@@ -125,7 +125,6 @@ FFCOPT += -L $(STDLIBPATH) -I $(STDINCPATH)
 # Libraries and resource files
 FFCOPT += -L $(FBEMPATH)/bin
 FFCOPT += -I $(FBEMPATH)/include
-FFCOPT += -I $(FBEMPATH)/src/resources_quasisingular_integration
 FFCOPT += -I $(FBEMPATH)/src/resources_shape_functions
 FFCOPT += -I $(FBEMPATH)/src/resources_quad_rules
 #FFCOPT += -L $(SDFPATH)
