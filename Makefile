@@ -3,7 +3,7 @@
 # ==============
 
 # Compilation mode: debug or optimal
-MODE = debug
+MODE = optimal
 
 # GNU Fortran Compiler
 FC = gfortran
