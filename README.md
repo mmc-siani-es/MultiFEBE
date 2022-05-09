@@ -21,8 +21,10 @@ Requirements:
   * Compiler: GNU Fortran Compiler versión 9.4 o superior
   * Linear Algebra:
     * Default: Automatically Tuned Linear Algebra Software (ATLAS)
-    * Other (need to change Makefile): OpenBLAS 
-  * Pre- and post-processor: Gmsh (https://gmsh.info/)
+    * Alternative (need to change Makefile): OpenBLAS 
+
+Optional but recommended:
+  * Pre- and post-processor (external tool): Gmsh (https://gmsh.info/)
 
 Instructions:
 
