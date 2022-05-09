@@ -9,7 +9,7 @@ How to install?
 ===============
 
 # Option 1
-Download binaries from [our website](www.mmc.siani.es), and run it.
+Download binaries from [our website](http://www.mmc.siani.es), and run it.
 
 # Option 2
 Download the source code from [GitHub](https://github.com/mmc-siani-es/MultiFEBE), unpack the tar.gz file, and compile it by running the Makfile. 
