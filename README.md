@@ -8,18 +8,34 @@ MultiFEBE is a multi-domain integrated Finite Element and Boundary Element solve
 How to install?
 ===============
 
-# Option 1
+## Option 1
 Download binaries from [our website](http://www.mmc.siani.es), and run it.
 
-# Option 2
+## Option 2
 Download the source code from [GitHub](https://github.com/mmc-siani-es/MultiFEBE), unpack the .zip file, and compile it by running the Makefile. 
 
-These are the requirements:
+Requirements:
 
+  * OS: GNU/Linux 64 bits
+  * Build automation tool: GNU Make
   * Compiler: GNU Fortran Compiler versión 9.4 o superior
   * Linear Algebra:
     * Default: Automatically Tuned Linear Algebra Software (ATLAS)
-    * Other: OpenBLAS (need to change Makefile)
+    * Other (need to change Makefile): OpenBLAS 
+  * Pre- and post-processor: Gmsh (https://gmsh.info/)
+
+Instructions:
+
+  * Download source code from [GitHub](https://github.com/mmc-siani-es/MultiFEBE).
+  * Unpack the downloaded .zip file.
+  * Edit the `./Makefile` if needed.
+  * Compile it by executing:
+  
+```
+$ make   
+```    
+
+  * Once compiled, the executable `multifebe` is locate at the folder `./bin/` 
     
 License:
 ========
