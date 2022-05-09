@@ -40,6 +40,4 @@ $ make
 License:
 ========
 
-Please see the file ./LICENSE for details.
-
-
+GPLv2, please see the [LICENSE](https://github.com/mmc-siani-es/MultiFEBE/blob/main/LICENSE) file for details.
