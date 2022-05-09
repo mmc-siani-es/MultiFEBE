@@ -250,10 +250,8 @@ module problem_variables
   ! ---------------
   !
   real(kind=real64)                       :: vectors_scale_factor  !! Scale factor for vectors
-  !character(len=32)                       :: fmt_integer           !! Format for integer export (Fortran specifier format)
-  character(len=fbem_fmtstr)              :: fmt_integer           !! Format for integer export (Fortran specifier format)
-  !character(len=32)                       :: fmt_real              !! Format for real export (Fortran specifier format)
-  character(len=fbem_fmtstr)              :: fmt_real              !! Format for real export (Fortran specifier format)
+  character(len=32)                       :: fmt_integer           !! Format for integer export (Fortran specifier format)
+  character(len=32)                       :: fmt_real              !! Format for real export (Fortran specifier format)
   integer                                 :: complex_notation      !! Notation for complex: 1: abs & arg, 2: real & imag.
   logical                                 :: export_overwrite      !! ¿Overwrite existent files (native file formats)?
   logical                                 :: export_geo_mesh_data  !! ¿Export geometrical e*.dat file?
@@ -261,7 +259,7 @@ module problem_variables
   logical                                 :: export_nso            !! ¿Export .nso file?
   logical                                 :: export_eso            !! ¿Export .eso file?
   logical                                 :: export_pos            !! ¿Export .pos file (Gmsh)?
-  character(len=fbem_fmtstr)              :: fmt_real_pos          !! Format for real export (Fortran specifier format) - .pos file
+  character(len=32)                       :: fmt_real_pos          !! Format for real export (Fortran specifier format) - .pos file
   logical                                 :: export_sif            !! ¿Export .sif file?
   logical                                 :: export_wsp            !! ¿Export .wsp file?
   logical                                 :: export_tot            !! ¿Export .tot file?
