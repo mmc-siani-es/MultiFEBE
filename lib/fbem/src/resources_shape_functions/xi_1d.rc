@@ -1,0 +1,13 @@
+select case (etype)
+  case (fbem_line1)
+#   include <xi_line1.rc>
+  case (fbem_line2)
+#   include <xi_line2.rc>
+  case (fbem_line3,fbem_line3_mqp1u,fbem_line3_mqp2u,fbem_line3_mqp1t,fbem_line3_mqp2t)
+#   include <xi_line3.rc>
+  case (fbem_line4)
+#   include <xi_line4.rc>
+  case default
+    call fbem_error_message(output_unit,0,__FILE__,__LINE__,&
+                            'etype={line1,line2,line3,line3_mqp1u,line3_mqp2u,line3_mqp1t,line3_mqp2t,line4}')
+end select

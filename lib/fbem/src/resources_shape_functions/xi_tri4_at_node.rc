@@ -1,0 +1,17 @@
+select case (node)
+  case (1)
+    xi(1)=1.0d0-0.666666666666666667d0*delta
+    xi(2)=      0.333333333333333333d0*delta
+  case (2)
+    xi(1)=      0.333333333333333333d0*delta
+    xi(2)=1.0d0-0.666666666666666667d0*delta
+  case (3)
+    xi(1)=      0.333333333333333333d0*delta
+    xi(2)=      0.333333333333333333d0*delta
+  case (4)
+    xi(1)=      0.333333333333333333d0
+    xi(2)=      0.333333333333333333d0
+  case default
+    call fbem_error_message(output_unit,0,__FILE__,__LINE__,&
+                            'node does not exist')
+end select

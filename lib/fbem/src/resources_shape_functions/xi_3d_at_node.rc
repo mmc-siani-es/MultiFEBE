@@ -1,0 +1,15 @@
+select case (etype)
+  case (fbem_tet4)
+#   include <xi_tet4_at_node.rc>
+  case (fbem_tet10)
+#   include <xi_tet10_at_node.rc>
+  case (fbem_hex8)
+#   include <xi_hex8_at_node.rc>
+  case (fbem_hex20)
+#   include <xi_hex20_at_node.rc>
+  case (fbem_hex27)
+#   include <xi_hex27_at_node.rc>
+  case default
+    call fbem_error_message(error_unit,0,__FILE__,__LINE__,&
+                            'etype={tet4,tet10,hex8,hex20,hex27}')
+end select

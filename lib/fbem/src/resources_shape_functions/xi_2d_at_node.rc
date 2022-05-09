@@ -1,0 +1,25 @@
+select case (etype)
+  case (fbem_tri1)
+#   include <xi_tri1_at_node.rc>
+  case (fbem_tri3)
+#   include <xi_tri3_at_node.rc>
+  case (fbem_tri4)
+#   include <xi_tri4_at_node.rc>
+  case (fbem_tri6)
+#   include <xi_tri6_at_node.rc>
+  case (fbem_quad1)
+#   include <xi_quad1_at_node.rc>
+  case (fbem_quad4)
+#   include <xi_quad4_at_node.rc>
+  case (fbem_quad8)
+#   include <xi_quad8_at_node.rc>
+  case (fbem_quad9)
+#   include <xi_quad9_at_node.rc>
+  case (fbem_line2point1)
+#   include <xi_line2point1_at_node.rc>
+  case (fbem_line3point1)
+#   include <xi_line3point1_at_node.rc>
+  case default
+    call fbem_error_message(error_unit,0,__FILE__,__LINE__,&
+                            'etype={tri1,tri3,tri4,tri6,quad1,quad4,quad8,quad9,line2point1,line3point1}')
+end select

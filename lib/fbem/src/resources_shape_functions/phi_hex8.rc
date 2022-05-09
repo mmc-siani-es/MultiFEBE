@@ -1,0 +1,8 @@
+phi(1)=0.125d0*aux(2)*aux(4)*aux(6)
+phi(2)=0.125d0*aux(3)*aux(4)*aux(6)
+phi(3)=0.125d0*aux(3)*aux(5)*aux(6)
+phi(4)=0.125d0*aux(2)*aux(5)*aux(6)
+phi(5)=0.125d0*aux(2)*aux(4)*aux(7)
+phi(6)=0.125d0*aux(3)*aux(4)*aux(7)
+phi(7)=0.125d0*aux(3)*aux(5)*aux(7)
+phi(8)=0.125d0*aux(2)*aux(5)*aux(7)

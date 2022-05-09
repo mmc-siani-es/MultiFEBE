@@ -1,0 +1,11 @@
+aux(1)=xi/(1.d0-delta)
+aux(2)=aux(1)-1.d0
+aux(3)=aux(1)+1.d0
+aux(4)=aux(1)-1.d0/3.d0
+aux(5)=aux(1)+1.d0/3.d0
+aux(6)=9.d0/16.d0*aux(4)*aux(5)
+aux(7)=27.d0/16.d0*aux(2)*aux(3)
+phi(1)=-aux(6)*aux(2)
+phi(2)=aux(6)*aux(3)
+phi(3)=aux(7)*aux(4)
+phi(4)=-aux(7)*aux(5)
