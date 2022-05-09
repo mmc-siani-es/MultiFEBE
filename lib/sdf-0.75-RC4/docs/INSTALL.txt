@@ -1,0 +1,317 @@
+Aug. 23, 2007 - George H. Fisher
+
+----------------------------------------------
+Installing the C/Fortran callable version of SDF:
+----------------------------------------------
+
+The Fortran and C callable version of the set of SDF functions is written in C.
+The source code for version-0.74 of the SDF i/o software is contained 
+in 2 files, sdf_subs.c and sdf_subs.h
+
+Thus far, the SDF code has been successfully compiled and
+tested in Linux (x86 and x86_64), Windows XP (x86), SUN-Solaris, Mac OS X, 
+The SGI Origin, SGI Altix, Cray XD1, and IBM SPX systems using many different 
+versions of gcc, as well as the Intel compiler icc, the Portland group 
+compiler pgcc, the SUN compiler, the IBM xlC_r compiler, and the Microsoft 
+Visual C/C++ compiler.  
+
+There is a Makefile.  The default compiler for SDF is gcc.  If you are on 
+a system with gcc, then to compile the SDF library, just type make.  
+If you want to use a different compiler from gcc, you will need to
+change the COMPILER setting, and possibly the FLAGS setting in Makefile.
+A number of compiler choices are already present as comments, and can be 
+chosen by un-commenting them.  
+
+In a unix environment, this should create a linkable object, sdf_subs.o, 
+and a library, libsdf.a .  It will also compile an executable command-line 
+sdf file browser, sdf_browse, which can be used to perform a cursory 
+examination of the contents of an sdf file.  
+
+To install the library and include file into the usual spots in /usr/local,
+on a unix system, become root and type "make install".  This will also 
+install the executable sdf file browser program sdf_browse in /usr/local/bin .
+If you want to change the prefix to some other location, change the PREFIX
+variable in the Makefile.  Make uninstall will remove the sdf_browse
+executable, the libsdf.a library, and the sdf_subs.h header from the PREFIX
+locations used in "make install".
+
+Starting with version 0.74, have added capability of having a 
+user-defined value of the initial header size of the file for the 
+C/Fortran callable versions versions of sdf_write, sdf_insert, and 
+sdf_replace.  This capability was also added to the IDL versions with a 
+keyword. (see details in the IDL section of SDF_USAGE_NOTES.txt).  In the 
+C/Fortran versions, this value can be optionally set at compile time by using 
+the -DHINITSZ=nnnn flag, where nnnn is the desired size in bytes.  This can 
+be edited as part of CCFLAGS in the Makefile if so desired.  The default
+value is 2000.  This value is adequate for a modest number of datasets per
+file, ie 30-40.  If you plan on writing a much larger number of datasets in a
+given file, the sdf i/o will be more efficient if you increase the size of 
+HINITSZ to larger values.
+
+Starting with version 0.73, 
+using the -DINTF_64 option to the C compiler will compile the sdf library
+assuming that default Fortran integers are 64 bits long, rather than 32 bits,
+the latter being what the Fortran standard assumes.  Now, typing "make" 
+creates both versions of the library, libsdf.a, the version which assumes
+default 32-bit fortran integers, and libsdf_if64.a, 
+which is to be used when linking from fortran programs that assume a 
+default 64-bit integer size.  Typing "make all" will make almost all of 
+the example programs, but this will require that you 
+have functioning fortran compilers (F77 and F95 in the Makefile) for some 
+of the examples.  Versions of the fortran test programs assuming 64-bit
+default integers can be compiled by typing "make all_if64".  The resulting
+executables have a trailing _if64 in their name.  
+
+If you are on a Solaris system make sure you use gnu make ('gmake') and not
+Sun's make, which seems to generate spurious error messages about 
+unexpected ends of lines.
+
+Make clean will remove all the objects, libraries, the sdf_browse
+executable, the example programs xtestmain, xtestf77, xtest_sdf_edit, 
+xlarge, x3d, x4d, x5d, xtc89, xtc99, xtest_dyn_f95, xtest_transp_f95,
+xtestrbwb, xtp, and xtestt, as well as the output files that the test programs
+create.  'make all' will compile all the C and Fortran test programs 
+(except for xtc99), as well as the libraries etc.  As noted above, this 
+will require that you have fortran compilers defined.  Make sdf.dll will 
+only work in MS Windows (see below).  The test executable xtc99 requires 
+complex variables to be defined in C which is only true for C99 compliant 
+compilers.  There is an entry in the Makefile for xtc99, but it is not 
+included in 'make all'.
+
+In MS Windows, the make file works fine under the mingw and msys
+environments, at least using the mingw 3.1.0-1 installation package
+(MinGW-3.1.0-1.exe) , and version 1.10 of msys (MSYS-1.0.10.exe) .  
+More recent MinGW versions, such as 5.02, also seem to work fine (but
+are missing the debugger gdb).  Mingw and msys are free software 
+that can be downloaded from www.mingw.org .  Mingw stands for 
+"minimal gnu for windows" and provides a self-consistent package of the 
+gcc compiler suite and gdb debugger that link against existing 
+Microsoft C libraries that are present in most windows installations.  
+Msys provides a unix-like shell environment from which the mingw 
+compilers and debuggers and make commands can be run.  
+Programs successfully compiled under mingw should work on most windows machines.
+Mingw only includes the Fortran 77 compiler g77
+as part of the compiler suite, but a free fortran 95 compiler, g95, 
+that works with mingw can be downloaded from www.g95.org .
+One can also now download mingw compatible versions of gfortran, the open 
+source fortran 95 compiler that is part of gcc version 4.
+Binaries can be downloaded from http://gcc.gnu.org/wiki/GFortranBinaries.
+
+There are several versions of compiler flags in the Makefile, either for
+debugging or for optimization.  Pick the version you want and uncomment it.
+If you pick a version with profiling ( with the -pg option) you might need to
+add a -lgprof in addition to -lsdf in the appropriate lines of the Makefile
+if you are running in MinGW.
+
+To link the sdf library into your fortran program barf.f creating 
+executable xbarf, these commands should work (according to these 4 compilers:
+
+g77:  g77 barf.f -lsdf -o xbarf
+g95:  g95 barf.f -lsdf -o xbarf
+ifort:  ifort barf.f -lsdf -o xbarf
+gfortran: gfortran barf.f -lsdf -o xbarf
+
+If the compiler/loader complains about missing symbols for various 
+sdf functions, try setting -L<dir> in the compiler commands above, 
+where <dir> is the directory where the library libsdf.a is located.
+
+Important Fortran note:  The sdf software assumes the Fortran standard
+for the size of default integers passed as arguments, which is 
+sizeof(double)/2.  If you change the default integer size from 
+sizeof(double)/2 in the integer arguments used in calling sdf functions
+(e.g. by using -i8 with the ifort compiler), you 
+should link to the default 64-bit integer version of the library, 
+libsdf_if64.a, instead of the default library libsdf.a.  
+The dims array, on the other hand, is assumed to be an array of 
+64-bit integers regardless of what the default integer size is, in 
+versions 0.70 and later.  Be sure you make dims an integer*8 or 
+integer(kind=8) array in your fortran calling program.  See the included 
+test programs for examples.  This is a change from earlier versions 
+(up through 0.69) of SDF.
+
+To use the functions sdf_wb_f77 and sdf_rb_f77, three of the arguments 
+(datapos, nelem, and fp) must be 64-bit fortran integers -- integer*8 or 
+integer (kind=8) .
+
+To link the sdf library into another C program barf.c to create executable 
+xbarf:
+
+gcc -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE barf.c -lsdf
+-o xbarf
+
+The C program barf.c will need to include the line 
+#include <sdf_subs.h> in the declarations part of the code.
+
+Important note for IBM SPX:  The sdf_subs.h file defines the _LARGE_FILES
+environment variable, which is *required* for SDF to work properly on these
+platforms.  If you write C-code that calls SDF functions, the
+#include <sdf_subs.h> line must occur before any other declarations in the
+calling program.  If for some reason that's not possible, then you can add
+#DEFINE _LARGE_FILES 1
+to come ahead of all other includes and declarations in the calling C-program.
+There seems to be no corresponding restriction for Fortran programs
+that call SDF functions on the SPX.
+
+There is a hook in the make file for my_C_prog, which could be customized
+for putting in your own C program that links with the sdf library.
+
+If the compiler can't find the header sdf_subs.h, insert a -I<header-dir>
+into the compiler command, where <header-dir> is the directory containing
+sdf_subs.h .  Similarly, if there are undefined sdf symbols from the loader,
+insert a -L<dir> into the compiler line, where <dir> is the directory
+containing libsdf.a .
+
+The MinGW Makefile includes an entry for creating a dynamic link 
+library sdf.dll and definitions file sdf.def if you are using mingw in 
+MS Windows ("make sdf.dll"), in addition to the default compilation and use 
+of the static library libsdf.a .  Fortran and C programs 
+compiled under MinGW can successfully link to the dll 
+by just adding the name of the dll file, sdf.dll , to the list of source code
+files in the compiler command.  In general, running the resulting executable
+will then mean you need to have the sdf.dll file in the same directory as the
+executable.  Typing "make sdf_dll.zip" will also create the zip file described
+below.  Starting in version 0.73, sdf_dll.zip includes both the "regular"
+.dll, and the 64-bit default fortran integer version, sdf_if64.dll.
+
+USING SDF IN MS-WINDOWS (WITHOUT MINGW/MSYS):
+
+For those who don't want or need to install MinGW on their
+Windows machines, a copy of sdf.dll, sdf_if64.dll, and sdf.def, sdf_if64.def 
+are included with this distribution in the .zip file, sdf_dll.zip .  
+Just unzip the zip file and it will inflate the .dll and .def files. 
+The .dll and .def files can then be used to link to
+other programs compiled with other compilers in MS Windows, 
+as described in the next few paragraphs.
+
+To link sdf.dll into a non-MinGW compiled program, there are 2 additional 
+steps: (1) create an import library for sdf.dll that will be recognized by
+the other compilers, and (2) then link the import library with the other
+source code files that call sdf functions.  If you are using the Microsoft
+Visual C/C++ compiler (msvc), the import library sdf.lib can be created 
+by using the "lib" command in one of the "build" command-line windows: 
+lib /machine:i386 /out:sdf.lib /def:sdf.def 
+This command uses both the sdf.dll file, and the sdf.def definitions
+file that mingw produces when you type "make sdf.dll".  Analogous commands
+can be used with sdf_if64.dll, the .dll that includes support for a default
+fortran integer size of 64-bits.
+
+Examples of compiling the import library into other C programs with msvc can 
+be found in the file Makefile_msvc that is included in this distribution.  To 
+compile all of the C test programs for SDF, as well as the versions of the 
+sdf_browse executable using the msvc compiler, you can bring up one of the 
+Microsoft Platform SDK command-line build windows, get into the sdf source code
+directory, and type "nmake /f Makefile_msvc all".  Versions of the resulting
+executables compiled by linking to the existing sdf.dll library have 
+an _dll in their name, while those compiled entirely with msvc have 
+an _msvc in their name.  More detail can be found by reading the comments 
+in the file Makefile_msvc.  These executables should do exactly the same 
+thing as the MinGW compiled programs, which don't have an _dll or _msvc in
+their names.  To remove the msvc compiled executables and their object files, 
+type "nmake /f Makefile_msvc clean".
+
+If you want to use sdf.dll with the command-line version of the 
+Borland C/C++ compiler (version 5.5, which is available for free), 
+the import library sdf.lib is created like this:
+implib -a sdf.lib sdf.def sdf.dll
+Before compiling any programs that use sdf, the include file 
+sdf_subs.h must be edited -- in the Borland compiler, a "long long" 
+variable does not exist, and variable type fpos_t is only 4 bytes long 
+instead of 8 bytes.  Near the top of the sdf_subs.h file add this line: 
+#define WIN32
+Then, in the typedefs for variable type "pos", substitute __int64 for fpos_t,
+and in the typedef for "i8", substitute __int64 for long long.
+The example commands below assume that sdf_subs.h is then placed into the
+default Include directory for the Borland compiler, 
+(which is commonly C:\Borland\BCC55\Include ).
+
+To compile e.g. a version of sdf_browse.exe using the Borland compiler bcc32,
+the next steps would then be:
+bcc32 -c sdf_browse.c
+bcc32 sdf_browse.obj sdf.lib
+
+The resulting version of sdf_browse.exe should behave in just the same 
+way as the MinGW compiled version of sdf_browse.  
+
+EXAMPLE PROGRAMS THAT USE SDF:
+
+Examples of the usage of SDF i/o functions can be found in sdf_f77_tests.f
+and sdf_f77_testt.f for Fortran 77, and main_test_sdf.c, sdf_test_large.c, 
+test_sdf_3d.c, test_sdf_4d.c, test_sdf_5d.c, test_complex_c89.c, 
+test_complex_c99.c, test_sdf_large.c, and sdf_test_edit.c for C.  
+The first two Fortran examples should compile with Fortran 77 compiler such as 
+g77 or pgf77.  Examples of fortran usage with allocatable arrays are given in 
+test_sdf_dynamic.F90 and test_sdf_transpose.F90 .  Here, you'll need to use a 
+Fortran 90/95 compiler such as g95, gfortran, or ifort.  These use sample sdf 
+files bz.sdf and sdf_example_file.sdf , the latter of which is included in the 
+distribution.  The file bz.sdf contains the vertical 
+magnetic field from a snapshot of an anelastic 3-D MHD simulation run 
+by Dave Bercik.  This file is not included in the distribution by default, 
+because it is so large (20 MB), but it can be downloaded from 
+http://solarmuri.ssl.berkeley.edu/~fisher/public/software/SDF .
+
+There are entries in the Makefile for making the example programs 
+("xtestmain", xtest_sdf_edit", "xlarge", "x3d", "x4d", "x5d", "xtc89", "xtc99", 
+"xtestf77", "xtestt", "xtest_dyn_f95", and "xtest_transp_f95"), but 
+before using the latter 4 make sure that you set the Fortran compiler names 
+in the Makefile to the compiler you have installed on your system.
+
+In addition to the SDF examples, there are 2 example test programs in the
+Makefile that use lower-level functions available in the SDF library to 
+perform large-endian binary I/O outside the context of the SDF format.  
+These are "xtestrbwb", and "xtp", respectively, and are compiled from the 
+Fortran 77 source files test_rbwb.f and test_prim.f, respectively.
+
+The makefiles also includes versions of the fortran test programs that
+assume a default 64-bit integer size.
+
+Note that as of late 12/22/05 large files (> 2GB) appear to be working properly
+at least for the cases I've considered thus far, at least in linux and 
+windows.  As of 6/20/06, large files also appear to be working for OSX on
+Mac G4 and G5 machines, as well as on SUN-Solaris machines, compiled with either
+the SUN default compiler or with gcc.  The program "xlarge" tests for the
+ability to write large files.  Make sure you have enough disk space before
+you try to run this!  Make sure you are not using a FAT32 partition!  
+On a modern laptop, this may take about 20 minutes to run to completion.
+
+Again, note that in Windows, you must be using an NTFS partition 
+(and not a FAT32 partition) for xlarge to work.  I have only confirmed the MinGW
+compiled version as working correctly with large files.  I suspect msvc compiled
+programs will also work correctly, and am cautiously optimistic but less 
+certain about Borland compiled programs.
+
+---------------------------------------------------
+Installing the IDL version of SDF:
+---------------------------------------------------
+
+Put all the files in the IDL folder somewhere in your IDL path, and that
+should be all that is necessary to install the IDL version of SDF.
+
+IDL functions sdf_read, sdf_write, sdf_query, sdf_sizes, sdf_insert,
+sdf_delete, sdf_insert mirror the C/Fortran callable functions, and are
+"self-documenting", at least as far as the calling syntax goes; typing
+in the name of the procedure should spit out the correct calling syntax.
+
+Try exploring the contents of the example sdf file included in the
+distribution (sdf_example_file.sdf) with sdf_query, sdf_read_all,
+etc.
+
+The IDL versions of sdf_insert, sdf_replace, and sdf_delete are pretty slow
+when applied to datasets near the front of very large ( > 2GB) files.  
+The C/Fortran callable versions seem to run faster.
+The IDL versions of sdf_insert, sdf_replace, and sdf_delete will not work
+correctly when using GDL (Gnu Data Language) instead of IDL,
+and in fact will corrupt the .sdf file.  Don't use these procedures from GDL!
+
+Starting with version 0.74, of the IDL version of sdf, the default 
+initial header size of the sdf file can be changed by using a new keyword in 
+sdf_write, sdf_insert, and sdf_replace, namely hinitsz=nnnn.  Here, nnnn 
+is whatever integer value in bytes you desire.  In earlier versions, 
+this is hard-wired to be 2000, and 2000 bytes is still the default value that 
+is used if the keyword is not set.
+
+Starting in version 0.74, the default operation of 'sdf_write_all' has been 
+changed from earlier versions, such that each call creates a new file, even 
+if an old file of the desired name already exists.  The previous behavior of 
+appending to an existing file was confusing to users.  The old 'append' 
+behavior can be retained by using the /append keyword, as documented in
+SDF_USAGE_NOTES.txt .

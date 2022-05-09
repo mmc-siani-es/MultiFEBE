@@ -1,0 +1,4 @@
+Authors of SDF:
+George H. Fisher <fisher at ssl dot berkeley dot edu>
+Jack Vernetti <jackv at ssl dot berkeley dot edu> (byteswap function)
+Dave Bercik <bercik at ssl dot berkeley dot edu> (parts of sdf_read_varlist)

@@ -1,0 +1,77 @@
+USING DYNAMICALLY ALLOCATED, MULTI-DIMENSIONAL ARRAYS WITH SDF FROM C 
+
+Multi-dimensional arrays in C can have a very different structure in memory
+depending on whether the arrays are allocated at compile time, or whether
+they are dynamically allocated at run-time.  The SDF I/O functions require
+that the array occupies a contiguous block in memory, or else they will not
+be read in or written out correctly.
+
+Multi-dimensional arrays in C that are stack or static variables allocated 
+at compile time appear to occupy contiguous blocks of memory, and the name of 
+the array can be passed as an argument to e.g. sdf_read or sdf_write without 
+any problems, regardless of the number of dimensions.
+
+Dynamically allocated arrays that are 1-dimensional also occupy a contiguous
+block of memory, and can also be passed without any problem as arguments to
+sdf_read or sdf_write, as described in the SDF_USAGE_NOTES.txt file.
+
+However, dynamically allocated multi-dimensional arrays that are created 
+using nested malloc or calloc calls as frequently described in textbooks on C, 
+will typically have gaps in memory at the end of rows (for a 2-d array), and 
+arrays created this way will not work correctly in SDF.  Of course, for large 
+scale simulations, the arrays are generally big and multi-dimensional, so 
+one needs to have some systematic way of using these arrays and performing I/O
+using SDF.
+
+There are basically 2 choices: (1) Use a 1-d array instead of a multi-d array,
+and use an ad-hoc indexing or pointer arithmetic scheme to mimic the 
+functionality of multiple indices; or (2) change the way the multi-dimensional 
+array is created in such a way that the data can occupy a contiguous block of 
+memory.  Here, we describe how both approaches can be used with SDF.
+
+To use a 1-d array for SDF I/O, one can either copy the contents of a
+multi-dimensional array into a 1-d array before writing, or just do the 
+simulations using a 1-d array in the first place.  Either way, the main 
+challenge is to convert between the multi-dimensional indices and the 
+equivalent index for the 1-d array.  The SDF library contains 2 functions 
+to aid in this task, rindcalc, and memcalcr.  The function rindcalc 
+computes a set of multi-dimensional indices given the array dimensions and 
+the equivalent 1-d index value.  The function memcalcr goes in the reverse 
+direction, and computes the equivalent 1-d index value, given the array 
+dimensions and a set of indices.  The calling sequence for rindcalc and 
+memcalcr are described along with the other SDF functions in
+SDF_USAGE_NOTES.txt.
+
+To create a dynamically allocated, multi-dimensional array in such a way 
+that the data occupies a contiguous block of memory, SDF provides a set 
+of functions which will create multi-dimensional arrays in which the number of
+dimensions (rank) ranges from 2 to 5, and which work nicely with
+sdf_read and sdf_write.  One set of functions (sdf_mk_2d, sdf_mk_3d,
+sdf_mk_4d, and sdf_mk_5d) will create dynamically allocated arrays to which
+the user can then assign values using standard array index notation, and
+which can then by easily written with sdf_write.  Another
+set of functions (sdf_1d_to_2d, sdf_1d_to_3d, sdf_1d_to_4d, and sdf_1d_to_5d)
+will take the 1-d array that is read from sdf_read and create the addressing
+needed to manipulate the resulting array with standard array indexing.
+The memory allocated by these functions should be freed using the functions
+sdf_free_2d, sdf_free_3d, sdf_free_4d, and sdf_free_5d when the user is done
+with the arrays.
+
+Examples using all of these functions can be found in the example programs
+test_sdf_large.c, test_sdf_3d.c, test_sdf_4d.c, and test_sdf_5d.c.  
+
+To create Multi-dimensional complex arrays in C, the choice depends on whether
+one is using a C99 compliant compiler -- complex variables are defined in
+C99, but not in C89.  Many compilers (such as MSVC) do not support complex
+variables in C, but most modern versions of gcc (including recent versions
+of MinGW) do.
+
+To create a multi-dimensional complex array with a C99 compiler, see 
+the examples in the test_sdf_complex_c99.c example file, which just uses 
+e.g. the sdf_mk_2d or sdf_1d_to_2d functions just as for other variables.  
+To create a multi-dimensional complex array with a C89 compiler, see the
+examples in the test_sdf_complex_c89.c example file.  Basically, one just
+creates an array with an additional last dimension of 2, in which the index is
+either 0 or 1 and denotes either the real or imaginary parts of the complex
+array.  This example illustrates how one can perform arithmetic on complex
+variables using this notation.

@@ -1,0 +1,151 @@
+# Nmake macros for building Windows 32-Bit apps
+
+!include <Win32.Mak>
+
+# This makefile for the Microsoft MSVC compiler/loader creates the executable
+# test programs for SDF using only the C test programs.  For each test program
+# it creates 2 different versions as executables:  one with an _dll in the
+# name, and one with an _msvc in the name.  The version with _dll is compiled
+# by linking to the mingw/msys compiled file sdf.dll that is included in 
+# the .zip file.  The version with _msvc is compiled by first compiling 
+# sdf_subs.dll (a version of sdf.dll compiled using msvc, not mingw) and 
+# then linking the test programs to that dll.  To make all of the test 
+# programs, type nmake /f Makefile_msvc all .  To remove all of the test 
+# programs and object files, and other stuff created during the build process, 
+# type nmake /f Makefile_msvc clean .
+
+
+#----- If OUTDIR does not exist, then create directory (commented out)
+# $(OUTDIR) :
+#    if not exist "$(OUTDIR)/$(NULL)" mkdir $(OUTDIR)
+#
+
+sdf_browse_dll.exe: sdf_browse.obj sdf.lib
+    $(link) $(conlflags) -out:sdf_browse_dll.exe sdf.lib Msvcrt.lib sdf_browse.obj $(conlibsdll)
+
+sdf_browse.obj: sdf_browse.c sdf_subs.h
+    $(cc) $(cflags) /O2 -I. $(cvarsdll) sdf_browse.c
+
+sdf.lib: sdf.dll sdf.def
+    $(implib) /out:sdf.lib /machine:i386 /def:sdf.def
+
+main_test_sdf.obj:  main_test_sdf.c sdf_subs.h
+    $(cc) $(cflags) /O2 -I. $(cvarsdll) main_test_sdf.c
+
+sdf_test_edit.obj:  sdf_test_edit.c sdf_subs.h
+    $(cc) $(cflags) /O2 -I. $(cvarsdll) sdf_test_edit.c
+
+test_sdf_3d.obj:  test_sdf_3d.c sdf_subs.h
+    $(cc) $(cflags) /O2 -I. $(cvarsdll) test_sdf_3d.c
+
+test_sdf_large.obj:  test_sdf_large.c sdf_subs.h
+    $(cc) $(cflags) /O2 -I. $(cvarsdll) test_sdf_large.c
+
+test_sdf_4d.obj:  test_sdf_4d.c sdf_subs.h
+    $(cc) $(cflags) /O2 -I. $(cvarsdll) test_sdf_4d.c
+
+test_sdf_5d.obj:  test_sdf_5d.c sdf_subs.h
+    $(cc) $(cflags) /O2 -I. $(cvarsdll) test_sdf_5d.c
+
+test_complex_c89.obj:  test_complex_c89.c sdf_subs.h
+    $(cc) $(cflags) /O2 -I. $(cvarsdll) test_complex_c89.c
+
+xtestmain_dll.exe: main_test_sdf.obj sdf.lib
+    $(link) $(conlflags) -out:xtestmain_dll.exe sdf.lib Msvcrt.lib main_test_sdf.obj $(conlibsdll)
+
+x3d_dll.exe: test_sdf_3d.obj sdf.lib
+    $(link) $(conlflags) -out:x3d_dll.exe sdf.lib Msvcrt.lib test_sdf_3d.obj $(conlibsdll)
+
+x4d_dll.exe: test_sdf_4d.obj sdf.lib
+    $(link) $(conlflags) -out:x4d_dll.exe sdf.lib Msvcrt.lib test_sdf_4d.obj $(conlibsdll)
+
+x5d_dll.exe: test_sdf_5d.obj sdf.lib
+    $(link) $(conlflags) -out:x5d_dll.exe sdf.lib Msvcrt.lib test_sdf_5d.obj $(conlibsdll)
+
+xlarge_dll.exe: test_sdf_large.obj sdf.lib
+    $(link) $(conlflags) -out:xlarge_dll.exe sdf.lib Msvcrt.lib test_sdf_large.obj $(conlibsdll)
+
+xtc89_dll.exe: test_complex_c89.obj sdf.lib
+    $(link) $(conlflags) -out:xtc89_dll.exe sdf.lib Msvcrt.lib test_complex_c89.obj $(conlibsdll)
+
+xtest_edit_dll.exe: sdf_test_edit.obj sdf.lib
+    $(link) $(conlflags) -out:xtest_edit_dll.exe sdf.lib Msvcrt.lib sdf_test_edit.obj $(conlibsdll)
+
+#--------------------- Install Rule  (not implemented) -----------------
+# install: libfftw3-3.dll $(OUTDIR)\vel_ccor.exe
+#	copy $(OUTDIR)\vel_ccor.exe C:\Documents and Settings\fisher\Bin
+#	copy libfftw3-3.dll C:\Documents and Settings\fisher\Bin
+#--------------------- Clean Rule --------------------------------------------------------
+sdf_subs.def:  sdf.def
+	copy sdf.def sdf_subs.def
+
+sdf_subs.obj:  sdf_subs.c sdf_subs.h
+	$(cc) $(cflags) /O2 -I. $(cvarsdll) sdf_subs.c
+
+sdf_subs.lib:  sdf_subs.obj sdf_subs.def
+	$(implib) -machine:$(CPU) -def:sdf_subs.def sdf_subs.obj \
+	-out:sdf_subs.lib
+
+sdf_subs.dll: sdf_subs.obj sdf_subs.def
+	$(link) $(dlllflags) sdf_subs.obj $(conlibsdll)  /def:sdf_subs.def -out:sdf_subs.dll 
+	
+
+sdf_browse_msvc.exe: sdf_browse.obj sdf_subs.lib sdf_subs.dll
+    $(link) $(conlflags) -out:sdf_browse_msvc.exe sdf_subs.lib sdf_browse.obj $(conlibsdll)
+
+xtestmain_msvc.exe: main_test_sdf.obj sdf_subs.lib sdf_subs.dll
+    $(link) $(conlflags) -out:xtestmain_msvc.exe sdf_subs.lib main_test_sdf.obj $(conlibsdll)
+
+xtest_edit_msvc.exe: sdf_test_edit.obj sdf_subs.lib sdf_subs.dll
+    $(link) $(conlflags) -out:xtest_edit_msvc.exe sdf_subs.lib sdf_test_edit.obj $(conlibsdll)
+
+xlarge_msvc.exe: test_sdf_large.obj sdf_subs.lib sdf_subs.dll
+    $(link) $(conlflags) -out:xlarge_msvc.exe sdf_subs.lib test_sdf_large.obj $(conlibsdll)
+
+x3d_msvc.exe: test_sdf_3d.obj sdf_subs.lib sdf_subs.dll
+    $(link) $(conlflags) -out:x3d_msvc.exe sdf_subs.lib test_sdf_3d.obj $(conlibsdll)
+
+x4d_msvc.exe: test_sdf_4d.obj sdf_subs.lib sdf_subs.dll
+    $(link) $(conlflags) -out:x4d_msvc.exe sdf_subs.lib test_sdf_4d.obj $(conlibsdll)
+
+x5d_msvc.exe: test_sdf_5d.obj sdf_subs.lib sdf_subs.dll
+    $(link) $(conlflags) -out:x5d_msvc.exe sdf_subs.lib test_sdf_5d.obj $(conlibsdll)
+
+xtc89_msvc.exe: test_complex_c89.obj sdf.lib
+    $(link) $(conlflags) -out:xtc89_msvc.exe sdf_subs.lib Msvcrt.lib test_complex_c89.obj $(conlibsdll)
+
+all: sdf_browse_dll.exe xtestmain_dll.exe xtest_edit_dll.exe xlarge_dll.exe x3d_dll.exe x4d_dll.exe x5d_dll.exe xtc89_dll.exe sdf_browse_msvc.exe xtestmain_msvc.exe xtest_edit_msvc.exe xlarge_msvc.exe x3d_msvc.exe x4d_msvc.exe x5d_msvc.exe xtc89_msvc.exe 
+
+# Rules for cleaning out those old files
+clean:
+	del /Q *.exp
+	del /Q *.manifest
+	del /Q sdf_browse.obj
+	del /Q sdf.lib
+	del /Q sdf_subs.obj
+	del /Q sdf_subs.dll
+	del /Q sdf_subs.def
+	del /Q sdf_subs.lib
+	del /Q xtestmain_dll.exe
+	del /Q xtestmain_msvc.exe
+	del /Q main_test_sdf.obj
+	del /Q sdf_browse_dll.exe
+	del /Q sdf_browse_msvc.exe
+	del /Q xtest_edit_dll.exe
+	del /Q xtest_edit_msvc.exe
+	del /Q sdf_test_edit.obj
+	del /Q test_complex_c89.obj
+	del /Q test_sdf_5d.obj
+	del /Q test_sdf_4d.obj
+	del /Q test_sdf_3d.obj
+	del /Q test_sdf_large.obj
+	del /Q xlarge_dll.exe
+	del /Q xlarge_msvc.exe
+	del /Q x3d_dll.exe
+	del /Q x3d_msvc.exe
+	del /Q x4d_dll.exe
+	del /Q x4d_msvc.exe
+	del /Q x5d_dll.exe
+	del /Q x5d_msvc.exe
+	del /Q xtc89_dll.exe
+	del /Q xtc89_msvc.exe

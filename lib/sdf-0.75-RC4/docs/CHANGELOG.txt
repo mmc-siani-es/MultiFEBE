@@ -1,0 +1,500 @@
+January 20, 2013 GHF
+
+version 0.75-RC4
+
+Found and fixed a bug in sdf_read, sdf_read_f77, and sdf_details, (for C and
+fortran-callable versions of SDF) in which
+a segmentation fault occurs if a negative value of "order" for a given dataset
+is given as one of the calling arguments.  Those functions now test to 
+ensure order >=0 before attempting to read or provide "details" on the dataset.
+A Similar bug (no testing for negative values of "order") was found and fixed 
+in the IDL versions of sdf_delete, sdf_insert, and sdf_replace.
+
+For IDL version, have now adopted test versions of sdf_read_var.pro 
+(modified by Brian Welsch) and sdf_read_all.pro (modified by Maria Kazachenko) 
+in which the "quiet" keyword was added to the calling sequence to 
+suppress the printing of the sdf_query output.
+
+March 27, 2012, GHF
+
+version 0.75-RC3
+
+Fixed a bug, found by Dave Bercik, in which zero or negative values of nbpw
+are not flagged as errors, and writes were attempted with no warning or error
+messages.  Fixes for this bug were added to sdf_write, sdf_replace, and
+sdf_insert.  I believe the IDL versions of these procedures are not affected
+by this bug; no changes to the IDL source code made.
+
+Feb. 3, 2012, GHF
+
+version 0.75-RC2
+
+Added the fortran callable subroutine sdf_ndat_f77(fname, ndat) and 
+the C function i4 sdf_ndat(fname) to return the number of datasets in
+a file without printing anything to stdout.  sdf_details had its default
+(no-error) print statements removed.  IDL version should be unchanged from
+0.74-1 I believe.  This version has *not* been tested against anything but
+Mac OSX (Lion) and the windows zip file has not been included.
+
+October 8, 2009 GHF
+
+version 0.74-1
+
+Fixed bug in the IDL versions of sdf_insert.pro and sdf_replace.pro in which
+sdf files with only 1 dataset were inadvertently removed.  Fixed another bug
+in which sdf_delete.pro and sdf_replace.pro had an incorrect check on illegal 
+values of the dataset to be replaced or deleted.  The C/Fortran callable
+libraries did not have this bug and remain unchanged.
+
+Aug. 23, 2007 GHF
+
+version 0.74
+
+Fixed a bug in C/Fortran version of sdf_rb, in which the code did not print
+any diagnostics if one tried to read past the end of the file.
+
+sdf file format is now an option for both the ANMHD and RADMHD mhd codes.
+
+Added capability of having a user-defined value of the initial header
+size of the file, to both the C/Fortran versions and the IDL versions
+of sdf_write, sdf_insert, and sdf_replace.  In the C/Fortran versions,
+this value can be set at compile time by using the -DHINITSZ=nnnn flag.
+This can be edited as part of CCFLAGS if so desired.  In the IDL versions,
+this can be changed by using a new keyword in sdf_write, sdf_insert, and
+sdf_replace, namely hinitsz=nnnn.  Here, nnnn is whatever integer value
+in bytes you desire.  In earlier versions, this is hard-wired to be 2000,
+and 2000 bytes is still the default value that is used.
+
+What is the significance of this?  If you add enough datasets to a file
+that the header information can't be safely stored in the initial 2000 bytes,
+then the entire file has to be "moved down" on the disk to make room for
+the expanded header information.  If the file is very large, like over 1-2GB,
+this can be very time consuming.  Typically, for a 2000 byte initial header 
+area, this occurs after 50-70 datasets or so.  If you will be storing many more
+datasets than this in a single file, it will be much more efficient to use
+a larger value of HINITSZ, as the number of times one of these "move down"
+operations has to be performed is much smaller.  On the other hand, for
+files containing a small number of datasets, making HINITSZ larger just
+results in some wasted space that isn't used.  I find the default value of
+2000 works fine for most of the cases I've used, but occasionally, when
+the file contains hundreds or thousands of datasets, it makes more sense to
+set HINITSZ to 10000 or 20000.
+
+The IDL version of sdf_write_all now creates a new output file by default,
+rather than appending to an existing file.  The addition of the /append
+keyword will result in the old behavior.
+
+Added cindcalc_f77, memcalcc_f77 functions, which are fortran callable
+functions that convert between multi-dimensional and 1-d array indices, and that
+use the default fortran index ranges (ie 1 to n instead of 0 to n-1).
+
+Feb. 26, 2006 GHF
+
+version 0.73
+
+Fixed a bug in the C/Fortran versions of sdf_insert, 
+sdf_replace in which the current file position was not returned to the 
+correct location if the header area had been expanded.
+
+Added the ability to use default 64-bit integers from Fortran programs that
+call sdf functions.  To enable this, I added an environment variable INTF_64
+which can be set at compile time with the -DINTF_64 flag to the C compiler
+(the default is that this is not set).  Two versions of the sdf library 
+are now compiled when you type "make", namely libsdf.a, which uses 
+the standard fortran integer size, namely an integer is half the size of 
+a double precision variable, and libsdf_if64.a, which assumes a default 
+fortran integer size of 64 bits.  Using 64-bit fortran integers by default 
+is enabled with a flag for most fortran compilers (-i8 for ifort and g95, and 
+-fdefault-integer-8 for gfortran, for example).  Fortran programs using these 
+options should then be linked to the libsdf_if64.a library with 
+the -lsdf_if64 flag.
+
+Note that it is still the case that even if one is using default fortran
+integer sizes of 32-bits, that some of the arguments are required to be
+64-bit integers (integer*8 or kind=8).  This is required to accomodate very
+large datasets.  See the SDF_USAGE_NOTES.txt file for details.
+
+There are versions of the fortran test programs assuming 64-bit default
+integers in the Makefile.  They have a trailing _if64 in the filenames of
+the executables, and they can all be compiled with "make all_if64".
+You will need to check that the flags F77_IF64 and F95_IF64 are correctly
+defined for your desired fortran compiler.
+
+Added "warnings" to the Makefile, which just reports all warnings from the
+compiler (-Wall) when trying to compile sdf_subs.c and sdf_browse.c .
+
+
+Oct. 17, 2006 GHF
+
+version 0.72
+
+With Yuhong Fan's help (Yuhong works at HAO/NCAR), have modified the 
+code slightly so that it compiles and runs on the IBM SPX series running AIX.  
+Modified sdf_subs.h to add
+# define _LARGE_FILES 1
+into the beginning of the include file.  This appears to be necessary to
+enable large file support on IBM SPX systems using the xlC_r compiler, 
+which seems to ignore the large-file support compiler flags that seem to 
+work with most of the other compilers.
+
+For IBM SPX systems, it then appears to be necessary that the
+# include <sdf_subs.h> line precede all other include statements and
+definitions in any C source code that calls SDF functions (no apparent
+restrictions on Fortran code that calls SDF routines).
+
+Also had some problems with the is_big_endian() function on IBM SPX, where
+it incorrectly identified the machine as being small-endian.  Made some slight
+changes to the function which seems to make it behave correctly, and added
+an error exit for the function.  Thus far this new function also behaves 
+correctly on all other platforms tested.
+
+Added some modifications to integer and masking arithmetic in
+the rindcalc, readmask, and writemask functions
+to increase their speed within sdf_transpose.  
+Speed improvements in the sdf_transpose function seem to be ~10-20% or so.
+
+Oct. 3, 2006 GHF
+
+version 0.71
+
+Jack Vernetti wrote a much faster version of the byte-swapping function,
+which speeded up the test programs on small-endian machines by anywhere from
+10-50%.  This version includes the new byteswap function.
+
+Sept. 28, 2006 GHF
+
+version 0.70
+
+After much soul-searching, decided to make a non-backwards compatible change
+for the Fortran-callable SDF subroutines:  All references to the "dims" array
+(array of dimensions) now assume that dims is an array of 64-bit integers 
+(integer*8 or integer (kind=8) ).  This is necessary to ensure that the I/O
+of very large arrays, as will surely occur in the future, will be handled
+correctly.  All of the example programs included were updated to reflect this
+change.  This change does not affect the files themselves, since the
+dimensions are converted to string tokens within the files.  But it will affect
+the Fortran calling software that reads or writes to the files.  The C and IDL
+interfaces were not changed, since they were already compatible with 64-bit
+dimensions.
+
+Fixed some minor bugs that Rick Devore found when compiling the code 
+on altix and origin SGI platforms.  
+
+Added IDL versions of sdf_wb and sdf_rb, to facilitate the analysis of
+files written in C or Fortran with sdf_wb and sdf_rb.  The calling sequence
+of sdf_wb and sdf_rb in IDL are somewhat different than in the Fortran/C calls.
+
+Aug. 18, 2006 GHF
+
+version 0.69
+
+Added fseeko_f77 and ftello_f77, to mirror the C functions fseeko and ftello,
+to the set of primitive fortran subroutines.  This means that pretty much
+the full range of C low-level binary disk I/O capabilities can be done 
+from a Fortran program.
+
+Changed the functions sdf_wb,
+sdf_rb, and sdf_wb_f77 and sdf_rb_f77, to add a file pointer argument.
+When the file pointer is set to 0 (or NULL in C), the file is opened and closed
+within the sdf_wb, sdf_rb functions, but when it is non-zero, it is treated
+as a file pointer, and the pointer is used for file i/o and the file is not
+opened or closed within the read/write functions.  The objective was to 
+provide the user with some additional control over the file I/O.  For example,
+the I/O can be done more efficiently if the user does their own opening and
+closing, but this means more coding effort.  In a calling Fortran program,
+this argument should be declared as a 64-bit integer.  This should make it 
+run correctly on either a 32-bit or 64-bit system.
+
+July 20, 2006 GHF
+
+version 0.68
+
+The names of the primitive fortran versions of the C functions in version 0.67
+(like sdf_fread_f77) were dangerously close to the sdf read function
+(sdf_read_f77).  Plus these primitives really have nothing to do with
+sdf files per se.  Therefore, the names of the fortran callable primitives
+were changed to be their C name (like fread) with an _f77 suffix.  Also
+added fflush_f77(fp) where fp file pointer returned from fopen_f77.  This
+results in pretty much all of the C i/o functions being supported from 
+Fortran.  The original version of fflush_f77, which flushed stdout only, has
+been changed to ffstdout_f77.  Also fixed a duplicated entry in Makefile for
+xtestrbwb.
+
+July 19, 2006 GHF
+
+version 0.67
+
+In response to Rick's latest email, put a call to sdf_file_truncate into
+sdf_wb so that file is truncated at the position last written.
+
+Also added Fortran callable interfaces to essentially all of the basic low-level
+C i/o functions, plus things like sdf_ftc_f77 (file truncation),  the SDF
+byteswapping function, etc.  This would make in possible to micro-engineer
+your own data format completely from within Fortran. There is a new test
+program, test_prim.f, which tests all of these functions in an example which
+makes a primitive large-endian binary file completly from Fortran calls of
+these low level routines.  This is now in the make file as the test 
+executable xtp.  For now, these low-level routines are not documented within
+the SDF_USAGE_NOTES.txt file.  For more information, see the example file
+test_prim.f .
+
+July 18, 2006 GHF
+
+version 0.66
+
+In response to email conversation with Rick Devore at NRL, introduced
+new functions to just perform primitive large-endian binary read/write in 
+the SDF library without all of the meta-data included in the SDF files.  The new
+functions are sdf_rb and sdf_wb (in C) and sdf_rb_f77 and sdf_wb_f77
+(Fortran callable versions).  The user then has to keep track of where things
+are in the file on their own.  These primitive functions allow one to start
+reading or writing anywhere in the file.  The functions are "large file"
+capable, ie one can read/write files larger than 2GB.  The IDL version of
+these primitives hasn't been written yet.
+
+July 9, 2006 GHF
+
+version 0.65
+
+Added a bunch of new functions to the C user interface to make it easier to
+use allocatable multi-dimensional arrays from C and do the I/O with SDF.
+To create a multi-dimensional, dynamically allocated array that
+can be used in e.g. sdf_write, one can use the functions sdf_mk_2d, sdf_mk_3d,
+sdf_mk_4d, or sdf_mk_5d to create 2d through 5d arrays which are indexable
+with standard [i][j][k]... syntax.  To convert the 1-d array that sdf_read
+returns into a multi-dimensional array, the functions sdf_1d_to_2d,
+sdf_1d_to_3d, sdf_1d_to_4d, and sdf_1d_to_5d will do the job.  The resulting
+multi-dimensional arrays are then freed with the sdf_free-2d, sdf_free_3d,
+sdf_free_4d, or sdf_free_5d functions.  These functions are now documented in 
+SDF_USAGE_NOTES.txt.
+
+There are a bunch of new test programs:  test_sdf_3d.c, test_sdf_4d.c, 
+test_sdf_5d.c, and sdf_test_complex_c89.c and sdf_test_complex_c99.c, which
+have entries in the Makefile, and which create executables x3d, x4d, x5d,
+xtc89 and xtc99, respectively.  The test_sdf_large.c test program, which is
+used to create the xlarge executable in the Makefile, now uses sdf_mk_2d
+and sdf_1d_to_2d.  The sdf_test_complex test programs use the sdf_mk_2d
+and sdf_1d_to_2d functions (C99 version) and sdf_mk_3d and sdf_1d_to_3d
+functions (C89 version).
+
+June 27, 2006 GHF
+
+version 0.64
+
+Found and fixed bugs in the C/Fortran versions of sdf_replace, sdf_insert,
+and sdf_delete, in which the original versions append a \0 at the end of
+a buffer containing the strings in
+the header area.  In some circumstances, this resulted in the value of
+hdrpos being 1 byte larger than it should have been, resulting in a null
+terminator being stuck into the middle of the header buffer in later calls
+to sdf_write, causing havoc when using complicated combinations of 
+sdf_replace and sdf_write.  Deleting the final \0 when writing out the 
+buffer in sdf_insert, sdf_replace, and sdf_delete appears to fix that problem.
+
+June 22, 2006 GHF
+
+version 0.63
+
+Found and fixed bugs in the new test programs test_sdf_large.c and 
+test_sdf_3d.c .  The allocation of the pointers in the original versions
+used sizeof(float) instead of sizeof(float *).  This caused these 2
+test programs to crash on 64-bit systems.  There are a few more comments
+in these codes now as to what their purpose is.  Also updated the
+documentation in SDF_USAGE_NOTES.txt (and in the file MULTI_DIM_ARRAYS_C.txt)
+to reflect the fixing of these bugs.
+
+June 20, 2006 GHF
+
+version 0.62
+
+Discovered a name conflict between sdf's "file_truncate" function in C, and one
+of exactly the same name in the cfitsio library.  Renamed the sdf version to be
+"sdf_file_truncate".  
+
+Found and fixed serious bugs in IDL versions of move_dn, move_up
+in which the code tried to read/write a buffer of zero bytes length if there
+was no "remainder" in the difference between the number of bytes to shift the
+file and the buffer size.
+
+June 8, 2006 GHF
+
+version 0.61
+
+Fixed small bugs in sdf_insert, sdf_replace, sdf_replace (C/Fortran versions)
+for opening files without checking to see if they'd been closed first.  
+
+Added a new test program, xtest_sdf_edit, which allows one to test the 
+functionality of sdf_insert/sdf_delete/sdf_replace from a C calling program.  
+The syntax of the program is xtest_sdf_edit <filename>, and it interactively 
+queries you to edit the datasets.  For insertion/replacement, it uses a dataset
+consisting of a 101 length floating array equal to sin (pi x), for x in [0,1].
+The program has not much practical use other than for testing the editing
+functions, and providing examples in the code for how to use sdf_insert,
+sdf_replace, and sdf_delete .  To make the test program, just type
+"make xtest_sdf_edit".
+
+June 2, 2006 GHF
+
+version 0.60
+
+A new IDL function was added, sdf_read_arr(fname,labtest).  This works much
+like sdf_read_var(fname, labtest) except for the following difference:
+sdf_read_var returns a *single* dataset for which labtest matches the dataset
+label -- but only the first occurrence of the dataset in the file.  
+sdf_read_arr, on the other hand, returns an "array" of results that 
+correspond to *all* occurrences of datasets for which labtest matches the 
+dataset label.  This is particularly useful if a single SDF file contains
+a "time series" of the same variable written repeatedly to the file.  
+Then the time evolution of a given variable can be recovered with a 
+single call to sdf_read_arr.
+
+Many local unused variables were removed from the C source code, and the 
+following functions were added:  sdf_malloc, sdf_free, sdf_create_id, 
+sdf_free_id.  These functions are now the best way to manage memory from 
+C programs that call the SDF functions -- sdf_create_id to create the 
+id structures that sdf_write needs, and sdf_free_id to free those structures.  
+Data read in with sdf_read should be freed with sdf_free to avoid possible 
+inconsistencies between the versions of malloc and free in the sdf library 
+and those used in the calling program.  Empirically, this seems to be 
+particularly important in Windows.  The MinGW compiled sdf.dll and sdf.def 
+files are now distributed along with the source code, for those that want 
+to use sdf in Windows and don't want to install MinGW.  An example Makefile
+file that works with the MSVC's (Microsoft Visual C/C++ compiler) 
+nmake is now also included in the distribution (as Makefile_msvc), which 
+has examples of how the included sdf.dll can be compiled into 
+other programs from MSVC.  Some more detail on this is provided in the updated
+version of INSTALL.txt .
+
+May 18, 2006 GHF
+
+version 0.59-3:
+
+Inserted some function prototypes that were missing
+in sdf_subs.h, and switched all C++ style comments to C-style
+comments in sdf_subs.h and sdf_subs.c in an effort to make the source 
+code more portable.  Converted expressions using pointer arithmetic on
+pointers to void variables to pointers to char variables to satisfy SUN
+compiler.  Added entries into Makefile to compile the fortran executable
+examples xtestf77, xtest_dyn_f95, and xtest_transp_f95.
+
+April 28, 2006 GHF
+
+version-0.59-2:
+
+Found and fixed a bug in sdf_write, in which fopen and fclose calls were not
+matched.  Symptom was a refusal to open the file after about 1000
+datasets had been written from a fortran 77 program.  Problem appears to be
+fixed.
+
+April 17, 2006 GHF
+
+version-0.59-1:
+
+Fixed small bugs in rindcalc, cindcalc in which a declaration appeared after
+an executable stmt, not allowed in version 2.96 of gcc
+
+April 13, 2006 GHF
+
+Discovered that the atoll (ascii to long long) function doesn't work right
+on Loraine's MAC laptop (OS 10.3.9, acc. to her).  Switched out the 
+atoll call for our own homebrew function, atopos, whose source is now 
+included in sdf_subs.c .
+
+Also discovered that on her MAC, need a -s option
+added to the ar -r command to make the library build correctly.
+
+April 6, 2006, GHF
+
+version 0.59
+
+Fixed small bug in output_int64 in which last 2 characters in output buffer 
+were being set repeatedly in a loop instead of after the loop.
+
+April 6, 2006, GHF
+
+Version 0.58:
+
+Fixed serious bug in sdf_transpose_f77, in which id->nbpw was not
+being assigned to *nbpwf77.
+
+Fixed serious bugs in IDL versions of sdf_replace and sdf_insert in 
+version 0.54.  There was an outer and an inner loop both indexed by i;
+the inner loop is now indexed by ii.
+
+Changed the memcalc function to be named memcalcr (row major), and added
+a new function memcalcc (assuming column major addressing).
+
+Confirmed using tests of sdf_delete and sdf_insert
+that existing "windows" version of 
+file_truncate in sdf_subs.c correctly changes the sizes of "large" files 
+bigger than the 32-bit 2GB limit, at least on NTFS partitions in Windows XP.
+
+Commented out some of the non-error print statements in sdf_read.
+
+Replaced Jack Vernetti's version of output_int64 with a simpler version.
+
+March 23, 2006, George H. Fisher
+
+Major Changes from version 0.52:
+
+A new capability to perform a multi-dimensional in-place transpose of a dataset,
+either after being read in, or before being written out, has been created
+via the sdf_transpose (C and IDL) and sdf_transpose_f77 (Fortran) functions.
+The C and fortran callable versions use the vacancy cycle tracking method
+of Ding (2001) to do the transpose in place, with little additional
+needed memory; the IDL version just uses the IDL transpose and reverse 
+functions, where the former does apparently introduce a temporary array
+to do the transpose.
+
+March 9, 2006, George H. Fisher
+
+Major Changes from version 0.43:
+
+A Makefile was created for compiling the sdf software into a library
+and an executable sdf file browser, sdf_browse.  Typing make should
+create the library libsdf.a and the executable sdf_browse.  Becoming
+root and typing make install will put the library, include file sdf_subs.h,
+and sdf_browse into the "regular" spots in the /usr/local tree.  If you
+want to put them somewhere else, modify the Makefile.  Typing make uninstall
+should remove these components from the "regular" spots.  More details
+on compiling the code and compiling fortran and C programs that use the
+sdf library can be found in INSTALL.txt.
+
+All fortran callable functions now come in all 3 flavors:  no trailing 
+underscore, 1 trailing underscore, and 2 trailing underscores.
+This is necessary to accomodate different fortran compilers, which 
+expect different numbers of trailing underscores, sigh.
+
+sdf_read_f77 no longer uses malloc and memcpy to transfer the data into
+the data space in the fortran calling program.  This increases the amount
+of data which can be read in from a single dataset.  The fortran calling
+program must initially dimension or dynamically allocate enough memory to
+handle the data being read in.
+
+There are new sdf functions, sdf_labmatch and sdf_labmatch_f77 which will
+find all dataset orders for which the "label" is matched by a user-input
+string.  There is also an IDL version of sdf_labmatch.
+
+There are new sdf functions, sdf_details and sdf_details_f77, which return
+all of the necessary metadata about a chosen dataset (but does not return
+the data itself).  There is also an IDL version of sdf_details .
+
+The file truncation functions for both *nix and win32 are now called
+file_truncate, and are now hopefully both defined in a large-file compliant
+way.  The old method involved the use of chsize in win32, which evidently
+is not large file compliant.  Most of the information for the win32 version 
+was gleaned from newsgroups of people wanting to compile various linux 
+applications for windows, and needing the file i/o to be large file compliant.  
+
+New IDL-only procedures, sdf_read_all and sdf_write_all,
+use sdf_read and sdf_write to read all datasets from an sdf file
+into IDL variables at the "$MAIN$" level in IDL, and to write each variable
+from that level into an sdf file, respectively.  The name of each IDL
+variable is equal to the "label" field for each dataset.  Obviously, this
+will only work correctly if each dataset has a unique label in a given 
+sdf file.  These procedures use the IDL scope_varfetch and execute functions.
+They will only work in versions 6.1 or later of IDL, since scope_varfetch
+was only introduced in 6.1.
+
+Also added a new function, sdf_read_var in IDL, which reads a dataset for
+which the label field matches a user's input label field.
