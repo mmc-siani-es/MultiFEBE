@@ -1,0 +1,25 @@
+select case (etype)
+  case (fbem_point1,fbem_line1)
+    phi(1)=1.d0
+  case (fbem_line2)
+#   include <phi_line2.rc>
+  case (fbem_line3)
+#   include <phi_line3.rc>
+  case (fbem_line3_qp1t)
+#   include <phi_line3_qp1t.rc>
+  case (fbem_line3_qp2t)
+#   include <phi_line3_qp2t.rc>
+  case (fbem_line3_mqp1u)
+#   include <phi_line3_mqp1u.rc>
+  case (fbem_line3_mqp2u)
+#   include <phi_line3_mqp2u.rc>
+  case (fbem_line3_mqp1t)
+#   include <phi_line3_mqp1t.rc>
+  case (fbem_line3_mqp2t)
+#   include <phi_line3_mqp2t.rc>
+  case (fbem_line4)
+#   include <phi_line4.rc>
+  case default
+    call fbem_error_message(output_unit,0,__FILE__,__LINE__,&
+    'etype={point1,line1,line2,line3,line3_qp1t,line3_qp2t,line3_mqp1u,line3_mqp2u,line3_mqp1t,line3_mqp2t,line4}')
+end select

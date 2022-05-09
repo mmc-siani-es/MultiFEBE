@@ -1,0 +1,7 @@
+aux(1)=xi/(1.d0-delta)
+aux(2)=27.d0*aux(1)**2
+aux(3)=18.d0*aux(1)
+dphidxi(1)=-1.d0/16.d0*(aux(2)-aux(3)-1.d0)
+dphidxi(2)=1.d0/16.d0*(aux(2)+aux(3)-1.d0)
+dphidxi(3)=1.d0/16.d0*(3.d0*aux(2)-aux(3)-27.d0)
+dphidxi(4)=-1.d0/16.d0*(3.d0*aux(2)+aux(3)-27.d0)

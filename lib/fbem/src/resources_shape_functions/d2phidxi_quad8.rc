@@ -1,0 +1,43 @@
+aux(3)=1.0d0/(1.0d0-delta)
+aux(1)=xi(1)*aux(3)
+aux(2)=xi(2)*aux(3)
+
+d2phidxi(1,1,1)=-0.5d0*(aux(2)-1.d0)
+d2phidxi(1,2,2)=-0.5d0*(aux(1)-1.d0)
+d2phidxi(1,1,2)=-0.25d0*(2.d0*aux(2)+2.d0*aux(1)-1.d0)
+d2phidxi(1,2,1)=d2phidxi(1,1,2)
+
+d2phidxi(2,1,1)=-0.5d0*(aux(2)-1.d0)
+d2phidxi(2,2,2)= 0.5d0*(aux(1)+1.d0)
+d2phidxi(2,1,2)= 0.25d0*(2.d0*aux(2)-2.d0*aux(1)-1.d0)
+d2phidxi(2,2,1)=d2phidxi(2,1,2)
+
+d2phidxi(3,1,1)= 0.5d0*(aux(2)+1.d0)
+d2phidxi(3,2,2)= 0.5d0*(aux(1)+1.d0)
+d2phidxi(3,1,2)= 0.25d0*(2.d0*aux(2)+2.d0*aux(1)+1.d0)
+d2phidxi(3,2,1)=d2phidxi(3,1,2)
+
+d2phidxi(4,1,1)= 0.5d0*(aux(2)+1.d0)
+d2phidxi(4,2,2)=-0.5d0*(aux(1)-1.d0)
+d2phidxi(4,1,2)=-0.25d0*(2.d0*aux(2)-2.d0*aux(1)+1.d0)
+d2phidxi(4,2,1)=d2phidxi(4,1,2)
+
+d2phidxi(5,1,1)= aux(2)-1.d0
+d2phidxi(5,2,2)=0.d0
+d2phidxi(5,1,2)=aux(1)
+d2phidxi(5,2,1)=d2phidxi(5,1,2)
+
+d2phidxi(6,1,1)=0.d0
+d2phidxi(6,2,2)=-aux(1)-1.d0
+d2phidxi(6,1,2)=-aux(2)
+d2phidxi(6,2,1)=d2phidxi(6,1,2)
+
+d2phidxi(7,1,1)=-aux(2)-1.d0
+d2phidxi(7,2,2)=0.d0
+d2phidxi(7,1,2)=-aux(1)
+d2phidxi(7,2,1)=d2phidxi(7,1,2)
+
+d2phidxi(8,1,1)=0.d0
+d2phidxi(8,2,2)=aux(1)-1.d0
+d2phidxi(8,1,2)=aux(2)
+d2phidxi(8,2,1)=d2phidxi(8,1,2)

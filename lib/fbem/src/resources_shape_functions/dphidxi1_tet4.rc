@@ -1,0 +1,4 @@
+dphidxi1(1)=-aux(1)
+dphidxi1(2)= aux(1)
+dphidxi1(3)= 0.d0
+dphidxi1(4)= 0.d0

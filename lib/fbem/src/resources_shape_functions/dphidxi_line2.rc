@@ -1,0 +1,3 @@
+aux(1)=0.5d0/(1.0d0-delta)
+dphidxi(1)=-aux(1)
+dphidxi(2)=aux(1)

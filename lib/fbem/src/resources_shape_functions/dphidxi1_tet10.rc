@@ -1,0 +1,10 @@
+dphidxi1( 1)=-2.d0*aux(1)*(1.d0-aux(5))-aux(1)*(1.d0-2.d0*aux(5))
+dphidxi1( 2)=2.d0*aux(2)*aux(1)-aux(1)*(1.d0-2.d0*aux(2))
+dphidxi1( 3)=0.d0
+dphidxi1( 4)=0.d0
+dphidxi1( 5)=-4.d0*aux(1)*aux(2)+4.d0*aux(1)*(1.d0-aux(5))
+dphidxi1( 6)=4.d0*aux(1)*aux(3)
+dphidxi1( 7)=-dphidxi1( 6)
+dphidxi1( 9)=-4.d0*aux(1)*aux(4)
+dphidxi1( 8)=-dphidxi1( 9)
+dphidxi1(10)=0.d0

@@ -1,0 +1,8 @@
+dphidxi1(1)=-0.125d0*aux(1)*aux(4)*aux(6)
+dphidxi1(2)=-dphidxi1(1)
+dphidxi1(3)= 0.125d0*aux(1)*aux(5)*aux(6)
+dphidxi1(4)=-dphidxi1(3)
+dphidxi1(5)=-0.125d0*aux(1)*aux(4)*aux(7)
+dphidxi1(6)=-dphidxi1(5)
+dphidxi1(7)= 0.125d0*aux(1)*aux(5)*aux(7)
+dphidxi1(8)=-dphidxi1(7)

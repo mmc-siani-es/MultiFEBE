@@ -1,0 +1,10 @@
+aux(1)=4.0d0*xi(1)
+aux(2)=4.0d0*xi(2)
+aux(3)=1.0d0/((1.0d0-delta)**2)
+aux(4)=0.333333333333333333d0*delta
+dphidxi2(1)=0.0d0
+dphidxi2(2)=aux(3)*(aux(2)-aux(4)-1.0d0)
+dphidxi2(3)=aux(3)*(aux(1)+aux(2)+aux(4)-3.0d0)
+dphidxi2(4)=4.0d0*aux(3)*(xi(1)-aux(4))
+dphidxi2(5)=-4.0d0*aux(3)*(2.0d0*xi(2)+xi(1)-1.0d0)
+dphidxi2(6)=-dphidxi2(4)
