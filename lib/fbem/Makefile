@@ -125,7 +125,6 @@ FFCOPT += -L $(STDLIBPATH) -I $(STDINCPATH)
 
 # Resource files
 FFCOPT += -I $(SRCPATH)/resources_quad_rules
-FFCOPT += -I $(SRCPATH)/resources_quasisingular_integration
 FFCOPT += -I $(SRCPATH)/resources_shape_functions
 
 
