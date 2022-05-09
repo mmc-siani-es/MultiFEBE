@@ -326,9 +326,9 @@ documentation:
 $(EXE): cleanhelp sdf fbem $(OBJS)
 	@echo 'Building $(EXE) ...'
 	@$(FC) $(OBJS) $(FFLAGS) $(FFCOPT) -o $(EXE) $(wildcard $(FBEMPATH)/bin/*.o) $(wildcard $(SDFPATH)/sdf_subs.o)
-	@echo 'Copying $(EXE) to bin/$(EXE) ...'
+	@echo 'Moving $(EXE) to bin/$(EXE) ...'
 	@mkdir -p bin
-	@cp $(EXE) bin/$(EXE)
+	@mv $(EXE) bin/$(EXE)
 
 # Build fbem library
 fbem:
