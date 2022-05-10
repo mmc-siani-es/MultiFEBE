@@ -30,27 +30,24 @@ Instructions:
 
   * Download source code from [GitHub](https://github.com/mmc-siani-es/MultiFEBE).
   * Unpack the downloaded .zip file.
-  * Review the requirements:
+  * Install the requirements if not already installed:
     * Install GNU Make and GNU Fortran:
-```
-$ sudo apt-get install make gfortran
-``` 
-   * Install ATLAS:
-```
-$ sudo apt-get install libatlas3-base libatlas-base-dev
-
-```
-   * Install OpenBlas (alternative to ATLAS):
-```
-$ sudo apt-get install libopenblas-base libopenblas-dev
-```
+    ```
+    $ sudo apt-get install make gfortran
+    ``` 
+    * Install ATLAS:
+    ```
+    $ sudo apt-get install libatlas3-base libatlas-base-dev
+    ```
+    * Install OpenBlas (alternative to ATLAS):
+    ```
+    $ sudo apt-get install libopenblas-base libopenblas-dev
+    ```
   * Edit the `./Makefile` if you want to use OpenBlas instead of ATLAS.
   * Compile it by executing:
-  
-```
-$ make   
-```    
-
+  ```
+  $ make   
+  ```    
   * Once compiled, the executable `multifebe` is locate at the folder `./bin/` 
     
 License:
