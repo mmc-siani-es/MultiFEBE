@@ -34,7 +34,7 @@ Instructions:
     * Install GNU Make and GNU Fortran:
 
 
-```
+```bash
 $ sudo apt-get install make gfortran
 ``` 
 
