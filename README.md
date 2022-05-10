@@ -33,21 +33,27 @@ Instructions:
   * Review the requirements:
     * Install GNU Make and GNU Fortran:
 
+
 ```
 $ sudo apt-get install make gfortran
 ``` 
 
+
     * Install ATLAS:
+
 
 ```
 $ sudo apt-get install libatlas3-base libatlas-base-dev
 ``` 
 
+
     * Install OpenBlas (alternative to ATLAS):
+
 
 ```
 $ sudo apt-get install libopenblas-base libopenblas-dev
 ``` 
+
 
   * Edit the `./Makefile` if you want to use OpenBlas instead of ATLAS.
   * Compile it by executing:
