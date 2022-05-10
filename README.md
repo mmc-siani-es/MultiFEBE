@@ -16,7 +16,7 @@ Download the source code from [GitHub](https://github.com/mmc-siani-es/MultiFEBE
 
 Requirements:
 
-  * OS: GNU/Linux 64 bits
+  * Operating System: GNU/Linux 64 bits
   * Build automation tool: GNU Make
   * Compiler: GNU Fortran Compiler versión 9.4 o superior
   * Linear Algebra:
@@ -30,7 +30,26 @@ Instructions:
 
   * Download source code from [GitHub](https://github.com/mmc-siani-es/MultiFEBE).
   * Unpack the downloaded .zip file.
-  * Edit the `./Makefile` if needed.
+  * Review the requirements:
+    * Install GNU Make and GNU Fortran:
+
+```
+$ sudo apt-get install make gfortran
+``` 
+
+    * Install ATLAS:
+
+```
+$ sudo apt-get install libatlas3-base libatlas-base-dev
+``` 
+
+    * Install OpenBlas (alternative to ATLAS):
+
+```
+$ sudo apt-get install libopenblas-base libopenblas-dev
+``` 
+
+  * Edit the `./Makefile` if you want to use OpenBlas instead of ATLAS.
   * Compile it by executing:
   
 ```
@@ -43,3 +62,16 @@ License:
 ========
 
 GPLv2, please see the [LICENSE](https://github.com/mmc-siani-es/MultiFEBE/blob/main/LICENSE) file for details.
+
+Financing:
+========
+
+This work has been developed with the support of research projects:
+
+  * PID2020-120102RB-I00, funded by the Agencial Estatal de Investigación of Spain, MCIN/AEI/10.13039/501100011033.
+
+
+  * ProID2020010025, funded by Consejerı́a de Economı́a, Conocimiento y Empleo (Agencia Canaria de la Investigación. Innovación y Sociedad de la Información) of the Gobierno de Canarias and FEDER;
+
+
+  * BIA2017-88770-R, funded by Subdirección General de Proyectos de Investigación of the Ministerio de Economı́a y Competitividad (MINECO) of Spain and FEDER.
