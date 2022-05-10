@@ -58,9 +58,7 @@ $ sudo apt-get install libopenblas-base libopenblas-dev
   * Edit the `./Makefile` if you want to use OpenBlas instead of ATLAS.
   * Compile it by executing:
   
-```
-$ make   
-```    
+    $ make
 
   * Once compiled, the executable `multifebe` is locate at the folder `./bin/` 
     
