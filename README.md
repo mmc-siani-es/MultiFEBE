@@ -32,8 +32,8 @@ Instructions:
   * Unpack the downloaded .zip file.
   * Install the requirements if not already installed:
     * Install GNU Make and GNU Fortran:
-    ```
-    $ sudo apt-get install make gfortran
+    ```bash
+    sudo apt-get install make gfortran
     ``` 
     * Install ATLAS:
     ```
