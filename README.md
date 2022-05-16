@@ -70,18 +70,13 @@ This work has been developed with the support of research projects:
 
   * PID2020-120102RB-I00, funded by the Agencial Estatal de Investigación of Spain, MCIN/AEI/10.13039/501100011033.
 
-  <p align="center">
-    <img src="docs/img/miciinn-aei.png">
-  </p>  
+    <img src="docs/img/miciinn-aei.png"> 
 
   * ProID2020010025, funded by Consejerı́a de Economı́a, Conocimiento y Empleo (Agencia Canaria de la Investigación. Innovación y Sociedad de la Información) of the Gobierno de Canarias and FEDER;
 
-  <p align="center">
-    <img src="docs/img/gobcan-fse.png">
-  </p>
+<img src="docs/img/gobcan-fse.png">
 
   * BIA2017-88770-R, funded by Subdirección General de Proyectos de Investigación of the Ministerio de Economı́a y Competitividad (MINECO) of Spain and FEDER.
-  
 
-    <img src="docs/img/miciinn-feder-aei.png">
+<img src="docs/img/miciinn-feder-aei.png">
 
