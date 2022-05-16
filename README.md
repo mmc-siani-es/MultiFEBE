@@ -82,6 +82,6 @@ This work has been developed with the support of research projects:
 
   * BIA2017-88770-R, funded by Subdirección General de Proyectos de Investigación of the Ministerio de Economı́a y Competitividad (MINECO) of Spain and FEDER.
   
-  <p align="center">
+
     <img src="docs/img/miciinn-feder-aei.png">
-  </p>   
+
