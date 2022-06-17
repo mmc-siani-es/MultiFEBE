@@ -24,7 +24,7 @@ Requirements:
     * Alternative (need to change Makefile): OpenBLAS 
 
 Optional but recommended:
-  * Pre- and post-processor (external tool): Gmsh (https://gmsh.info/)
+  * Pre- and post-processor (external tool): Gmsh (https://gmsh.info/), version 3.0.6.
 
 Instructions:
 
