@@ -67,7 +67,6 @@ subroutine export_solution_mechanics_static_tot(output_fileunit)
   logical                                 :: sb_reversion, reversed
   real(kind=real64)                       :: symconf_m(3), symconf_s, symconf_t(3), symconf_r(3)
 
-
   ! ------------------
   ! Header of the file
   ! ------------------
@@ -623,11 +622,14 @@ subroutine export_solution_mechanics_static_tot(output_fileunit)
                 w=gl11_w(j,rule)
                 x=fbem_position(problem%n,element(se)%type_g,element(se)%x_gn,xi)
                 r=x-xm
-                if (problem%n.eq.2) then
-                  jg=fbem_jacobian2d(element(se)%type_g,element(se)%x_gn,xi(1))
-                else
-                  jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi(1))
-                end if
+                select case (problem%n)
+                  case (2)
+                    jg=fbem_jacobian2d(element(se)%type_g,element(se)%x_gn,xi(1))
+                  case (3)
+                    jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi(1))
+                  case default
+                    stop 'error'
+                end select
                 pphi=fbem_phi_hybrid(element(se)%type_f1,element(se)%delta_f,xi)
                 sphi=fbem_phi_hybrid(element(se)%type_f2,element(se)%delta_f,xi)
                 u=0.
@@ -641,10 +643,26 @@ subroutine export_solution_mechanics_static_tot(output_fileunit)
                   t=t+sphi(kn)*node(sn)%value_r((problem%n+1):(2*problem%n),face)
                 end do
                 D(:,face)=D(:,face)+u*w*jg
-                r3=sqrt(r(1)**2+r(2)**2)
-                if (r3/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
-                F(:,face)=F(:,face)+t*w*jg
-                M(1,face)=M(1,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                select case (problem%n)
+                  case (2)
+                    r3=sqrt(r(1)**2+r(2)**2)
+                    if (r3/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                    F(:,face)=F(:,face)+t*w*jg
+                    M(1,face)=M(1,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                  case (3)
+                    r1=sqrt(r(2)**2+r(3)**2)
+                    r2=sqrt(r(3)**2+r(1)**2)
+                    r3=sqrt(r(1)**2+r(2)**2)
+                    if (r1/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(2)*u(3)-r(3)*u(2))/r1**2*w*jg
+                    if (r2/element(se)%csize.gt.1.d-12) G(2,face)=G(2,face)+(r(3)*u(1)-r(1)*u(3))/r2**2*w*jg
+                    if (r3/element(se)%csize.gt.1.d-12) G(3,face)=G(3,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                    F(:,face)=F(:,face)+t*w*jg
+                    M(1,face)=M(1,face)+(r(2)*t(3)-r(3)*t(2))*w*jg
+                    M(2,face)=M(2,face)+(r(3)*t(1)-r(1)*t(3))*w*jg
+                    M(3,face)=M(3,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                  case default
+                    stop 'error'
+                end select
               end do
             case (2)
               select case (fbem_n_edges(element(se)%type_g))
@@ -656,7 +674,14 @@ subroutine export_solution_mechanics_static_tot(output_fileunit)
                     w=wantri_w(j,rule)
                     x=fbem_position(problem%n,element(se)%type_g,element(se)%x_gn,xi)
                     r=x-xm
-                    jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi)
+                    select case (problem%n)
+                      case (2)
+                        jg=fbem_jacobian2d(element(se)%type_g,element(se)%x_gn,xi)
+                      case (3)
+                        jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi)
+                      case default
+                        stop 'error'
+                    end select
                     pphi=fbem_phi_hybrid(element(se)%type_f1,element(se)%delta_f,xi)
                     sphi=fbem_phi_hybrid(element(se)%type_f2,element(se)%delta_f,xi)
                     u=0.
@@ -670,16 +695,26 @@ subroutine export_solution_mechanics_static_tot(output_fileunit)
                       t=t+sphi(kn)*node(sn)%value_r((problem%n+1):(2*problem%n),face)
                     end do
                     D(:,face)=D(:,face)+u*w*jg
-                    r1=sqrt(r(2)**2+r(3)**2)
-                    r2=sqrt(r(3)**2+r(1)**2)
-                    r3=sqrt(r(1)**2+r(2)**2)
-                    if (r1/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(2)*u(3)-r(3)*u(2))/r1**2*w*jg
-                    if (r2/element(se)%csize.gt.1.d-12) G(2,face)=G(2,face)+(r(3)*u(1)-r(1)*u(3))/r2**2*w*jg
-                    if (r3/element(se)%csize.gt.1.d-12) G(3,face)=G(3,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
-                    F(:,face)=F(:,face)+t*w*jg
-                    M(1,face)=M(1,face)+(r(2)*t(3)-r(3)*t(2))*w*jg
-                    M(2,face)=M(2,face)+(r(3)*t(1)-r(1)*t(3))*w*jg
-                    M(3,face)=M(3,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                    select case (problem%n)
+                      case (2)
+                        r3=sqrt(r(1)**2+r(2)**2)
+                        if (r3/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                        F(:,face)=F(:,face)+t*w*jg
+                        M(1,face)=M(1,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                      case (3)
+                        r1=sqrt(r(2)**2+r(3)**2)
+                        r2=sqrt(r(3)**2+r(1)**2)
+                        r3=sqrt(r(1)**2+r(2)**2)
+                        if (r1/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(2)*u(3)-r(3)*u(2))/r1**2*w*jg
+                        if (r2/element(se)%csize.gt.1.d-12) G(2,face)=G(2,face)+(r(3)*u(1)-r(1)*u(3))/r2**2*w*jg
+                        if (r3/element(se)%csize.gt.1.d-12) G(3,face)=G(3,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                        F(:,face)=F(:,face)+t*w*jg
+                        M(1,face)=M(1,face)+(r(2)*t(3)-r(3)*t(2))*w*jg
+                        M(2,face)=M(2,face)+(r(3)*t(1)-r(1)*t(3))*w*jg
+                        M(3,face)=M(3,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                      case default
+                        stop 'error'
+                    end select
                   end do
                 case (4)
                   rule=element(se)%n_phi
@@ -690,7 +725,14 @@ subroutine export_solution_mechanics_static_tot(output_fileunit)
                       w=gl11_w(j1,rule)*gl11_w(j2,rule)
                       x=fbem_position(problem%n,element(se)%type_g,element(se)%x_gn,xi)
                       r=x-xm
-                      jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi)
+                      select case (problem%n)
+                        case (2)
+                          jg=fbem_jacobian2d(element(se)%type_g,element(se)%x_gn,xi)
+                        case (3)
+                          jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi)
+                        case default
+                          stop 'error'
+                      end select
                       pphi=fbem_phi_hybrid(element(se)%type_f1,element(se)%delta_f,xi)
                       sphi=fbem_phi_hybrid(element(se)%type_f2,element(se)%delta_f,xi)
                       u=0.
@@ -704,16 +746,26 @@ subroutine export_solution_mechanics_static_tot(output_fileunit)
                         t=t+sphi(kn)*node(sn)%value_r((problem%n+1):(2*problem%n),face)
                       end do
                       D(:,face)=D(:,face)+u*w*jg
-                      r1=sqrt(r(2)**2+r(3)**2)
-                      r2=sqrt(r(3)**2+r(1)**2)
-                      r3=sqrt(r(1)**2+r(2)**2)
-                      if (r1/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(2)*u(3)-r(3)*u(2))/r1**2*w*jg
-                      if (r2/element(se)%csize.gt.1.d-12) G(2,face)=G(2,face)+(r(3)*u(1)-r(1)*u(3))/r2**2*w*jg
-                      if (r3/element(se)%csize.gt.1.d-12) G(3,face)=G(3,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
-                      F(:,face)=F(:,face)+t*w*jg
-                      M(1,face)=M(1,face)+(r(2)*t(3)-r(3)*t(2))*w*jg
-                      M(2,face)=M(2,face)+(r(3)*t(1)-r(1)*t(3))*w*jg
-                      M(3,face)=M(3,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                      select case (problem%n)
+                        case (2)
+                          r3=sqrt(r(1)**2+r(2)**2)
+                          if (r3/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                          F(:,face)=F(:,face)+t*w*jg
+                          M(1,face)=M(1,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                        case (3)
+                          r1=sqrt(r(2)**2+r(3)**2)
+                          r2=sqrt(r(3)**2+r(1)**2)
+                          r3=sqrt(r(1)**2+r(2)**2)
+                          if (r1/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(2)*u(3)-r(3)*u(2))/r1**2*w*jg
+                          if (r2/element(se)%csize.gt.1.d-12) G(2,face)=G(2,face)+(r(3)*u(1)-r(1)*u(3))/r2**2*w*jg
+                          if (r3/element(se)%csize.gt.1.d-12) G(3,face)=G(3,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                          F(:,face)=F(:,face)+t*w*jg
+                          M(1,face)=M(1,face)+(r(2)*t(3)-r(3)*t(2))*w*jg
+                          M(2,face)=M(2,face)+(r(3)*t(1)-r(1)*t(3))*w*jg
+                          M(3,face)=M(3,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                        case default
+                          stop 'error'
+                      end select
                     end do
                   end do
               end select

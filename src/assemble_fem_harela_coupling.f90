@@ -344,7 +344,6 @@ subroutine assemble_fem_harela_coupling(se_int,mode)
 
   if (element(se_int)%n_dimension.eq.(problem%n-1)) then
 
-
     ! ----------------------------------------------------------
     ! FE MID-FACE TO BE FACE COUPLING (FE ELEMENT TO BE ELEMENT)
     ! ----------------------------------------------------------
@@ -1185,34 +1184,127 @@ subroutine assemble_fem_harela_coupling(se_int,mode)
         ! ============
 
         case (fbem_part_be_bodyload)
+          select case (mode)
+            !
+            ! ASSEMBLE to Ax=b
+            !
+            case (0)
 
-          ! ASSEMBLE LOAD MATRIX
-          ! Local row
-          row_local=1
-          do kn_row=1,element(se_int)%n_nodes
-            sn_row=element(se_int)%node(kn_row)
-            do kdof_row=1,node(sn_row)%n_dof
-              if (node(sn_row)%ctype(kdof_row,1).eq.1) then
-                row=node(sn_row)%row(kdof_row,1)
-                ! Local column
-                col_local=1
-                do kn=1,element(se_int)%n_nodes
-                  ! Selected FE node and its corresponding BE node
-                  sn=element(se_int)%node(kn)
-                  sn_be=element(se_int)%element_node(kn)
-                  ! Loop through coordinates
-                  do kdof_col=1,problem%n
-                    col=node(sn_be)%col(problem%n+kdof_col,1)
-                    A_c(row,col)=A_c(row,col)+Qmid(row_local,col_local)
-                    col_local=col_local+1
-                  end do
+              ! Local row
+              row_local=1
+              do kn_row=1,element(se_int)%n_nodes
+                sn_row=element(se_int)%node(kn_row)
+                do kdof_row=1,node(sn_row)%n_dof
+                  if (node(sn_row)%ctype(kdof_row,1).eq.1) then
+                    row=node(sn_row)%row(kdof_row,1)
+                    ! Local column
+                    col_local=1
+                    do kn=1,element(se_int)%n_nodes
+                      ! Selected Shell FE node and its corresponding BE node
+                      sn=element(se_int)%node(kn)
+                      sn_be=element(se_int)%element_node(kn)
+                      ! Save the index of the BE node in the BE element
+                      do kn_be=1,element(se_be)%n_nodes
+                        if (element(se_be)%node(kn_be).eq.sn_be) exit
+                      end do
+                      ! Loop through coordinates
+                      do kdof_col=1,problem%n
+                        select case (region(be_bodyload(sb_be)%region)%type)
+
+                          ! --------------
+                          ! INVISCID FLUID
+                          ! --------------
+
+                          case (fbem_potential)
+                            stop 'Fatal error: this should not happen'
+
+                          ! ------------------
+                          ! VISCOELASTIC SOLID
+                          ! ------------------
+
+                          case (fbem_viscoelastic)
+                            col=node(sn_be)%col(problem%n+kdof_col,1)
+                            A_c(row,col)=A_c(row,col)+Qmid(row_local,col_local)
+
+                          ! -----------------
+                          ! POROELASTIC MEDIA
+                          ! -----------------
+
+                          case (fbem_poroelastic)
+                            stop 'Fatal error: this should not happen'
+
+                        end select
+
+                        col_local=col_local+1
+                      end do
+                    end do
+                  end if
+                  row_local=row_local+1
                 end do
-              end if
-              row_local=row_local+1
-            end do
-          end do
+              end do
+            !
+            ! ASSEMBLE to q=Ka-f_bem-f_ext
+            !
+            case (1)
+              ! Initialization
+              allocate (t_e(ndof_load))
+              allocate (f_e(ndof_se))
+              f_e=0
+              t_e=0
+              ! Build the BE load vector (t_e)
+              do kn=1,element(se_int)%n_nodes
+                ! Selected FE node and its corresponding BE node
+                sn=element(se_int)%node(kn)
+                sn_be=element(se_int)%element_node(kn)
+                ! Save the index of the BE node in the BE element
+                do kn_be=1,element(se_be)%n_nodes
+                  if (element(se_be)%node(kn_be).eq.sn_be) exit
+                end do
+                select case (region(be_bodyload(sb_be)%region)%type)
+
+                  ! --------------
+                  ! INVISCID FLUID
+                  ! --------------
+
+                  case (fbem_potential)
+                    stop 'Fatal error: this should not happen'
+
+                  ! ------------------
+                  ! VISCOELASTIC SOLID
+                  ! ------------------
+
+                  case (fbem_viscoelastic)
+                    t_e((problem%n*(kn-1)+1):(problem%n*kn))=node(sn_be)%value_c((problem%n+1):2*problem%n,1)
+
+                  ! -----------------
+                  ! POROELASTIC MEDIA
+                  ! -----------------
+
+                  case (fbem_poroelastic)
+                    stop 'Fatal error: this should not happen'
+
+                end select
+              end do
+              ! Build the FE load vector (f_e)
+              f_e=matmul(Qmid,t_e)
+              ! Save to q
+              kdofe=1
+              do kn=1,element(se_int)%n_nodes
+                do kc=1,element(se_int)%node_n_dof(kn)
+                  element(se_int)%value_c(kc,kn,2)=element(se_int)%value_c(kc,kn,2)+f_e(kdofe)
+                  kdofe=kdofe+1
+                end do
+              end do
+              ! Finalization
+              deallocate (t_e,f_e)
+
+            case default
+              stop 'invalid mode for coupling assemble'
+
+          end select
 
       end select
+
       deallocate (Qmid)
 
     end if

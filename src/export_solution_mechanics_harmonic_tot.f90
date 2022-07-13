@@ -1149,10 +1149,10 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
 
       ! Loop through the BE LOADS of each REGION
       do kb=1,region(kr)%n_be_bodyloads
-        D=0.
-        G=0.
-        F=0.
-        M=0.
+        D=0
+        G=0
+        F=0
+        M=0
         !
         ! General setup
         !
@@ -1162,8 +1162,8 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
         !
         ! Point with respect moments are calculated, xm.
         !
-        xm=0.d0
-        A=0.d0
+        xm=0
+        A=0
         do ke=1,part(be_bodyload(sb)%part)%n_elements
           se=part(be_bodyload(sb)%part)%element(ke)
           xm=xm+element(se)%centroid*element(se)%size
@@ -1171,7 +1171,7 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
         end do
         xm=xm/A
         if (tot_apply_symmetry.and.(n_symplanes.gt.0)) then
-          xmt=0.d0
+          xmt=0
           do ks=1,n_symelements
             call fbem_symmetry_multipliers(ks,3,n_symplanes,symplane_m,symplane_s,symplane_t,symplane_r,&
                                            symconf_m,symconf_s,symconf_t,symconf_r,reversed)
@@ -1180,7 +1180,7 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
           xm=xmt/dble(n_symelements)
         end if
         ! If tot_xm=0, then the origin is used.
-        if (tot_xm.eq.0) xm=0.d0
+        if (tot_xm.eq.0) xm=0
         !
         ! Loop through the ELEMENTS of each BE LOAD
         !
@@ -1209,11 +1209,14 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
                     w=gl11_w(j,rule)
                     x=fbem_position(problem%n,element(se)%type_g,element(se)%x_gn,xi)
                     r=x-xm
-                    if (problem%n.eq.2) then
-                      jg=fbem_jacobian2d(element(se)%type_g,element(se)%x_gn,xi(1))
-                    else
-                      jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi(1))
-                    end if
+                    select case (problem%n)
+                      case (2)
+                        jg=fbem_jacobian2d(element(se)%type_g,element(se)%x_gn,xi(1))
+                      case (3)
+                        jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi(1))
+                      case default
+                        stop 'error'
+                    end select
                     pphi=fbem_phi_hybrid(element(se)%type_f1,element(se)%delta_f,xi)
                     sphi=fbem_phi_hybrid(element(se)%type_f2,element(se)%delta_f,xi)
                     u=0.
@@ -1227,10 +1230,26 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
                       t=t+sphi(kn)*node(sn)%value_c((problem%n+1):(2*problem%n),face)
                     end do
                     D(:,face)=D(:,face)+u*w*jg
-                    r3=sqrt(r(1)**2+r(2)**2)
-                    if (r3/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
-                    F(:,face)=F(:,face)+t*w*jg
-                    M(1,face)=M(1,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                    select case (problem%n)
+                      case (2)
+                        r3=sqrt(r(1)**2+r(2)**2)
+                        if (r3/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                        F(:,face)=F(:,face)+t*w*jg
+                        M(1,face)=M(1,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                      case (3)
+                        r1=sqrt(r(2)**2+r(3)**2)
+                        r2=sqrt(r(3)**2+r(1)**2)
+                        r3=sqrt(r(1)**2+r(2)**2)
+                        if (r1/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(2)*u(3)-r(3)*u(2))/r1**2*w*jg
+                        if (r2/element(se)%csize.gt.1.d-12) G(2,face)=G(2,face)+(r(3)*u(1)-r(1)*u(3))/r2**2*w*jg
+                        if (r3/element(se)%csize.gt.1.d-12) G(3,face)=G(3,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                        F(:,face)=F(:,face)+t*w*jg
+                        M(1,face)=M(1,face)+(r(2)*t(3)-r(3)*t(2))*w*jg
+                        M(2,face)=M(2,face)+(r(3)*t(1)-r(1)*t(3))*w*jg
+                        M(3,face)=M(3,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                      case default
+                        stop 'error'
+                    end select
                   end do
                 case (2)
                   select case (fbem_n_edges(element(se)%type_g))
@@ -1242,7 +1261,14 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
                         w=wantri_w(j,rule)
                         x=fbem_position(problem%n,element(se)%type_g,element(se)%x_gn,xi)
                         r=x-xm
-                        jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi)
+                        select case (problem%n)
+                          case (2)
+                            jg=fbem_jacobian2d(element(se)%type_g,element(se)%x_gn,xi)
+                          case (3)
+                            jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi)
+                          case default
+                            stop 'error'
+                        end select
                         pphi=fbem_phi_hybrid(element(se)%type_f1,element(se)%delta_f,xi)
                         sphi=fbem_phi_hybrid(element(se)%type_f2,element(se)%delta_f,xi)
                         u=0.
@@ -1256,16 +1282,26 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
                           t=t+sphi(kn)*node(sn)%value_c((problem%n+1):(2*problem%n),face)
                         end do
                         D(:,face)=D(:,face)+u*w*jg
-                        r1=sqrt(r(2)**2+r(3)**2)
-                        r2=sqrt(r(3)**2+r(1)**2)
-                        r3=sqrt(r(1)**2+r(2)**2)
-                        if (r1/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(2)*u(3)-r(3)*u(2))/r1**2*w*jg
-                        if (r2/element(se)%csize.gt.1.d-12) G(2,face)=G(2,face)+(r(3)*u(1)-r(1)*u(3))/r2**2*w*jg
-                        if (r3/element(se)%csize.gt.1.d-12) G(3,face)=G(3,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
-                        F(:,face)=F(:,face)+t*w*jg
-                        M(1,face)=M(1,face)+(r(2)*t(3)-r(3)*t(2))*w*jg
-                        M(2,face)=M(2,face)+(r(3)*t(1)-r(1)*t(3))*w*jg
-                        M(3,face)=M(3,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                        select case (problem%n)
+                          case (2)
+                            r3=sqrt(r(1)**2+r(2)**2)
+                            if (r3/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                            F(:,face)=F(:,face)+t*w*jg
+                            M(1,face)=M(1,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                          case (3)
+                            r1=sqrt(r(2)**2+r(3)**2)
+                            r2=sqrt(r(3)**2+r(1)**2)
+                            r3=sqrt(r(1)**2+r(2)**2)
+                            if (r1/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(2)*u(3)-r(3)*u(2))/r1**2*w*jg
+                            if (r2/element(se)%csize.gt.1.d-12) G(2,face)=G(2,face)+(r(3)*u(1)-r(1)*u(3))/r2**2*w*jg
+                            if (r3/element(se)%csize.gt.1.d-12) G(3,face)=G(3,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                            F(:,face)=F(:,face)+t*w*jg
+                            M(1,face)=M(1,face)+(r(2)*t(3)-r(3)*t(2))*w*jg
+                            M(2,face)=M(2,face)+(r(3)*t(1)-r(1)*t(3))*w*jg
+                            M(3,face)=M(3,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                          case default
+                            stop 'error'
+                        end select
                       end do
                     case (4)
                       rule=element(se)%n_phi
@@ -1276,7 +1312,14 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
                           w=gl11_w(j1,rule)*gl11_w(j2,rule)
                           x=fbem_position(problem%n,element(se)%type_g,element(se)%x_gn,xi)
                           r=x-xm
-                          jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi)
+                          select case (problem%n)
+                            case (2)
+                              jg=fbem_jacobian2d(element(se)%type_g,element(se)%x_gn,xi)
+                            case (3)
+                              jg=fbem_jacobian3d(element(se)%type_g,element(se)%x_gn,xi)
+                            case default
+                              stop 'error'
+                          end select
                           pphi=fbem_phi_hybrid(element(se)%type_f1,element(se)%delta_f,xi)
                           sphi=fbem_phi_hybrid(element(se)%type_f2,element(se)%delta_f,xi)
                           u=0.
@@ -1290,16 +1333,26 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
                             t=t+sphi(kn)*node(sn)%value_c((problem%n+1):(2*problem%n),face)
                           end do
                           D(:,face)=D(:,face)+u*w*jg
-                          r1=sqrt(r(2)**2+r(3)**2)
-                          r2=sqrt(r(3)**2+r(1)**2)
-                          r3=sqrt(r(1)**2+r(2)**2)
-                          if (r1/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(2)*u(3)-r(3)*u(2))/r1**2*w*jg
-                          if (r2/element(se)%csize.gt.1.d-12) G(2,face)=G(2,face)+(r(3)*u(1)-r(1)*u(3))/r2**2*w*jg
-                          if (r3/element(se)%csize.gt.1.d-12) G(3,face)=G(3,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
-                          F(:,face)=F(:,face)+t*w*jg
-                          M(1,face)=M(1,face)+(r(2)*t(3)-r(3)*t(2))*w*jg
-                          M(2,face)=M(2,face)+(r(3)*t(1)-r(1)*t(3))*w*jg
-                          M(3,face)=M(3,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                          select case (problem%n)
+                            case (2)
+                              r3=sqrt(r(1)**2+r(2)**2)
+                              if (r3/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                              F(:,face)=F(:,face)+t*w*jg
+                              M(1,face)=M(1,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                            case (3)
+                              r1=sqrt(r(2)**2+r(3)**2)
+                              r2=sqrt(r(3)**2+r(1)**2)
+                              r3=sqrt(r(1)**2+r(2)**2)
+                              if (r1/element(se)%csize.gt.1.d-12) G(1,face)=G(1,face)+(r(2)*u(3)-r(3)*u(2))/r1**2*w*jg
+                              if (r2/element(se)%csize.gt.1.d-12) G(2,face)=G(2,face)+(r(3)*u(1)-r(1)*u(3))/r2**2*w*jg
+                              if (r3/element(se)%csize.gt.1.d-12) G(3,face)=G(3,face)+(r(1)*u(2)-r(2)*u(1))/r3**2*w*jg
+                              F(:,face)=F(:,face)+t*w*jg
+                              M(1,face)=M(1,face)+(r(2)*t(3)-r(3)*t(2))*w*jg
+                              M(2,face)=M(2,face)+(r(3)*t(1)-r(1)*t(3))*w*jg
+                              M(3,face)=M(3,face)+(r(1)*t(2)-r(2)*t(1))*w*jg
+                            case default
+                              stop 'error'
+                          end select
                         end do
                       end do
                   end select
@@ -1440,8 +1493,6 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
           end select
         end do
         write(output_fileunit,*)
-
-
 
       end do ! Loop through the BE LOADS of the REGION
 
