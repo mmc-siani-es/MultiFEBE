@@ -281,28 +281,9 @@ subroutine build_data_at_geometrical_nodes
                 !
                 ! Calculate v1, v2 and v3
                 !
-                v1=0
-                ! For singular nodes
-!~                 if (node(sn)%is_singular) then
-                  v1=element(ke)%t1_gn(:,kn)
-!~                 ! For regular nodes, use the average vector.
-!~                 else
-!~                   do kej=1,node(sn)%n_elements
-!~                     sej=node(sn)%element(kej)
-!~                     v1=v1+element(sej)%t1_gn(:,node(sn)%element_node_iid(kej))
-!~                   end do
-
-!~                   ! ?¿?¿?¿?¿ Falta considerar cuando un nodo pertenece a un plano de simetria ?¿?¿?¿?¿
-
-!~                   if (sqrt(dot_product(v1,v1)).le.geometric_tolerance) then
-!~                     call fbem_error_message(error_unit,0,'element',element(ke)%id,'a v1 director vector of this element is close to zero, something wrong with the mesh?.')
-!~                   end if
-!~                   v1=v1/sqrt(dot_product(v1,v1))
-!~                   ! If the angle between v1 and tangent is greater than 60º, then use v1 == tangent at the node
-!~                   if (abs(acos(dot_product(element(ke)%t1_gn(:,kn),v1)))*180.d0/c_pi.gt.60.d0) then
-!~                     v1=element(ke)%t1_gn(:,kn)
-!~                   end if
-!~                 end if
+                ! For simplicity, it is assumed that v1 == t1 (cross section is always orthogonal to the mid-line).                
+                v1=element(ke)%t1_gn(:,kn)
+                ! Save
                 element(ke)%v_midnode(1,1,kn)=v1(1)
                 element(ke)%v_midnode(2,1,kn)=v1(2)
                 element(ke)%v_midnode(3,1,kn)=0.
@@ -319,10 +300,12 @@ subroutine build_data_at_geometrical_nodes
                 !
                 element(ke)%tv_midnode(2,kn)=element(ke)%tn_midnode(2,kn)/dot_product(v1,element(ke)%t1_gn(:,kn))
                 element(ke)%tv_midnode(3,kn)=element(ke)%tn_midnode(3,kn)
+                
 !                ! Write v1, v2, v3
 !                write(22,'(2i11,6e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,1,kn)
 !                write(23,'(2i11,6e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,2,kn)
 !                write(24,'(2i11,6e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,3,kn)
+
               end do
 
             ! --------------
@@ -375,43 +358,11 @@ subroutine build_data_at_geometrical_nodes
               element(ke)%tv_midnode=0.d0
               do kn=1,element(ke)%n_nodes
                 sn=element(ke)%node(kn)
-                v1=0
                 !
                 ! Calculate v1, v2 and v3
                 !
-                ! For singular nodes (non-singular nodes are nodes belonging to one element or two 1D elements), v1 == tangent
-!~                 if (node(sn)%is_singular) then
-                  v1=element(ke)%t1_gn(:,kn)
-!                ! For regular nodes, use the average vector
-!                else
-!                  do kej=1,node(sn)%n_elements
-!                    sej=node(sn)%element(kej)
-!                    v1=v1+element(sej)%t1_gn(:,node(sn)%element_node_iid(kej))
-!                  end do
-
-!                  !?¿?¿?¿?¿
-!                  ! Falta considerar simetria
-!                  !??¿¿?¿?
-
-!                  if (sqrt(dot_product(v1,v1)).le.geometric_tolerance) then
-!                    call fbem_error_message(error_unit,0,'element',element(ke)%id,'a v1 director vector of this element is close to zero, something wrong in the mesh?.')
-!                  end if
-!                  v1=v1/sqrt(dot_product(v1,v1))
-
-
-!                  ! If the angle between v1 and tangent is greater than 60º, then use v1 == tangent
-!                  tmp=dot_product(element(ke)%t1_gn(:,kn),v1)
-!                  if (tmp.gt.1.d0) then
-!                    tmp=1.d0
-!                  else
-!                    if (tmp.lt.-1.d0) then
-!                      tmp=-1.d0
-!                    end if
-!                  end if
-!                  if (abs(acos(tmp))*180.d0/c_pi.gt.60.d0) then
-!                    v1=element(ke)%t1_gn(:,kn)
-!                  end if
-!                end if
+                ! For simplicity, it is assumed that v1 == t1 (cross section is always orthogonal to the mid-line).
+                v1=element(ke)%t1_gn(:,kn)
                 ! Save
                 element(ke)%v_midnode(:,1,kn)=v1
                 ! Copy provisional v2
@@ -439,8 +390,6 @@ subroutine build_data_at_geometrical_nodes
                 element(ke)%tv_midnode(2,kn)=element(ke)%tn_midnode(2,kn)/dot_product(v2,t2)
                 element(ke)%tv_midnode(3,kn)=element(ke)%tn_midnode(3,kn)/dot_product(v3,t3)
 
-
-
                 ! Write v1, v2, v3
                 ! gnuplot
                 !set view equal xyz
@@ -448,9 +397,8 @@ subroutine build_data_at_geometrical_nodes
                 !write(22,'(2i11,6e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,1,kn)
                 !write(23,'(2i11,8e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,2,kn), element(ke)%tv_midnode(2,kn)
                 !write(24,'(2i11,8e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,3,kn), element(ke)%tv_midnode(3,kn)
+                
               end do
-
-
 
 !              do pi=0,100
 !                do pj=0,10
