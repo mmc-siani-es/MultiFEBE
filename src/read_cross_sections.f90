@@ -474,7 +474,7 @@ subroutine read_cross_sections(fileunit)
             element(se)%M_intngp =0
             element(se)%Q_intmode=0
             element(se)%Q_intngp =0
-            element(se)%r_integration=(thickness(2)+thickness(3))/c_pi
+            element(se)%r_integration=sqrt(element(se)%A/c_pi)
           end if
 
           !
@@ -541,13 +541,13 @@ subroutine read_cross_sections(fileunit)
               element(se)%ksh(1)=m*n**3*(16.d0/3.d0-3.36d0*n/m*(1.d0-(n/m)**4/12.d0))/element(se)%I(1)
               element(se)%ksh(2)=10.d0*(1.d0+nu)/(12.d0+11.d0*nu)
               element(se)%ksh(3)=element(se)%ksh(2)
-              element(se)%r_integration=0.5d0*(sqrt(element(se)%I(2)/element(se)%A)+sqrt(element(se)%I(3)/element(se)%A)) ! radius of gyration
+              element(se)%r_integration=sqrt(element(se)%A/c_pi)
             else if (trim(tmp_cross_section).eq.'generic') then
               element(se)%cs_type=0
               element(se)%A=area
               element(se)%I=inertia
               element(se)%ksh=ksh
-              element(se)%r_integration=0.5d0*(sqrt(inertia(2)/area)+sqrt(inertia(3)/area)) ! radius of gyration
+              element(se)%r_integration=sqrt(element(se)%A/c_pi)
             end if
             ! Reference vector for y' axis
             element(se)%ep(:,2)=v2ref(1:problem%n)
