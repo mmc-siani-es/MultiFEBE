@@ -422,87 +422,41 @@ subroutine assemble_bem_harpot_equation(omega,kr,sb_int,sb_int_reversion,se_int,
 
     case (fbem_boundary_coupling_be_fe_be)
       if (sb_int_reversion.eqv.(.false.)) then
-!        select case (region(boundary(sb_int)%region(2))%type)
-
-!          ! ---------------------------------------
-!          ! INVISCID FLUID (1) - INVISCID FLUID (2)
-!          ! ---------------------------------------
-
-!          case (fbem_potential)
-            row=node(sn_col)%row(1,eq_index)
-            do kn_int=1,se_int_n_nodes
-              sn_int=element(se_int)%node(kn_int)
-              sn_int_fe=element(se_int)%element_node(kn_int)
-              ! p^(1)
-              col=node(sn_int)%col(1,1)
-              A_c(row,col)=A_c(row,col)+hp(kn_int)
-              ! Un^(1)=u^(fe)·n^(1)
-              do ik=1,problem%n
-                if (node(sn_int_fe)%ctype(ik,1).eq.1) then
-                  col=node(sn_int_fe)%col(ik,1)
-                  A_c(row,col)=A_c(row,col)-gp(kn_int)*element(se_int)%n_fn(ik,kn_int)
-                else
-                  b_c(row,1)=b_c(row,1)+gp(kn_int)*element(se_int)%n_fn(ik,kn_int)*node(sn_int_fe)%cvalue_c(ik,1,1)
-                end if
-              end do
-            end do
-
-!          ! -------------------------------------------
-!          ! INVISCID FLUID (1) - VISCOELASTIC SOLID (2)
-!          ! -------------------------------------------
-
-!          case (fbem_viscoelastic)
-!            stop 'not implemented yet'
-
-!          ! ------------------------------------------
-!          ! INVISCID FLUID (1) - POROELASTIC MEDIA (2)
-!          ! ------------------------------------------
-
-!          case (fbem_poroelastic)
-!            stop 'not implemented yet'
-
-!        end select
+        row=node(sn_col)%row(1,eq_index)
+        do kn_int=1,se_int_n_nodes
+          sn_int=element(se_int)%node(kn_int)
+          sn_int_fe=element(se_int)%element_node(kn_int)
+          ! p^(1)
+          col=node(sn_int)%col(1,1)
+          A_c(row,col)=A_c(row,col)+hp(kn_int)
+          ! Un^(1)=u^(fe)·n^(1)
+          do ik=1,problem%n
+            if (node(sn_int_fe)%ctype(ik,1).eq.1) then
+              col=node(sn_int_fe)%col(ik,1)
+              A_c(row,col)=A_c(row,col)-gp(kn_int)*element(se_int)%n_fn(ik,kn_int)
+            else
+              b_c(row,1)=b_c(row,1)+gp(kn_int)*element(se_int)%n_fn(ik,kn_int)*node(sn_int_fe)%cvalue_c(ik,1,1)
+            end if
+          end do
+        end do
       else
-!        select case (region(boundary(sb_int)%region(1))%type)
-
-!          ! ---------------------------------------
-!          ! INVISCID FLUID (1) - INVISCID FLUID (2)
-!          ! ---------------------------------------
-
-!          case (fbem_potential)
-            row=node(sn_col)%row(1,eq_index)
-            do kn_int=1,se_int_n_nodes
-              sn_int=element(se_int)%node(kn_int)
-              sn_int_fe=element(se_int)%element_node(kn_int)
-              ! p^(2)
-              col=node(sn_int)%col(1,2)
-              A_c(row,col)=A_c(row,col)+hp(kn_int)
-              ! Un^(2)=-u^(fe)·n^(1)
-              do ik=1,problem%n
-                if (node(sn_int_fe)%ctype(ik,1).eq.1) then
-                  col=node(sn_int_fe)%col(ik,1)
-                  A_c(row,col)=A_c(row,col)+gp(kn_int)*element(se_int)%n_fn(ik,kn_int)
-                else
-                  b_c(row,1)=b_c(row,1)-gp(kn_int)*element(se_int)%n_fn(ik,kn_int)*node(sn_int_fe)%cvalue_c(ik,1,1)
-                end if
-              end do
-            end do
-
-!          ! -------------------------------------------
-!          ! VISCOELASTIC SOLID (1) - INVISCID FLUID (2)
-!          ! -------------------------------------------
-
-!          case (fbem_viscoelastic)
-!            stop 'not implemented yet'
-
-!          ! ------------------------------------------
-!          ! POROELASTIC MEDIA (1) - INVISCID FLUID (2)
-!          ! ------------------------------------------
-
-!          case (fbem_poroelastic)
-!            stop 'not implemented yet'
-
-!        end select
+        row=node(sn_col)%row(1,eq_index)
+        do kn_int=1,se_int_n_nodes
+          sn_int=element(se_int)%node(kn_int)
+          sn_int_fe=element(se_int)%element_node(kn_int)
+          ! p^(2)
+          col=node(sn_int)%col(1,2)
+          A_c(row,col)=A_c(row,col)+hp(kn_int)
+          ! Un^(2)=-u^(fe)·n^(1)
+          do ik=1,problem%n
+            if (node(sn_int_fe)%ctype(ik,1).eq.1) then
+              col=node(sn_int_fe)%col(ik,1)
+              A_c(row,col)=A_c(row,col)+gp(kn_int)*element(se_int)%n_fn(ik,kn_int)
+            else
+              b_c(row,1)=b_c(row,1)-gp(kn_int)*element(se_int)%n_fn(ik,kn_int)*node(sn_int_fe)%cvalue_c(ik,1,1)
+            end if
+          end do
+        end do
       end if
 
   end select
