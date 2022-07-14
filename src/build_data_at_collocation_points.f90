@@ -845,6 +845,29 @@ subroutine build_data_at_collocation_points
           se_fe=element(se)%element
           r_integration=element(se_fe)%r_integration
           !
+          ! Check condition for good conditioning of the coupling (radius of integration vs distance between nodes)
+          !
+          select case (element(se)%type)
+            case (fbem_line2)
+              if ((2.d0*r_integration).lt.(element(se)%csize)) then
+                call fbem_warning_message(error_unit,0,'element',element(se)%id,&
+                'such a small element length (FE beam - BE line load coupling) may lead to innacuracies')
+              end if
+            case (fbem_line3)
+              if ((2.d0*r_integration).lt.(element(se)%csize/2.d0)) then
+                call fbem_warning_message(error_unit,0,'element',element(se)%id,&
+                'such a small element length (FE beam - BE line load coupling) may lead to innacuracies')
+              end if
+            case (fbem_line4)
+              if ((2.d0*r_integration).lt.(element(se)%csize/3.d0)) then
+                call fbem_warning_message(error_unit,0,'element',element(se)%id,&
+                'such a small element length (FE beam - BE line load coupling) may lead to innacuracies')
+              end if
+            case default
+              call fbem_warning_message(error_unit,0,'element',element(se)%id,&
+              'checking of coupled be body load element not available')
+          end select          
+          !
           ! Save the basic data of the element
           !
           allocate (x_nodes(3,element(se)%n_nodes))
