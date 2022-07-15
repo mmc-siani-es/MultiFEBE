@@ -41,7 +41,6 @@ module fbem_geometry
   use fbem_numerical
   use fbem_string_handling
   use fbem_quad_rules
-  use fbem_telles_transformation
   use fbem_shape_functions
 
   ! No implicit variables are allowed
