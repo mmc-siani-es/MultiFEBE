@@ -1,1 +1,53 @@
+[problem]
+n = 3D
+type = mechanics
+analysis = static
 
+[settings]
+mesh_file_mode = 2 "t2.msh"
+
+[materials]
+1
+1 elastic_solid E 1. nu 0.25
+
+[boundaries]
+6
+1 1 ordinary
+2 2 ordinary
+3 3 ordinary
+4 4 ordinary
+5 5 ordinary
+6 6 ordinary
+
+[regions]
+1
+
+1 be
+6 1 2 3 4 5 6
+material 1
+0
+
+[conditions over be boundaries]
+boundary 1: 1 0.
+            1 0.
+            0 0.
+
+boundary 2: 1 1.
+            1 0.
+            1 0.
+
+boundary 3: 1 0.
+            1 0.
+            0 0.
+
+boundary 4: 0 0.
+            1 0.
+            1 0.
+
+boundary 5: 1 0.
+            0 0.
+            1 0.
+
+boundary 6: 1 0.
+            0 0.
+            1 0.           
