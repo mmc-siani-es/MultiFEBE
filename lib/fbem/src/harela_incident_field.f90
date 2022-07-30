@@ -46,7 +46,7 @@ module fbem_harela_incident_field
   public :: fbem_harela_incident_plane_wave
   public :: fbem_harela_c_rayleigh
   public :: harela_calculate_rayleigh_wavenumber
-  public :: elastic_constants
+  public :: fbem_ela_properties
 
   ! Parameters
   integer, parameter, public :: fbem_harela_sh_wave      =1 ! indice asociado al tipo de onda SH
@@ -878,7 +878,7 @@ contains
   end function harela_rayleigh_equation
 
   !! Calculate all elastic constants by giving two of them
-  subroutine elastic_constants(pE,E,pnu,nu,plambda,lambda,pmu,mu,pK,K)
+  subroutine fbem_ela_properties(pE,E,pnu,nu,plambda,lambda,pmu,mu,pK,K)
     implicit none
     ! I/O
     logical           :: pE
@@ -955,6 +955,6 @@ contains
     ! Check if constants are valid
     if (mu.le.0.d0) stop 'mu must be >0'
     if ((3.d0*lambda+2.d0*mu).le.0.d0) stop '3*lambda+2*mu must be >0'
-  end subroutine elastic_constants
+  end subroutine fbem_ela_properties
 
 end module fbem_harela_incident_field

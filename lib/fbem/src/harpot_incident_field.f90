@@ -43,6 +43,7 @@ module fbem_harpot_incident_field
   ! Subroutines
   public :: fbem_harpot_pointwave
   public :: fbem_harpot_planewave
+  public :: fbem_harpot_properties
 
 contains
 
@@ -263,5 +264,39 @@ contains
       Un_inc=Un_inc+Un_ref
     end if
   end subroutine fbem_harpot_planewave
+
+  !! Calculate all properties by giving two of them
+  subroutine fbem_harpot_properties(pK,K,prho,rho,pc,c)
+    implicit none
+    ! I/O
+    logical           :: pK
+    real(kind=real64) :: K
+    logical           :: prho
+    real(kind=real64) :: rho
+    logical           :: pc
+    real(kind=real64) :: c
+    ! Local
+    integer :: n
+    ! Check input constants
+    n=0
+    if (pK  ) n=n+1
+    if (prho) n=n+1
+    if (pc  ) n=n+1
+    if (n.ne.2) stop 'only 2 properties are needed'
+
+    if (pK.and.prho) then
+      c=sqrt(K/rho)
+    end if
+    if (pK.and.pc) then
+      rho=K/c**2
+    end if
+    if (prho.and.pc) then
+      K=rho*c**2
+    end if
+    ! Check if constants are valid
+    if (  K.le.0.d0) stop 'K must be >0'
+    if (  c.le.0.d0) stop 'c must be >0'
+    if (rho.le.0.d0) stop 'rho must be >0'
+  end subroutine fbem_harpot_properties
 
 end module fbem_harpot_incident_field
