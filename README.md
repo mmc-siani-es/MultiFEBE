@@ -13,7 +13,7 @@ Download an installer from the [releases](https://github.com/mmc-siani-es/MultiF
 More details about the installation can be found in the [manual](https://github.com/mmc-siani-es/MultiFEBE/blob/main/docs/manual.pdf).
 
 ## Option 2 (compilation)
-Download the source code from [GitHub](https://github.com/mmc-siani-es/MultiFEBE) or [packages](https://github.com/mmc-siani-es/MultiFEBE/packages), and compile it by running the CMake and GNU Make. 
+Download the source code from [GitHub](https://github.com/mmc-siani-es/MultiFEBE) and compile it by running the CMake and GNU Make. 
 More details about the compilation can be found in Appendix A of the [manual](https://github.com/mmc-siani-es/MultiFEBE/blob/main/docs/manual.pdf).
 
 Requirements:
