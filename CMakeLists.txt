@@ -43,7 +43,8 @@ endif (WIN32)
 #
 # For installing the program and documentation:
 # $ make install
-#
+#DESTINATION "${CMAKE_INSTALL_DOCDIR}/multifebe"
+include(GNUInstallDirs)
 install(TARGETS multifebe RUNTIME COMPONENT applications)
 install(FILES "${CMAKE_SOURCE_DIR}/docs/manual.pdf" TYPE DOC COMPONENT documentation)
 install(FILES "${CMAKE_SOURCE_DIR}/docs/multifebe_unix.bas" TYPE DOC COMPONENT documentation)
