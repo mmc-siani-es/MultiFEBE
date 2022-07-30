@@ -83,8 +83,7 @@ subroutine calculate_incident_mechanics_harmonic(kf)
   complex(kind=real64)              :: phi_s_2, phi_f_2
   complex(kind=real64)              :: D1I
 
-  ! Message
-  if (verbose_level.ge.1)  write(output_unit,'(a)') 'Calculating incident fields ...'
+  if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'START calculating incident fields')
 
   ! Frequency
   omega=frequency(kf)
@@ -1078,7 +1077,6 @@ subroutine calculate_incident_mechanics_harmonic(kf)
 
   end do
 
-  ! Ending message
-  if (verbose_level.ge.1) write(output_unit,'(a)') 'done.'
+  if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'END calculating incident fields')
 
 end subroutine calculate_incident_mechanics_harmonic

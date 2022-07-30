@@ -281,7 +281,7 @@ subroutine build_data_at_geometrical_nodes
                 !
                 ! Calculate v1, v2 and v3
                 !
-                ! For simplicity, it is assumed that v1 == t1 (cross section is always orthogonal to the mid-line).                
+                ! For simplicity, it is assumed that v1 == t1 (cross section is always orthogonal to the mid-line).
                 v1=element(ke)%t1_gn(:,kn)
                 ! Save
                 element(ke)%v_midnode(1,1,kn)=v1(1)
@@ -300,7 +300,7 @@ subroutine build_data_at_geometrical_nodes
                 !
                 element(ke)%tv_midnode(2,kn)=element(ke)%tn_midnode(2,kn)/dot_product(v1,element(ke)%t1_gn(:,kn))
                 element(ke)%tv_midnode(3,kn)=element(ke)%tn_midnode(3,kn)
-                
+
 !                ! Write v1, v2, v3
 !                write(22,'(2i11,6e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,1,kn)
 !                write(23,'(2i11,6e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,2,kn)
@@ -397,7 +397,7 @@ subroutine build_data_at_geometrical_nodes
                 !write(22,'(2i11,6e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,1,kn)
                 !write(23,'(2i11,8e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,2,kn), element(ke)%tv_midnode(2,kn)
                 !write(24,'(2i11,8e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,3,kn), element(ke)%tv_midnode(3,kn)
-                
+
               end do
 
 !              do pi=0,100

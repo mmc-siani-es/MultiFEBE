@@ -52,8 +52,7 @@ subroutine calculate_internal_points_mechanics_static
   ! Writing
   character(len=fbem_fmtstr) :: fmtstr            ! String used for write format string
 
-  ! Message
-  if (verbose_level.ge.1)  write(output_unit,'(a)') 'Calculating internal points solutions at BE regions ...'
+  if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'START calculating internal points solutions at BE regions')
 
   ! Initialize internal points
   do kip=1,n_internalpoints
@@ -130,23 +129,11 @@ subroutine calculate_internal_points_mechanics_static
     end if
   end do ! Loop through REGIONS
 
-
-
-
-
-
-
-
-
-
-
-
+  if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'END calculating internal points solutions at BE regions')
 
   if (internalelements) then
 
-    ! Message
-    if (verbose_level.ge.1)  write(output_unit,'(a)') 'Map the internal points corresponding to internal elements ...'
-
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'START mapping the internal points corresponding to internal elements')
 
     do kp=1,internalelements_mesh%n_parts
       kr=internalelements_mesh%part(kp)%entity
@@ -219,26 +206,9 @@ subroutine calculate_internal_points_mechanics_static
       end if
     end do
 
-
-
-
-
-
-    ! Ending message
-    if (verbose_level.ge.1) write(output_unit,'(a)') 'done.'
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'END mapping the internal points corresponding to internal elements')
 
   end if
-
-
-
-
-
-
-
-
-
-  ! Ending message
-  if (verbose_level.ge.1) write(output_unit,'(a)') 'done.'
 
 end subroutine calculate_internal_points_mechanics_static
 

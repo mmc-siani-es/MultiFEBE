@@ -422,6 +422,7 @@ subroutine assemble_bem_harpot_equation(omega,kr,sb_int,sb_int_reversion,se_int,
 
     case (fbem_boundary_coupling_be_fe_be)
       if (sb_int_reversion.eqv.(.false.)) then
+
         row=node(sn_col)%row(1,eq_index)
         do kn_int=1,se_int_n_nodes
           sn_int=element(se_int)%node(kn_int)
@@ -439,7 +440,9 @@ subroutine assemble_bem_harpot_equation(omega,kr,sb_int,sb_int_reversion,se_int,
             end if
           end do
         end do
+
       else
+
         row=node(sn_col)%row(1,eq_index)
         do kn_int=1,se_int_n_nodes
           sn_int=element(se_int)%node(kn_int)
@@ -457,6 +460,7 @@ subroutine assemble_bem_harpot_equation(omega,kr,sb_int,sb_int_reversion,se_int,
             end if
           end do
         end do
+
       end if
 
   end select

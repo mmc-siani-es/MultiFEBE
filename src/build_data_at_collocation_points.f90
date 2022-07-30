@@ -866,7 +866,7 @@ subroutine build_data_at_collocation_points
             case default
               call fbem_warning_message(error_unit,0,'element',element(se)%id,&
               'checking of coupled be body load element not available')
-          end select          
+          end select
           !
           ! Save the basic data of the element
           !

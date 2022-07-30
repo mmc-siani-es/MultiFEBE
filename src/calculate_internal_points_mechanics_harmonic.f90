@@ -45,8 +45,7 @@ subroutine calculate_internal_points_mechanics_harmonic(kf)
   real(kind=real64)                 :: aux(10), xi1d, delta_f
   real(kind=real64), allocatable    :: xi(:), phi(:)
 
-  ! Message
-  if (verbose_level.ge.1)  write(output_unit,'(a)') 'Calculating internal points solutions at BE regions ...'
+  if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'START calculating internal points solutions at BE regions')
 
   ! Initialize internal points
   do kip=1,n_internalpoints
@@ -67,18 +66,11 @@ subroutine calculate_internal_points_mechanics_harmonic(kf)
     end if
   end do
 
-  ! Ending message
-  if (verbose_level.ge.1) write(output_unit,'(a)') 'done.'
-
-
-
-
-
+  if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'END calculating internal points solutions at BE regions')
 
   if (internalelements) then
 
-    ! Message
-    if (verbose_level.ge.1)  write(output_unit,'(a)') 'Map the internal points corresponding to internal elements ...'
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'START mapping the internal points corresponding to internal elements')
 
 
     !
@@ -167,13 +159,7 @@ subroutine calculate_internal_points_mechanics_harmonic(kf)
       end if
     end do
 
-
-
-
-
-
-    ! Ending message
-    if (verbose_level.ge.1) write(output_unit,'(a)') 'done.'
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'END mapping the internal points corresponding to internal elements')
 
   end if
 

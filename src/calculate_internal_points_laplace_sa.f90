@@ -93,8 +93,7 @@ subroutine calculate_internal_points_laplace_sa
   ! Writing
   character(len=fbem_fmtstr)     :: fmtstr
 
-  ! Message
-  if (verbose_level.ge.1)  write(output_unit,'(a)') 'Calculating internal points sensitivity solutions at BE regions ...'
+  if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'START calculating internal points sensitivity solutions at BE regions')
 
   ! Initialize internal points values
   do kip=1,n_internalpoints
@@ -254,10 +253,10 @@ subroutine calculate_internal_points_laplace_sa
             ! CALCULATE KERNELS
             select case (problem%n)
               case (2)
-                call fbem_bem_stapot2d_sbie_auto(se_int_data,se_int_reversion,x_i,qsi_post_parameters,qsi_ns_max,h,g)
-                call fbem_bem_stapot2d_vsbie_auto(se_int_data,se_int_reversion,x_i,qsi_post_parameters,qsi_ns_max,h1,h2,g1,g2)
+                call fbem_bem_stapot2d_sbie_auto(se_int_data,se_int_reversion,x_i,qsi_parameters,qsi_ns_max,h,g)
+                call fbem_bem_stapot2d_vsbie_auto(se_int_data,se_int_reversion,x_i,qsi_parameters,qsi_ns_max,h1,h2,g1,g2)
               case (3)
-                call fbem_bem_stapot3d_sbie_auto(se_int_data,se_int_reversion,x_i,qsi_post_parameters,qsi_ns_max,h,g)
+                call fbem_bem_stapot3d_sbie_auto(se_int_data,se_int_reversion,x_i,qsi_parameters,qsi_ns_max,h,g)
                 stop 'stapot3d_vsbie not yet'
             end select
             ! BUILD KERNELS ACCORDING TO SYMMETRY
@@ -376,10 +375,10 @@ subroutine calculate_internal_points_laplace_sa
               ! CALCULATE KERNELS
               select case (problem%n)
                 case (2)
-                  call fbem_bem_stapot2d_hbie_auto(se_int_data,se_int_reversion,x_i,n_i,qsi_post_parameters,qsi_ns_max,m,l)
-                  call fbem_bem_stapot2d_vhbie_auto(se_int_data,se_int_reversion,x_i,n_i,qsi_post_parameters,qsi_ns_max,m1,m2,m3,l1,l2,l3)
+                  call fbem_bem_stapot2d_hbie_auto(se_int_data,se_int_reversion,x_i,n_i,qsi_parameters,qsi_ns_max,m,l)
+                  call fbem_bem_stapot2d_vhbie_auto(se_int_data,se_int_reversion,x_i,n_i,qsi_parameters,qsi_ns_max,m1,m2,m3,l1,l2,l3)
                 case (3)
-                  call fbem_bem_stapot3d_hbie_auto(se_int_data,se_int_reversion,x_i,n_i,qsi_post_parameters,qsi_ns_max,m,l)
+                  call fbem_bem_stapot3d_hbie_auto(se_int_data,se_int_reversion,x_i,n_i,qsi_parameters,qsi_ns_max,m,l)
                   stop 'stapot3d_vhbie not yet'
               end select
               ! BUILD KERNELS ACCORDING TO SYMMETRY
@@ -518,7 +517,6 @@ subroutine calculate_internal_points_laplace_sa
 
   end do ! Loop through REGIONS
 
-  ! Ending message
-  if (verbose_level.ge.1) write(output_unit,'(a)') 'done.'
+  if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'END calculating internal points sensitivity solutions at BE regions')
 
 end subroutine calculate_internal_points_laplace_sa
