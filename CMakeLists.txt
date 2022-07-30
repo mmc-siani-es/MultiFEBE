@@ -44,11 +44,18 @@ endif (WIN32)
 # For installing the program and documentation:
 # $ make install
 #DESTINATION "${CMAKE_INSTALL_DOCDIR}/multifebe"
-include(GNUInstallDirs)
 install(TARGETS multifebe RUNTIME COMPONENT applications)
+if (UNIX)
+include(GNUInstallDirs)
 install(FILES "${CMAKE_SOURCE_DIR}/docs/manual.pdf" TYPE DOC COMPONENT documentation)
 install(FILES "${CMAKE_SOURCE_DIR}/docs/multifebe_unix.bas" TYPE DOC COMPONENT documentation)
 install(FILES "${CMAKE_SOURCE_DIR}/docs/multifebe_win.bas" TYPE DOC COMPONENT documentation)
+endif (UNIX)
+if (WIN32)
+install(FILES "${CMAKE_SOURCE_DIR}/docs/manual.pdf" DESTINATION "doc" COMPONENT documentation)
+install(FILES "${CMAKE_SOURCE_DIR}/docs/multifebe_unix.bas" DESTINATION "doc" COMPONENT documentation)
+install(FILES "${CMAKE_SOURCE_DIR}/docs/multifebe_win.bas" DESTINATION "doc" COMPONENT documentation)
+endif (WIN32)
 
 #
 # For generating an installer on GNU/Linux (debian)
@@ -93,7 +100,7 @@ if (WIN32)
   set(CPACK_NSIS_MUI_UNICON "${CMAKE_CURRENT_SOURCE_DIR}/docs/img\\\\logo.ico")
   set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
   set(CPACK_NSIS_MENU_LINKS "bin/multifebe" "MultiFEBE"
-						                "docs/manual.pdf" "Manual")
+						    "doc/manual.pdf" "Manual")
   set(CPACK_NSIS_MODIFY_PATH ON)
   set(CPACK_GENERATOR NSIS64)
 endif (WIN32)
