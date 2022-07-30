@@ -17,8 +17,8 @@
 
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  
- getopt_m           - Copyright (C) 2008 by Mark Gates
- Simple Data Format - Copyright (C) 2006,2007 University of California
- DSYEVJ3            - Copyright (C) 2006  Joachim Kopp
- f90doc             - Copyright (C) 1997-2006 Erik D. Demaine
+ 
+ getopt_m           - Copyright (C) 2008 by Mark Gates - GPLv2
+ Simple Data Format - Copyright (C) 2006,2007 University of California - LGPLv2.1 License
+ DSYEVJ3            - Copyright (C) 2006  Joachim Kopp - LGPLv2.1 License
+ f90doc             - Copyright (C) 1997-2006 Erik D. Demaine - MIT License
