@@ -3,61 +3,38 @@
 What is MultiFEBE?
 ==================
 
-MultiFEBE is a multi-domain integrated Finite Element and Boundary Element solver.
+MultiFEBE is a multi-domain Finite Element and Boundary Element linear mechanics solver. It implements mixed-dimensional couplings between finite elements and boundary elements. It is available for Windows and GNU/Linux 64 bits.
 
 How to install?
 ===============
 
-## Option 1
-Download binaries from [our website](http://www.mmc.siani.es), and run it.
+## Option 1 (installation)
+Download an installer from the [releases](https://github.com/mmc-siani-es/MultiFEBE/releases) and run it. 
+More details about the installation can be found in the [manual](https://github.com/mmc-siani-es/MultiFEBE/blob/main/docs/manual.pdf).
 
-## Option 2
-Download the source code from [GitHub](https://github.com/mmc-siani-es/MultiFEBE), unpack the .zip file, and compile it by running the Makefile. 
+## Option 2 (compilation)
+Download the source code from [GitHub](https://github.com/mmc-siani-es/MultiFEBE) or [packages](https://github.com/mmc-siani-es/MultiFEBE/packages), and compile it by running the CMake and GNU Make. 
+More details about the compilation can be found in Appendix A of the [manual](https://github.com/mmc-siani-es/MultiFEBE/blob/main/docs/manual.pdf).
 
 Requirements:
 
-  * Operating System: GNU/Linux 64 bits
-  * Build automation tool: GNU Make
-  * Compiler: GNU Fortran Compiler versión 9.4 o superior
-  * Linear Algebra:
-    * Default: Automatically Tuned Linear Algebra Software (ATLAS)
-    * Alternative (need to change Makefile): OpenBLAS 
+  * Operating System: Windows or GNU/Linux 64 bits.
+  * Build automation tool: CMake, GNU Make.
+  * Compiler: GNU Fortran Compiler version 9.4 or superior.
+  * Dependencies: OpenBLAS (Linear Algebra).
+  * For compilation in Windows: [MSYS2 environment](https://www.msys2.org).
 
-Optional but recommended:
-  * Pre- and post-processor (external tool): Gmsh (https://gmsh.info/), version 3.0.6.
+How to use?
+===========
 
-Instructions:
+MultiFEBE is a command-line program. It takes an input file which defines the case, and, once the case is solved, it creates output files with the results. 
 
-  * Download source code from [GitHub](https://github.com/mmc-siani-es/MultiFEBE).
-  * Unpack the downloaded .zip file.
-  * Install the requirements through the terminal (if not already installed).
-    * Install GNU Make and GNU Fortran:
-    
-    ```
-    sudo apt-get install make gfortran
-    ``` 
-    
-    * Install ATLAS:
-    
-    ```
-    sudo apt-get install libatlas3-base libatlas-base-dev
-    ```
-    
-    * Install OpenBlas (alternative to ATLAS):
-    
-    ```
-    sudo apt-get install libopenblas-base libopenblas-dev
-    ```
-    
-  * Edit the `./Makefile` if you want to use OpenBlas instead of ATLAS.
-  * Compile it by executing:
-  
-  ```
-  $ make   
-  ```    
-  
-  * Once compiled, the executable `multifebe` is locate at the folder `./bin/` 
-    
+The input file contains data sections defining the type of analysis, mesh, materials, boundary conditions, modelling details, etc. 
+It may contain the whole mesh definition (nodes, elements, parts), but it is more appropriate to use a reference to a separate mesh file.
+Mesh files can be formatted in a native format, or in [Gmsh](https://gmsh.info) MSH mesh file format 2.2. Results can also be exported to Gmsh file format, so you can fully use Gmsh as pre- and post-processor for MultiFEBE. 
+The native mesh file format is very easy to build manually or from custom-built scripts. In this sense, we have created a .bas template file which can be used in [GiD](https://www.gidsimulation.com/) pre- and post-processor to generate our native mesh files.
+More details can be found in the [manual](https://github.com/mmc-siani-es/MultiFEBE/blob/main/docs/manual.pdf).
+
 License:
 ========
 
@@ -84,5 +61,5 @@ This work has been developed with the support of research projects:
   
   <p align="center">
     <img src="docs/img/miciinn-feder-aei.png">
-  </p>   
+  </p> 
 
