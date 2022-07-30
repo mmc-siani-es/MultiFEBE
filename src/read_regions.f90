@@ -49,12 +49,10 @@ subroutine read_regions(fileunit)
   character(len=fbem_stdcharlen)         :: section_name           ! Name of the section
   character(len=fbem_fmtstr)             :: fmtstr                 ! String used for write format string
   logical                                :: found
-  character(len=2)                       :: tmp_class              ! Temporary variable to read the class of region
   character(len=fbem_stdcharlen)         :: tmp_type               ! Temporary variable to read the type of the region
   character(len=fbem_stdcharlen)         :: tmp_variable           ! Temporary variable to read the type of the region
   integer                                :: i, j, si               ! Counters
   complex(kind=real64)                   :: cte_r, cte_q, cte_b, cte_p, cte_trho, cte_phi, cte_rhof
-  logical                                :: tmp_control
   character(len=fbem_file_record_length) :: line, word
   integer                                :: nw
   integer                                :: km
@@ -90,7 +88,7 @@ subroutine read_regions(fileunit)
         ! rigid feature
         region(i)%master_node=0
 
-        region(i)%sensitivity=0
+        region(i)%sensitivity=.false.
         region(i)%export=.false.
       end do
     else
@@ -595,13 +593,67 @@ subroutine read_regions(fileunit)
                 read(word,*) km
                 km=material_iid(km)
 
+                ! ----- !
+                ! FLUID !
+                ! ----- !
+
+                if (trim(material(km)%type).eq.'fluid') then
+                  region(i)%type   =fbem_potential
+                  region(i)%subtype=0
+                  if (region(i)%space.eq.fbem_multilayered_half_space) stop 'not multilayered halfspace for fluids yet'
+                  !
+                  ! region()%property_*
+                  ! -------------------
+                  !
+                  !   - property_r(1): rho, density (only real)
+                  !   - property_?(2): K, bulk modulus (real or complex)
+                  !   - property_r(3): xi, hysteretic damping ratio (only real)
+                  !   - property_?(4): c, wave propagation speed (real or complex)
+                  !
+                  ! Allocate region properties
+                  allocate(region(i)%property_r(4))
+                  allocate(region(i)%property_c(4))
+                  region(i)%property_r=0.
+                  region(i)%property_c=0.
+                  !
+                  ! Read from "material" data structure
+                  !
+                  !  1 K
+                  !  2 rho
+                  !  3 xi
+                  !  4 c
+                  !
+                  if (material(km)%property_defined(2)) then
+                    region(i)%property_r(1)=material(km)%property(2,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'rho is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(1)) then
+                    region(i)%property_r(2)=material(km)%property(1,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'K is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(3)) then
+                    region(i)%property_r(3)=material(km)%property(3,1)
+                  else
+                    region(i)%property_r(3)=0.d0
+                  end if
+                  if (material(km)%property_defined(4)) then
+                    region(i)%property_r(4)=material(km)%property(4,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'c is required for the material of this region')
+                  end if
+                  region(i)%property_c(2)=region(i)%property_r(2)*(1+c_im*2*region(i)%property_r(3))
+                  region(i)%property_c(4)=sqrt(region(i)%property_c(2)/region(i)%property_r(1))
+
                 ! ------------- !
                 ! ELASTIC SOLID !
                 ! ------------- !
 
-                if (trim(material(km)%type).eq.'elastic_solid') then
+                else if (trim(material(km)%type).eq.'elastic_solid') then
                   region(i)%type   =fbem_viscoelastic
                   region(i)%subtype=0
+                  if (region(i)%space.eq.fbem_half_space) stop 'not halfspace for elastodynamics yet'
                   if (region(i)%space.eq.fbem_multilayered_half_space) stop 'not multilayered halfspace for elastodynamics yet'
                   !
                   ! Complete list of region properties:
@@ -623,6 +675,8 @@ subroutine read_regions(fileunit)
                   ! Allocate region properties
                   allocate(region(i)%property_r(8))
                   allocate(region(i)%property_c(2:8))
+                  region(i)%property_r=0.
+                  region(i)%property_c=0.
                   !
                   ! Read from "material" data structure
                   !
@@ -663,8 +717,137 @@ subroutine read_regions(fileunit)
                   region(i)%property_c(6)=2.0d0*region(i)%property_c(2)*region(i)%property_r(3)/(1.0d0-2.0d0*region(i)%property_r(3))
                   region(i)%property_c(7)=zsqrt((region(i)%property_c(6)+2.0d0*region(i)%property_c(2))/region(i)%property_r(1))
                   region(i)%property_c(8)=zsqrt(region(i)%property_c(2)/region(i)%property_r(1))
+
+                ! ----------------------- !
+                ! BIOT POROELASTIC MEDIUM !
+                ! ----------------------- !
+
+                else if (trim(material(km)%type).eq.'biot_poroelastic_medium') then
+                  region(i)%type   =fbem_poroelastic
+                  region(i)%subtype=0
+                  if (region(i)%space.eq.fbem_half_space) stop 'not halfspace for poroelasticity yet'
+                  if (region(i)%space.eq.fbem_multilayered_half_space) stop 'not multilayered halfspace for poroelasticity yet'
+                  !
+                  ! List of properties
+                  ! ------------------
+                  !
+                  !   - property_r(1) : rhof, density of the fluid
+                  !   - property_r(2) : rhos, density of the solid skeleton
+                  !   - property_r(3) : lambda, Lame constant
+                  !   - property_r(4) : mu, shear modulus
+                  !   - property_r(5) : E, Young modulus
+                  !   - property_r(6) : nu, Poisson's ratio
+                  !   - property_r(7) : xi, damping coefficient
+                  !   - property_r(8) : phi, porosity
+                  !   - property_r(9) : rhoa, additional density
+                  !   - property_r(10): R coupling parameter
+                  !   - property_r(11): Q coupling parameter
+                  !   - property_r(12): b coupling parameter
+                  !   - property_r(13): rho1, density of the solid skeleton with respect to the total volume
+                  !   - property_r(14): rho2, density of the fluid with respect to the total volume
+                  !   - property_c(3) : lambda, Lame constant, includes damping
+                  !   - property_c(4) : mu, shear modulus, includes damping
+                  !   - property_c(5) : E, Young modulus, includes damping
+                  !   - property_c(6) : nu, Poisson's ratio, includes damping
+                  !   - property_c(10): R coupling parameter, includes damping
+                  !   - property_c(11): Q coupling parameter, includes damping
+                  !
+                  ! Allocate region properties
+                  allocate(region(i)%property_r(14))
+                  allocate(region(i)%property_c(3:11))
+                  region(i)%property_r=0.d0
+                  region(i)%property_c=0.d0
+                  !
+                  ! List of properties:
+                  !
+                  !  1 phi
+                  !  2 E
+                  !  3 nu
+                  !  4 lambda
+                  !  5 mu
+                  !  6 K
+                  !  7 Q
+                  !  8 R
+                  !  9 rho_f
+                  ! 10 rho_s
+                  ! 11 rho_a
+                  ! 12 xi
+                  ! 13 b
+                  !
+                  if (material(km)%property_defined(1)) then
+                    region(i)%property_r(8)=material(km)%property(1,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'phi is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(2)) then
+                    region(i)%property_r(5)=material(km)%property(2,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'E is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(3)) then
+                    region(i)%property_r(6)=material(km)%property(3,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'nu is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(4)) then
+                    region(i)%property_r(3)=material(km)%property(4,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'lambda is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(5)) then
+                    region(i)%property_r(4)=material(km)%property(5,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'mu is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(7)) then
+                    region(i)%property_r(11)=material(km)%property(7,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'Q is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(8)) then
+                    region(i)%property_r(10)=material(km)%property(8,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'R is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(9)) then
+                    region(i)%property_r(1)=material(km)%property(9,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'rhof is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(10)) then
+                    region(i)%property_r(2)=material(km)%property(10,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'rhos is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(11)) then
+                    region(i)%property_r(9)=material(km)%property(11,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'rhoa is required for the material of this region')
+                  end if
+                  if (material(km)%property_defined(12)) then
+                    region(i)%property_r(7)=material(km)%property(12,1)
+                  else
+                    region(i)%property_r(7)=0
+                  end if
+                  if (material(km)%property_defined(13)) then
+                    region(i)%property_r(12)=material(km)%property(13,1)
+                  else
+                    call fbem_error_message(error_unit,0,section_name,i,'b is required for the material of this region')
+                  end if
+
+                  region(i)%property_c( 3)=region(i)%property_r( 3)*(1+c_im*2*region(i)%property_r(7))
+                  region(i)%property_c( 4)=region(i)%property_r( 4)*(1+c_im*2*region(i)%property_r(7))
+                  region(i)%property_c( 5)=region(i)%property_r( 5)*(1+c_im*2*region(i)%property_r(7))
+                  region(i)%property_c( 6)=0.5d0*region(i)%property_c(3)/(region(i)%property_c(3)+region(i)%property_c(4))
+                  ! Duda: Q y R se ven afectadas por el amort. histeretico. Por lo que pone el libro de
+                  ! Detournay y Cheng sí.
+                  region(i)%property_c(10)=region(i)%property_r(10)*(1+c_im*2*region(i)%property_r(7))
+                  region(i)%property_c(11)=region(i)%property_r(11)*(1+c_im*2*region(i)%property_r(7))
+
                 else
+
                   call fbem_error_message(error_unit,0,section_name,i,'invalid or unknown type of material')
+
                 end if
 
               !

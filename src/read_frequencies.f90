@@ -77,8 +77,9 @@ subroutine read_frequencies(fileunit)
     if (trim(line).eq.'list' ) specification_mode=1
     if (trim(line).eq.'lin'  ) specification_mode=2
     if (trim(line).eq.'log10') specification_mode=3
+    if (trim(line).eq.'log'  ) specification_mode=3
     if (specification_mode.eq.0) then
-      call fbem_error_message(error_unit,0,'specification_mode',0,'the frequency specification mode is "list", "lin" or "log10"')
+      call fbem_error_message(error_unit,0,'specification_mode',0,'the frequency specification mode is "list", "lin" or "log"')
     end if
 
     ! Switch between the frequency specification modes
@@ -119,7 +120,7 @@ subroutine read_frequencies(fileunit)
           frequency(i)=frequency(1)+delta*dble(i-1)
         end do
       !
-      ! log10
+      ! log
       !
       case (3)
         ! Read the number of frequencies
@@ -137,7 +138,7 @@ subroutine read_frequencies(fileunit)
         ! Build the vector of frequencies
         delta=(dlog10(frequency(n_frequencies))-dlog10(frequency(1)))/dble(n_frequencies-1)
         do i=2,n_frequencies-1
-          frequency(i)=10**(dlog10(frequency(1))+delta*dble(i-1))
+          frequency(i)=10.0d0**(dlog10(frequency(1))+delta*dble(i-1))
         end do
     end select
 

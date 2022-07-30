@@ -68,8 +68,6 @@ module problem_variables
   ! Quasi-singular integration
   real(kind=real64)                       :: qsi_relative_error    !! Relative error of quasi-singular integration.
   type(fbem_qs_parameters)                :: qsi_parameters        !! Parameters for quasi-singular integration.
-  real(kind=real64)                       :: qsi_post_relative_error!! Relative error of quasi-singular integration.
-  type(fbem_qs_parameters)                :: qsi_post_parameters   !! Parameters for quasi-singular integration.
   integer                                 :: qsi_ns_max            !! Maximum number of subdivisions in quasi-singular integration (>=0).
   integer                                 :: n_precalsets          !! Number of precalculated datasets at integration points.
   integer, allocatable                    :: precalset_gln(:)      !! Number of Gauss-Legendre quadrature points of each set (<=30). The order is O=2N-1.
@@ -263,7 +261,6 @@ module problem_variables
   logical                                 :: export_sif            !! ¿Export .sif file?
   logical                                 :: export_wsp            !! ¿Export .wsp file?
   logical                                 :: export_tot            !! ¿Export .tot file?
-  logical                                 :: export_def            !! ¿Export .def file?
   integer                                 :: tot_xm                !! Resultant moment in .tot file: 1 (origin), 2 (centroid of the boundary)
   logical                                 :: tot_apply_symmetry    !! Resultants (tot y ier) applying symmetry
   ! --------------------------------------------------------------------------------------------------------------------------------

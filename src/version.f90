@@ -38,12 +38,13 @@ subroutine version
   write(output_unit,fmtstr) '                        Guillermo M. Alamo                                      '
   write(output_unit,fmtstr) '                        Luis A. Padron                                          '
   write(output_unit,fmtstr) '                        Juan J. Aznarez                                         '
-  write(output_unit,fmtstr) '                        Orlando Maeso.                                          '
+  write(output_unit,fmtstr) '                        Orlando Maeso                                           '
   write(output_unit,*)
   write(output_unit,fmtstr) 'Description: Multi-domain integrated Finite Element and Boundary Element solver '
   write(output_unit,*)
   write(output_unit,fmtstr) 'Link: https://github.com/mmc-siani-es/MultiFEBE                                 '
   write(output_unit,*)
+  write(output_unit,fmtstr) 'License GPLv2: GNU GPL version 2 or later <https://gnu.org/licenses/gpl.html>   '
   write(output_unit,fmtstr) 'This is free software; see the source for copying conditions.  There is NO      '
   write(output_unit,fmtstr) 'warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.     '
   write(output_unit,*)

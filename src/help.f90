@@ -37,7 +37,7 @@ subroutine help
   !                                   1         2         3         4         5         6         7         8
   !                          12345678901234567890123456789012345678901234567890123456789012345678901234567890
   write(output_unit,fmtstr) 'Usage:                                                                          '
-  write(output_unit,fmtstr) '  ./multifebe [options]                                                         '
+  write(output_unit,fmtstr) '  multifebe [options]                                                           '
   write(output_unit,*)
   write(output_unit,fmtstr) 'Options:                                                                        '
   write(output_unit,fmtstr) '  -i, --input STRING        Input file name           [required]                '

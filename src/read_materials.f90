@@ -36,6 +36,7 @@ subroutine read_materials(fileunit)
   use fbem_shape_functions
   use fbem_data_structures
   use fbem_harela_incident_field
+  use fbem_harpot_incident_field
 
   ! Problem variables module
   use problem_variables
@@ -104,10 +105,11 @@ subroutine read_materials(fileunit)
         !  1 K
         !  2 rho
         !  3 xi
+        !  4 c
         !
         valid_material=.true.
-        allocate(material(i)%property_defined(3))
-        allocate(material(i)%property(3,1))
+        allocate(material(i)%property_defined(4))
+        allocate(material(i)%property(4,1))
         material(i)%property_defined=.false.
         material(i)%property=0.d0
         ! Calculate the number of properties introduced by the user
@@ -147,18 +149,25 @@ subroutine read_materials(fileunit)
             word=fbem_extract_word(line,2+2*j)
             read(word,*) material(i)%property(3,1)
           end if
+          if (trim(word).eq.'c') then
+            valid_property=.true.
+            if (material(i)%property_defined(4)) then
+              call fbem_error_message(error_unit,0,'material',material(i)%id,'repeated value of c')
+            end if
+            material(i)%property_defined(4)=.true.
+            word=fbem_extract_word(line,2+2*j)
+            read(word,*) material(i)%property(4,1)
+          end if
           if (.not.valid_property) then
             call fbem_error_message(error_unit,0,'material',material(i)%id,'unknown property')
           end if
         end do
-        if (material(i)%property_defined(1)) then
-          if (material(i)%property(1,1).le.0.d0) then
-            call fbem_error_message(error_unit,0,'material',material(i)%id,'K must be >0')
-          end if
-        end if
-        if (material(i)%property_defined(2)) then
-          if (material(i)%property(2,1).le.0.d0) then
-            call fbem_error_message(error_unit,0,'material',material(i)%id,'rho must be >0')
+        call fbem_harpot_properties(material(i)%property_defined(1),material(i)%property(1,1),&
+                                    material(i)%property_defined(2),material(i)%property(2,1),&
+                                    material(i)%property_defined(4),material(i)%property(4,1))
+        if (material(i)%property_defined(3)) then
+          if (material(i)%property(3,1).lt.0.d0) then
+            call fbem_error_message(error_unit,0,'material',material(i)%id,'xi must be >=0')
           end if
         end if
       end if
@@ -313,7 +322,7 @@ subroutine read_materials(fileunit)
           end if
         end do
         ! Calculate the other properties (elastic constants) and check them
-        call elastic_constants(material(i)%property_defined(1),material(i)%property(1,1),&
+        call fbem_ela_properties(material(i)%property_defined(1),material(i)%property(1,1),&
                                material(i)%property_defined(2),material(i)%property(2,1),&
                                material(i)%property_defined(3),material(i)%property(3,1),&
                                material(i)%property_defined(4),material(i)%property(4,1),&
@@ -322,6 +331,11 @@ subroutine read_materials(fileunit)
         if (material(i)%property_defined(6)) then
           if (material(i)%property(6,1).le.0.d0) then
             call fbem_error_message(error_unit,0,'material',material(i)%id,'rho must be >0')
+          end if
+        end if
+        if (material(i)%property_defined(7)) then
+          if (material(i)%property(7,1).lt.0.d0) then
+            call fbem_error_message(error_unit,0,'material',material(i)%id,'xi must be >=0')
           end if
         end if
       end if
@@ -489,7 +503,7 @@ subroutine read_materials(fileunit)
           end if
         end do
         ! Calculate the other properties (drained elastic constants) and check them
-        call elastic_constants(material(i)%property_defined(2),material(i)%property(2,1),&
+        call fbem_ela_properties(material(i)%property_defined(2),material(i)%property(2,1),&
                                material(i)%property_defined(3),material(i)%property(3,1),&
                                material(i)%property_defined(4),material(i)%property(4,1),&
                                material(i)%property_defined(5),material(i)%property(5,1),&

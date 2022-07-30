@@ -77,7 +77,6 @@ subroutine read_export(input_fileunit)
   export_eso=.true.
   export_wsp=.false.
   export_tot=.false.
-  export_def=.false.
   tot_xm=0
   tot_apply_symmetry=.true.
   if (mesh_file_mode.eq.2) export_pos=.true.
@@ -126,12 +125,6 @@ subroutine read_export(input_fileunit)
     call fbem_search_section(input_fileunit,'export',found)
     call fbem_search_keyword(input_fileunit,'export_wsp','=',found)
     if (found) read(input_fileunit,*) export_wsp
-    !
-    ! Find "export_def"
-    !
-    call fbem_search_section(input_fileunit,'export',found)
-    call fbem_search_keyword(input_fileunit,'export_def','=',found)
-    if (found) read(input_fileunit,*) export_def
     !
     ! Find "export_tot"
     !

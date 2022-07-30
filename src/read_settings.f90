@@ -31,7 +31,6 @@
 !!|                      VARIABLE |                       VALUES |                                                     DESCRIPTION |
 !!+-------------------------------+------------------------------+-----------------------------------------------------------------+
 !!|            qsi_relative_error |  [1.d-15,1.d-3] (def. 1.d-6) |       relative error in quasi-singular integration when solving |
-!!|       qsi_post_relative_error |  [1.d-15,1.d-3] (def. 1.d-6) |   rel. error in quasi-singular integration when post-processing |
 !!|                    qsi_ns_max |            [0,inf] (def. 16) |                                  maximum number of subdivisions |
 !!|                    precalsets |      n gln_1 gln_2 ... gln_n |    number of precalculated datasets (n) and number of points of |
 !!|                               |                              |       the Gauss-Legendre 1D quadrature (gln_k) for each dataset |
@@ -89,23 +88,6 @@ subroutine read_settings(fileunit)
   end if
   call fbem_qs_calculate_parameters(qsi_relative_error,qsi_parameters)
 
-  ! -----------------------
-  ! qsi_post_relative_error
-  ! -----------------------
-
-  call fbem_search_section(fileunit,'settings',found)
-  if (found) call fbem_search_keyword(fileunit,'qsi_post_relative_error','=',found)
-  if (found) then
-    read(fileunit,*) qsi_post_relative_error
-    if ((qsi_post_relative_error.lt.1.0d-15).or.(qsi_post_relative_error.gt.1.0d-3)) then
-      call fbem_error_message(error_unit,0,'qsi_post_relative_error',0,'this variable must be between 1.E-15 and 1.E-3')
-    end if
-    if (verbose_level.ge.3) write(output_unit,'(2x,a,e10.3)') 'qsi_post_relative_error =', qsi_post_relative_error
-  else
-    qsi_post_relative_error=1.0d-6
-  end if
-  call fbem_qs_calculate_parameters(qsi_post_relative_error,qsi_post_parameters)
-
   ! ----------
   ! qsi_ns_max
   ! ----------
@@ -159,9 +141,9 @@ subroutine read_settings(fileunit)
     end if
   ! Default
   else
-    n_precalsets=9
-    allocate(precalset_gln(9))
-    precalset_gln=(/2,3,4,5,6,7,8,9,10/)
+    n_precalsets=8
+    allocate(precalset_gln(8))
+    precalset_gln=(/2,3,4,5,6,7,8,9/)
   end if
   ! Save the maximum and minimum of precalset_gln()
   precalset_gln_min=precalset_gln(1)
