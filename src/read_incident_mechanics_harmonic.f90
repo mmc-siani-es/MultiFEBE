@@ -2,7 +2,6 @@
 ! Copyright (C) 2014-2022 Universidad de Las Palmas de Gran Canaria:
 !                         Jacob D.R. Bordon
 !                         Guillermo M. Alamo
-!                         Luis A. Padron
 !                         Juan J. Aznarez
 !                         Orlando Maeso.
 !
@@ -331,7 +330,7 @@ subroutine read_incident_mechanics_harmonic(fileunit)
                 case (3)
                   if (incidentfield(i)%space.eq.fbem_half_space) then
                     if (incidentfield(i)%np.ne.3) then
-                      call fbem_error_message(error_unit,0,'incident wave',incidentfield(i)%id,'np can be only 2.')
+                      call fbem_error_message(error_unit,0,'incident wave',incidentfield(i)%id,'np can be only 3.')
                     end if
                     if (incidentfield(i)%bc.ne.1) then
                       call fbem_error_message(error_unit,0,'incident wave',incidentfield(i)%id,'bc must be 1.')

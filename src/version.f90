@@ -2,7 +2,6 @@
 ! Copyright (C) 2014-2022 Universidad de Las Palmas de Gran Canaria:
 !                         Jacob D.R. Bordon
 !                         Guillermo M. Alamo
-!                         Luis A. Padron
 !                         Juan J. Aznarez
 !                         Orlando Maeso.
 !
@@ -36,7 +35,6 @@ subroutine version
   write(output_unit,fmtstr) 'Copyright (C) 2014-2022 Universidad de Las Palmas de Gran Canaria:              '
   write(output_unit,fmtstr) '                        Jacob D.R. Bordon                                       '
   write(output_unit,fmtstr) '                        Guillermo M. Alamo                                      '
-  write(output_unit,fmtstr) '                        Luis A. Padron                                          '
   write(output_unit,fmtstr) '                        Juan J. Aznarez                                         '
   write(output_unit,fmtstr) '                        Orlando Maeso                                           '
   write(output_unit,*)
