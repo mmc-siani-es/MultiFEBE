@@ -2,7 +2,6 @@
 ! Copyright (C) 2014-2022 Universidad de Las Palmas de Gran Canaria:
 !                         Jacob D.R. Bordon
 !                         Guillermo M. Alamo
-!                         Luis A. Padron
 !                         Juan J. Aznarez
 !                         Orlando Maeso.
 !
