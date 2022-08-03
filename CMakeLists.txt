@@ -92,7 +92,7 @@ if (WIN32)
   set(CPACK_NSIS_MUI_UNICON "${CMAKE_CURRENT_SOURCE_DIR}/docs/img\\\\logo.ico")
   set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
   set(CPACK_NSIS_MENU_LINKS "bin/multifebe" "MultiFEBE"
-						                "doc/manual.pdf" "Manual")
+                            "share/doc/multifebe/manual.pdf" "Manual")
   set(CPACK_NSIS_MODIFY_PATH ON)
   set(CPACK_GENERATOR NSIS64)
 endif (WIN32)
