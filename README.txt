@@ -41,7 +41,7 @@ License:
 GPLv2, please see the [LICENSE](https://github.com/mmc-siani-es/MultiFEBE/blob/main/LICENSE) file for details.
 
 Financing:
-========
+==========
 
 This work has been developed with the support of research projects:
 
