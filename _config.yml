@@ -1,5 +1,5 @@
-logo: /docs/img/logo.png
-show_downloads: true
 theme: jekyll-theme-minimal
 title: MultiFEBE
 description: Multi-domain Finite Element and Boundary Element linear mechanics solver
+logo: https://github.com/mmc-siani-es/MultiFEBE/blob/main/docs/img/logo.png
+show_downloads: true
