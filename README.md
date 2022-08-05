@@ -3,7 +3,11 @@
 What is MultiFEBE?
 ==================
 
-MultiFEBE is a multi-domain Finite Element and Boundary Element linear mechanics solver. It implements mixed-dimensional couplings between finite elements and boundary elements. It is available for Windows and GNU/Linux 64 bits.
+MultiFEBE is a multi-domain Finite Element and Boundary Element linear mechanics solver. 
+
+It implements several mixed-dimensional couplings between Finite Elements (FE) and Boundary Elements (BE), particularly those developed in our [research team](http://www.mmc.siani.es/) (see our [publications](http://www.mmc.siani.es/papers-in-referred-journals/)). It also implements ordinary and crack boundary elements for inviscid fluids (acoustic medium), elastic solid and poroelastic medium, allowing the interaction between regions of different kind of materials.
+
+It is available for Windows and GNU/Linux 64 bits (see below).
 
 How to install?
 ===============
