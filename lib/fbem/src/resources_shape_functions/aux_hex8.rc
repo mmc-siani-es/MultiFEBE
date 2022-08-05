@@ -1,8 +1,0 @@
-aux(1)=1.d0/(1.d0-delta)
-aux(2)=1.d0-xi(1)*aux(1)
-aux(3)=1.d0+xi(1)*aux(1)
-aux(4)=1.d0-xi(2)*aux(1)
-aux(5)=1.d0+xi(2)*aux(1)
-aux(6)=1.d0-xi(3)*aux(1)
-aux(7)=1.d0+xi(3)*aux(1)
-

@@ -1,6 +1,0 @@
-aux(1)=1.0d0/(1.0d0-delta)
-aux(2)=xi(1)*aux(1)**2
-aux(3)=0.5d0*aux(1)
-dphidxi1(1)=aux(2)-aux(3)
-dphidxi1(2)=aux(2)+aux(3)
-dphidxi1(3)=-2.0d0*aux(2)

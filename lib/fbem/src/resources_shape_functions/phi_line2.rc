@@ -1,3 +1,0 @@
-aux(1)=0.5d0*xi/(1.0d0-delta)
-phi(1)=0.5d0-aux(1)
-phi(2)=0.5d0+aux(1)

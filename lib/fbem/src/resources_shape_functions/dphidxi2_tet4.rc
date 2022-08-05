@@ -1,4 +1,0 @@
-dphidxi2(1)=-aux(1)
-dphidxi2(2)= 0.d0
-dphidxi2(3)= aux(1)
-dphidxi2(4)= 0.d0

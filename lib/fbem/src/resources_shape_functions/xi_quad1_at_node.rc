@@ -1,8 +1,0 @@
-select case (node)
-  case (1)
-    xi(1)=0.d0
-    xi(2)=0.d0
-  case default
-    call fbem_error_message(output_unit,0,__FILE__,__LINE__,&
-                            'node does not exist')
-end select
