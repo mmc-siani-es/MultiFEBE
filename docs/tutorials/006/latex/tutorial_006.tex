@@ -42,13 +42,16 @@ Gmsh \cite{gmsh, gmshweb} is a finite element mesh generator with its own langua
 \subsubsection{File *.geo}
 The Gmsh language allows to define parameters to use later in the script and comments as every other programming language. 
 
-In this example two parameters are defined: the pile length (Lpile) and the mesh element size (ms\_pile). Every point in the geometry can be specified by its coordinates (x y z) and the mesh element size to use there with the function "Point". Every straight line of the model is created with the function "Line" and its initial and final points. Then, with the function "Physical Line" every line is converted into a single entity or physical entity with its own name. Furthermore, the function "Transfinite Line" explicitly defines the location of the nodes on the line by following the expression specified and the function "Ceil" rounds up values to the nearest integer.
+In this example two parameters are defined: the pile length (Lpile) and the mesh element size (ms\_pile). Every point in the geometry can be specified by its coordinates (x y z) and the mesh element size to use there with the function "Point". Every straight line of the model is created with the function "Line" and its initial and final points. Then, with the function "Physical Line" every line is converted into a single entity or physical entity with its own name. The function "Transfinite Line" explicitly defines the location of the nodes on the line by following the expression specified and the function "Ceil" rounds up values to the nearest integer. Furthermore, it is worth noting that “if an expression defines a new entity, it is enclosed between parentheses but if an expression refers to a previously defined entity, it is enclosed between braces.” \cite{gmshweb}
 
-It is worth noting that “if an expression defines a new entity, it is enclosed between parentheses but if an expression refers to a previously defined entity, it is enclosed between braces.” \cite{gmshweb}
+Finally, the mesh generation, the element order and the *.msh file saving can also be specified
+with the expressions Mesh + mesh dimension, SetOrder + element order and Save + ”name.msh”,
+respectively.
 
 The resulting *.geo file applied to the problem is the following:
 
 \begin{Verbatim}
+// Geometry & mesh parameters
 Lpile = 25;
 ms_pile = 2;
 
@@ -63,6 +66,11 @@ Point (4) = {0, 0, Lpile, ms_pile};
 Line  (2) = {3, 4};
 Transfinite Line {2} = Ceil(Lpile/ms_pile + 1.);
 Physical Line ("pile") = {2};
+
+// Mesh generation
+Mesh 1;
+SetOrder 2;
+Save "mesh.msh";
 \end{Verbatim}
 
 \subsubsection{File *.msh}
@@ -71,7 +79,7 @@ The *.msh file begins with a mandatory section about information of the file (Me
 
 In the section "PhysicalName", all the physical entities of the model are defined. The first line indicates the number of physical entities. Then, one line per physical entity indicating the physical dimension, the tag and the name.  
 
-In the section "Nodes", all the nodes of the model are defined. The first line indicates the number of nodes. Then, one line per node indicating the identifier of the node and its coordinates (x y z).
+In the section "Nodes", all the nodes of the model are defined. The first line indicates the number of nodes. Then, one line per node indicating the node identifier and its coordinates (x y z).
 
 In the section "Elements", all the elements of the model are defined. The first line indicates the number of elements. Then, one line per element indicating:
 
@@ -210,7 +218,7 @@ type = mechanics
 analysis = static
 \end{Verbatim}
 
-In the section [export], several export settings are defined. In this example, the nodal solutions  and the element solutions will be exported by writing the option T with the corresponding expression, \textit{export\_eso} and \textit{export\_tot}, respectively.
+In the section [export], several export settings are defined. In this example, the nodal solutions  and the \textbf{element} solutions will be exported by writing the option T with the corresponding expression, \textit{export\_nso} and \textit{export\_tot}, respectively.
 
 \begin{Verbatim}
 [export]
