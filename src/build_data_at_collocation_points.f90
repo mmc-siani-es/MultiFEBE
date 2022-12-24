@@ -848,19 +848,25 @@ subroutine build_data_at_collocation_points
           !
           select case (element(se)%type)
             case (fbem_line2)
-              if ((2.d0*r_integration).lt.(element(se)%csize)) then
+              if ((2.d0*r_integration).gt.(element(se)%csize)) then
+                write(error_unit,*) '2*r_integration =', 2.d0*r_integration
+                write(error_unit,*) 'L between nodes =', element(se)%csize
                 call fbem_warning_message(error_unit,0,'element',element(se)%id,&
-                'such a small element length (FE beam - BE line load coupling) may lead to innacuracies')
+                'too small element length (FE beam - BE line load coupling) may lead to innacuracies')
               end if
             case (fbem_line3)
-              if ((2.d0*r_integration).lt.(element(se)%csize/2.d0)) then
+              if ((2.d0*r_integration).gt.(element(se)%csize/2.d0)) then
+                write(error_unit,*) '2*r_integration =', 2.d0*r_integration
+                write(error_unit,*) 'L between nodes =', element(se)%csize/2.d0
                 call fbem_warning_message(error_unit,0,'element',element(se)%id,&
-                'such a small element length (FE beam - BE line load coupling) may lead to innacuracies')
+                'too small element length (FE beam - BE line load coupling) may lead to innacuracies')
               end if
             case (fbem_line4)
-              if ((2.d0*r_integration).lt.(element(se)%csize/3.d0)) then
+              if ((2.d0*r_integration).gt.(element(se)%csize/3.d0)) then
+                write(error_unit,*) '2*r_integration =', 2.d0*r_integration
+                write(error_unit,*) 'L between nodes =', element(se)%csize/3.d0
                 call fbem_warning_message(error_unit,0,'element',element(se)%id,&
-                'such a small element length (FE beam - BE line load coupling) may lead to innacuracies')
+                'too small element length (FE beam - BE line load coupling) may lead to innacuracies')
               end if
             case default
               call fbem_warning_message(error_unit,0,'element',element(se)%id,&
