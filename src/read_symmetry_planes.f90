@@ -140,7 +140,10 @@ subroutine read_symmetry_planes(fileunit)
     ! Read "plane_n1"
     call fbem_search_section(fileunit,section_name,found)
     call fbem_search_keyword(fileunit,'plane_n1',':',found)
-    if (.not.found) call fbem_search_keyword(fileunit,'plane_yz',':',found)
+    if (.not.found) then
+      call fbem_search_section(fileunit,section_name,found)
+      call fbem_search_keyword(fileunit,'plane_yz',':',found)
+    end if
     if (found) then
       ! Increment the counter of symmetry planes
       n_symplanes=n_symplanes+1
@@ -165,7 +168,10 @@ subroutine read_symmetry_planes(fileunit)
     ! Read "plane_n2"
     call fbem_search_section(fileunit,section_name,found)
     call fbem_search_keyword(fileunit,'plane_n2',':',found)
-    if (.not.found) call fbem_search_keyword(fileunit,'plane_zx',':',found)
+    if (.not.found) then
+      call fbem_search_section(fileunit,section_name,found)
+      call fbem_search_keyword(fileunit,'plane_zx',':',found)
+    end if
     if (found) then
       ! Increment the counter of symmetry planes
       n_symplanes=n_symplanes+1
@@ -192,7 +198,10 @@ subroutine read_symmetry_planes(fileunit)
       ! Read "plane_n3"
       call fbem_search_section(fileunit,section_name,found)
       call fbem_search_keyword(fileunit,'plane_n3',':',found)
-      if (.not.found) call fbem_search_keyword(fileunit,'plane_xy',':',found)
+      if (.not.found) then
+        call fbem_search_section(fileunit,section_name,found)
+        call fbem_search_keyword(fileunit,'plane_xy',':',found)
+      end if
       if (found) then
         ! Increment the counter of symmetry planes
         n_symplanes=n_symplanes+1
