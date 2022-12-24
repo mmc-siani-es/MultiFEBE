@@ -290,9 +290,9 @@ subroutine build_lse_mechanics_bem_harpor(kf,kr)
         write(fmtstr,*) '(3x,a19,1x,i',fbem_nchar_int(element(se_int)%id),',1x,a3)'
         call fbem_trimall(fmtstr)
         if (sb_int_reversion) then
-          write(output_unit,fmtstr) 'Integrating element', element(se_int)%id, '...'
+          write(output_unit,fmtstr) 'Integrating element', element(se_int)%id, '(-n) ...'
         else
-          write(output_unit,fmtstr) 'Integrating element', element(se_int)%id, '...'
+          write(output_unit,fmtstr) 'Integrating element', element(se_int)%id, '(+n) ...'
         end if
       end if
 
