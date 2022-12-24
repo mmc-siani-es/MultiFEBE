@@ -1,0 +1,74 @@
+%===============================================================================
+% Configuracion de pagina
+\usepackage[a4paper,
+twoside,
+hmargin={2cm,2cm},
+vmargin={2cm,2cm},
+bindingoffset=1cm]{geometry}
+%===============================================================================
+% Idioma
+%\usepackage[spanish]{babel}
+%\decimalpoint
+%===============================================================================
+% Paquetes para fuentes
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{bm}
+\usepackage{wasysym}
+\usepackage{eurosym}
+\usepackage{textcomp}
+\usepackage{url}      % Poner URL con enlace en el pdf y formatear
+\usepackage{etex}     % Para memoria dinamica - listings
+\reserveinserts{28}   % Para memoria dinamica - listings
+\usepackage{listings} % Codigo fuente y algoritmos
+% Tipo de letra sans serif
+% Ver web: http://dtrx.de/od/tex/sfmath.html
+% Descomentar esta linea
+%\usepackage{cmbright}
+% O bien descomentar estas dos lineas
+%\renewcommand{\familydefault}{\sfdefault} % letra sans serif
+%\usepackage{sfmath} % math en sans serif
+% Tipo de letra parecida a Elsevier
+%\usepackage{fourier}
+% Letra times
+%\usepackage{mathptmx}
+% %===============================================================================
+% % Imagenes, figuras y tablas
+\usepackage[table,x11names]{xcolor}
+\usepackage{booktabs}        % Reglas para tablas
+\usepackage{longtable}       % Tablas en varias paginas
+\setcounter{LTchunksize}{30} % Ajustar chunks para el paquete longtable
+\usepackage{ltabptch}        % Bug longtable
+\usepackage{rotating}        % Girar figuras y tablas sideways
+\usepackage{lscape}          % Paquete para girar tablas y ocupar varias paginas
+\usepackage{colortbl}        % Coloreado de tablas
+\usepackage{multirow}        % Tratamiento celdas tablas
+\usepackage{caption}
+\usepackage{graphicx}
+\usepackage{epsfig}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{subfloat}
+\usepackage{multicol}
+%\usepackage{subfig}          % Varias figuras en un flotante entre paginas
+%\usepackage{pst-all}         % pstricks
+%\usepackage{pstricks,framed} % pstricks dibujo frames
+%\usepackage{tikz}            % Paquete grafico muy potente
+% %===============================================================================
+% % Decoracion del documento
+\usepackage[explicit]{titlesec}              % Variables decorar cada chapter
+\usepackage{fancyhdr}                        % Encabezados y pie de pagina.
+\usepackage{fancybox}                        % Cajas alrededor de textos
+\usepackage{fancyvrb}                        % Verbatim specials
+\usepackage{enumerate}                       % Tipos de numeracion
+\usepackage[footnote,printonlyused]{acronym} % Acronimos
+%===============================================================================
+% Indice de palabras
+\usepackage{makeidx}
+\makeindex
+%===============================================================================
+\usepackage{hyperref} % si se utiliza, comentar subfig
+\usepackage{cleveref}

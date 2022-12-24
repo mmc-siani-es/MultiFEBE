@@ -1,0 +1,71 @@
+%% Creator: Inkscape inkscape 0.91, www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'incidence_angle.eps' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{325.98425293bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.43478258)%
+    \put(0,0){\includegraphics[width=\unitlength]{figures/incidence_angle.eps}}%
+    \put(0.08695652,0.39130416){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{$y$}}}%
+    \put(0.34782609,0.13043464){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{$x$}}}%
+    \put(0.18260869,0.11304305){\color[rgb]{0,0,1}\makebox(0,0)[lb]{\smash{$\theta$}}}%
+    \put(0.26086956,0.2608694){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{incidence direction}}}%
+    \put(0.82608694,0.17391324){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{$y$}}}%
+    \put(0.47826085,0.08695664){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{$x$}}}%
+    \put(0.60869568,0.39130461){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{$z$}}}%
+    \put(0.67826081,0.08695664){\color[rgb]{0,0,1}\makebox(0,0)[lb]{\smash{$\varphi$}}}%
+    \put(0.66086952,0.15652195){\color[rgb]{0,0.50196078,0}\makebox(0,0)[lb]{\smash{$\theta$}}}%
+    \put(0.78260863,0.304348){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{incidence direction}}}%
+    \put(0.21739131,0.02608674){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{2D}}}%
+    \put(0.60869568,0.02608704){\color[rgb]{0,0,0}\makebox(0,0)[b]{\smash{3D}}}%
+    \put(0.71767675,0.25162082){\color[rgb]{0,0,0}\makebox(0,0)[lb]{\smash{P}}}%
+    \put(0.5659553,0.06467151){\color[rgb]{0,0,0}\makebox(0,0)[lb]{\smash{SV}}}%
+    \put(0.53298967,0.13200785){\color[rgb]{0,0,0}\makebox(0,0)[lb]{\smash{SH}}}%
+    \put(0.13456197,0.03865954){\color[rgb]{0,0,0}\makebox(0,0)[lb]{\smash{SV}}}%
+    \put(0.18170694,0.20659537){\color[rgb]{0,0,0}\makebox(0,0)[lb]{\smash{P}}}%
+  \end{picture}%
+\endgroup%
