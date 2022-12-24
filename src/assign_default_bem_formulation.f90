@@ -36,7 +36,7 @@ subroutine assign_default_bem_formulation
   implicit none
 
   ! Local variables
-  integer :: ke, se, kn, sn, i, k
+  integer :: ke, se, kn, knj, sn, snj, i, k
 
   if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'START assigning default BEM formulations')
 
@@ -386,6 +386,30 @@ subroutine assign_default_bem_formulation
                   element(se)%delta_sbie_mca(k)=0.138863688d0
               end select
             end do
+            !
+            ! Since it is not possible (as far as we know) to perform singular integrals along 3D line body loads (occur when end
+            ! points coincides with a boundary element node), we consider a MCA collocation for those boundary element nodes.
+            !
+            if ((be_bodyload(i)%coupling.eq.fbem_bl_coupling_beam_line).and.node(sn)%in_boundary) then
+              do knj=1,node(sn)%n_nodes
+                snj=node(sn)%node(knj)
+                if (node(snj)%sbie.eq.fbem_sbie) then
+                  node(snj)%sbie=fbem_sbie_mca
+                  do ke=1,node(snj)%n_elements
+                    se=node(snj)%element(ke)
+                    k=node(snj)%element_node_iid(ke)
+                    select case (element(se)%type)
+                      case (fbem_line2,fbem_tri3,fbem_quad4)
+                        element(se)%delta_sbie_mca(k)=0.42264973d0
+                      case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
+                        element(se)%delta_sbie_mca(k)=0.22540333d0
+                      case (fbem_line4)
+                        element(se)%delta_sbie_mca(k)=0.138863688d0
+                    end select
+                  end do
+                end if
+              end do
+            end if
           end if
         end do
 
