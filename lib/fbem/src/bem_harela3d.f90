@@ -1602,6 +1602,9 @@ contains
           rv=x-x_i
           r=sqrt(dot_product(rv,rv))
           d1r1=1.d0/r
+          d1r2=d1r1**2
+          d1r3=d1r2*d1r1
+          d1r4=d1r3*d1r1
           drdx=rv*d1r1
           ! Jacobians * weight
           jw=jg*js*jt(1)*w(1)
