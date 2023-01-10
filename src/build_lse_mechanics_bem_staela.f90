@@ -576,9 +576,15 @@ subroutine build_lse_mechanics_bem_staela(kr)
           assemble=.true.
           node_freeterm_added(sn_col)=.true.
           h=0.d0
-          do il=1,problem%n
-            h(kn_col,il,il)=1.d0
-          end do
+          if (node(sn_col)%sbie_lineload_end_boundary) then
+            do il=1,problem%n
+              h(kn_col,il,il)=0.5d0
+            end do
+          else
+            do il=1,problem%n
+              h(kn_col,il,il)=1.d0
+            end do
+          end if 
         end if
 
         ! ======== !
