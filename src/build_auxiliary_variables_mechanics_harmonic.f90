@@ -2364,14 +2364,14 @@ subroutine build_auxiliary_variables_mechanics_harmonic
                       sn=element(se)%node(kn)
                       if (node(sn)%n_dof.eq.0) then
                         element(se)%node_n_dof(kn)=5
-                        if (node(sn)%is_singular.or.(node(sn)%rigid_link.ne.0)) then
+                        if (node(sn)%is_singular.or.(node(sn)%rigid_link.ne.0).or.(node(sn)%n_symplanes.gt.0)) then
                           element(se)%node_n_dof(kn)=6
                         end if
                       else
                         element(se)%node_n_dof(kn)=node(sn)%n_dof
                         select case (node(sn)%n_dof)
                           case (5)
-                            if (node(sn)%is_singular.or.(node(sn)%rigid_link.ne.0)) then
+                            if (node(sn)%is_singular.or.(node(sn)%rigid_link.ne.0).or.(node(sn)%n_symplanes.gt.0)) then
                               call fbem_error_message(error_unit,0,'node',node(sn)%id,'this node can not be a 5 DOF node.')
                             end if
                           case (6)
