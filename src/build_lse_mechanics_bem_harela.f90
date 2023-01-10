@@ -818,9 +818,15 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
           assemble=.true.
           node_freeterm_added(sn_col)=.true.
           h=0.d0
-          do il=1,problem%n
-            h(kn_col,il,il)=1.d0
-          end do
+          if (node(sn_col)%sbie_lineload_end_boundary) then
+            do il=1,problem%n
+              h(kn_col,il,il)=0.5d0
+            end do
+          else
+            do il=1,problem%n
+              h(kn_col,il,il)=1.d0
+            end do
+          end if
         end if
 
         ! ======== !
@@ -831,7 +837,7 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
           assemble=.true.
           xi_i=element(se_int)%xi_i_sbie_mca(:,kn_col)
           pphi_i=fbem_phi_hybrid(element(se_int)%type_f1,element(se_int)%delta_f,xi_i)
-          h=0.d0
+          h=0
           do il=1,problem%n
             h(:,il,il)=h(:,il,il)+pphi_i
           end do
@@ -1018,6 +1024,16 @@ subroutine build_lse_mechanics_bem_harela_element(omega,kr,sb_int,sb_int_reversi
   !
   ! Loop through SYMMETRICAL ELEMENTS for INTEGRATION
   !
+
+  !
+  ! Crear temporales:
+  ! n_symelements, n_symplanes, symplane_m,symplane_s,symplane_t,symplane_r
+  !
+  ! Si el elemento pertenece completamente al plano de simetria, hay que "desactivar" dicho
+  ! plano de simetria para la integracion de ecuaciones.
+  !
+
+
   do ks=1,n_symelements
     ! SYMMETRY SETUP
     call fbem_symmetry_multipliers(ks,problem%n,n_symplanes,symplane_m,symplane_s,symplane_t,symplane_r,&
@@ -1524,6 +1540,9 @@ subroutine build_lse_mechanics_bem_harela_bl(omega,kr,sb_int,se_int,se_int_n_nod
   logical                :: reversed
   ! Assembling control variable
   logical                :: assemble
+
+  ! temporary
+  logical :: tmp_log
 
   ! Wave propagation speeds and wavenumbers
   select case (problem%n)
