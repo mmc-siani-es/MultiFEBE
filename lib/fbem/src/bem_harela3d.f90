@@ -1478,7 +1478,7 @@ contains
     complex(kind=real64) :: psi, chi                   ! Components of the fundamental solutions
     complex(kind=real64) :: fs_u                       ! Fundamental solutions values
     ! Initialize
-    g=(0.d0,0.d0)
+    g=0
     ! Numerical integration
     do kip=1,e%ps_ngp(ps)
       x=e%ps_x(:,kip,ps)
@@ -1487,11 +1487,10 @@ contains
       rv=x-x_i
       r=sqrt(dot_product(rv,rv))
       d1r1=1.d0/r
-      d1r2=d1r1**2
+      d1r2=d1r1*d1r1
       d1r3=d1r2*d1r1
       d1r4=d1r3*d1r1
       drdx=rv*d1r1
-      drdn=dot_product(drdx,n)
       z(1)=-c_im*p%k1*r
       z(2)=-c_im*p%k2*r
       call fbem_zexp_decomposed(2,z,EnR)
@@ -1964,7 +1963,7 @@ contains
               xi_s(:,4)=[-1.d0, 1.d0]
           end select
         case (3)
-          stop 'not yet : fbem_bem_staela3d_sbie_bl_ext_adp'
+          stop 'not yet : fbem_bem_harela3d_sbie_bl_ext_adp'
       end select
       call fbem_nearest_element_point_bem(3,e%gtype,e%x,e%cl,x_i,barxi,rmin,d,method)
       barxip=barxi
@@ -2059,7 +2058,7 @@ contains
         ! VOLUME LOAD
         !
         case (3)
-          stop 'not yet : fbem_bem_staela3d_sbie_bl_ext_adp'
+          stop 'not yet : fbem_bem_harela3d_sbie_bl_ext_adp'
       end select
     ! Calculate the subdivided element using Telles transformation
     else
@@ -2291,16 +2290,9 @@ contains
       ! OTHERS
       !
       case default
-
         write(*,*) xi_i
         write(*,*) x_nodes
-
-
-
         call fbem_error_message(output_unit,0,'fbem_bem_harela3d_sbie_bl_int',0,'it is only possible to integrate surface or volume loads')
-
-
-
     end select
   end subroutine fbem_bem_harela3d_sbie_bl_int
 
