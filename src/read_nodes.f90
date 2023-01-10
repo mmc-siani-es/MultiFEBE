@@ -117,6 +117,7 @@ subroutine read_nodes(fileunit,mode)
         node(i)%n_fn=0.d0
         node(i)%t1_fn=0.d0
         if (problem%n.eq.3) node(i)%t2_fn=0.d0
+        node(i)%n_nodes=0
         node(i)%coupled_node=0
         node(i)%n_dof=0
 
@@ -125,6 +126,18 @@ subroutine read_nodes(fileunit,mode)
         node(i)%master=0
         node(i)%n_slaves=0
 
+        node(i)%n_elements=0
+        node(i)%dimensional_degree=0
+        node(i)%n_parts=0
+        node(i)%n_symplanes=0
+        node(i)%in_boundary=.false.
+        node(i)%is_singular=.false.
+        node(i)%dm_n_elements=0
+        node(i)%sbie=0
+        node(i)%hbie=0
+        node(i)%dual=0
+        node(i)%dual_is_common=.false.
+        node(i)%sbie_lineload_end_boundary=.false.
         node(i)%export=.true.
       end do
     else
