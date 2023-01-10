@@ -284,6 +284,8 @@ module fbem_data_structures
     integer                           :: dual                           !! Dual usage of BIEs: 0: none, 1: Dual B&M, 2: DBEM
     logical                           :: dual_is_common                 !! True if for a dual formulation, both the SBIE and the HBIE are collocated at the same points.
     real(kind=real64)                 :: alpha                          !! Parameter alpha for Dual B&M: if static analysis (beta=alpha), if harmonic analysis (beta=alpha*i/wavenumber).
+    ! Special: for BE lineloads end nodes touching a boundary (sbie with 0.5 freeterm)
+    logical                           :: sbie_lineload_end_boundary
     !
     ! Export settings
     !
