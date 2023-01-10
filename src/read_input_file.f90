@@ -249,6 +249,7 @@ subroutine read_input_file
             call read_conditions_fem_nodes_mechanics_harmonic(input_fileunit)
       end select
     end select
+    call assign_default_conditions_fem_nodes_symmetry_planes
   end if
   ! --------------------------------------------------------------------------------------------------------------------------------
 
