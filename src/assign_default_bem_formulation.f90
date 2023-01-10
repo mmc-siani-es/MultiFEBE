@@ -390,9 +390,10 @@ subroutine assign_default_bem_formulation
             ! Since it is not possible (as far as we know) to perform singular integrals along 3D line body loads (occur when end
             ! points coincides with a boundary element node), we consider a MCA collocation for those boundary element nodes.
             !
-            if ((be_bodyload(i)%coupling.eq.fbem_bl_coupling_beam_line).and.node(sn)%in_boundary) then
+            if (be_bodyload(i)%coupling.eq.fbem_bl_coupling_beam_line) then
               do knj=1,node(sn)%n_nodes
                 snj=node(sn)%node(knj)
+                ! By selecting nodes with SBIE it is assumed a BE node
                 if (node(snj)%sbie.eq.fbem_sbie) then
                   node(snj)%sbie=fbem_sbie_mca
                   do ke=1,node(snj)%n_elements
