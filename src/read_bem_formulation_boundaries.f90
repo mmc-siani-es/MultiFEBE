@@ -89,11 +89,10 @@ subroutine read_bem_formulation_boundaries(input_fileunit)
       end if
     end do
 
-    ! Read formulation for BE nodes from groups the integration point is not in the design macro-element
+    ! Read formulation for BE nodes from groups
     do i=1,n_groups
       ! Process groups with BE nodes
       if (group(i)%type.ne.fbem_group_type_nodes) cycle
-      if (part(node(group(i)%object(1))%part(1))%type.ne.fbem_part_be_boundary) cycle
       write(keyword,*) 'group ', group(i)%id
       call fbem_trim2b(keyword)
       call fbem_search_section(input_fileunit,section_name,found)
