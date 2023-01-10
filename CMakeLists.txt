@@ -6,7 +6,7 @@ enable_language(Fortran)
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
     set(dialect "-std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -fopenmp -march=core2 -O3 -flto")
-    set(bounds "-std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -fopenmp -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow -fno-inline -Og")
+    set(bounds "-std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow -fno-inline -Og")
 endif()
 set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${bounds}")
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${dialect}")
@@ -19,6 +19,17 @@ include_directories(lib/fbem/src/resources_shape_functions)
 include_directories(lib/fbem/src/resources_quad_rules)
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+
+
+#
+# Build and link to SDF
+#
+add_custom_target(libsdf.a COMMAND make
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/sdf-0.75-RC4
+)
+target_link_libraries(multifebe ${CMAKE_CURRENT_SOURCE_DIR}/lib/sdf-0.75-RC4/libsdf.a)
+add_dependencies(multifebe libsdf.a)
+
 
 #
 # Link to OpenBLAS
@@ -92,7 +103,7 @@ if (WIN32)
   set(CPACK_NSIS_MUI_UNICON "${CMAKE_CURRENT_SOURCE_DIR}/docs/img\\\\logo.ico")
   set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
   set(CPACK_NSIS_MENU_LINKS "bin/multifebe" "MultiFEBE"
-                            "share/doc/multifebe/manual.pdf" "Manual")
+						                "doc/manual.pdf" "Manual")
   set(CPACK_NSIS_MODIFY_PATH ON)
   set(CPACK_GENERATOR NSIS64)
 endif (WIN32)
