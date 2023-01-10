@@ -39,8 +39,8 @@ subroutine read_bem_formulation_selected_nodes(input_fileunit,section_name,keywo
   integer                               :: selected_node(selected_n_nodes)
   ! Local variables
   logical                               :: found
-  integer                               ::  k
-  integer                               :: sb, ke, se, kn, sn
+  integer                               :: k
+  integer                               :: sp, sb, ke, se, kn, sn
   character(len=fbem_stdcharlen)        :: tmp_type
   real(kind=real64)                     :: tmp_delta_sbie, tmp_delta_hbie
   integer                               :: tmp_type_value
@@ -49,445 +49,527 @@ subroutine read_bem_formulation_selected_nodes(input_fileunit,section_name,keywo
   ! Nota: La dual B&M poroelastica no esta bien!!, la suma hay que ponderarla con otro numero de onda o hacerla de otra
   ! manera...
 
+  ! Part and entity (BE boundary or BE bodyload) of the selected nodes
+  sp=node(selected_node(1))%part(1)
+  sb=part(sp)%entity
 
-  ! Boundary of selected nodes
-  sb=part(node(selected_node(1))%part(1))%entity
-  select case (boundary(sb)%class)
+  select case (part(sp)%type)
 
-    ! ------------------------------------------------------------------------------------------------------------------------
-    ! ORDINARY BOUNDARY
-    ! ------------------------------------------------------------------------------------------------------------------------
+    !
+    ! BE BOUNDARY
+    !
+    case (fbem_part_be_boundary)
 
-    case (fbem_boundary_class_ordinary)
+      select case (boundary(sb)%class)
+
+        ! ------------------------------------------------------------------------------------------------------------------------
+        ! ORDINARY BOUNDARY
+        ! ------------------------------------------------------------------------------------------------------------------------
+
+        case (fbem_boundary_class_ordinary)
+          ! Read the type of formulation
+          read(input_fileunit,*) tmp_type
+          tmp_type_value=0
+          if (trim(tmp_type).eq.'sbie'             ) tmp_type_value=1
+          if (trim(tmp_type).eq.'sbie_boundary_mca') tmp_type_value=2
+          if (trim(tmp_type).eq.'sbie_mca'         ) tmp_type_value=3
+          if (trim(tmp_type).eq.'hbie'             ) tmp_type_value=4
+          if (trim(tmp_type).eq.'dual_bm_same'     ) tmp_type_value=5
+          if (trim(tmp_type).eq.'dual_bm_mixed'    ) tmp_type_value=6
+          ! Check if valid
+          if (tmp_type_value.eq.0) then
+            call fbem_error_message(error_unit,0,'boundary',boundary(sb)%id,'the indicated BEM formulation does not exist.')
+          end if
+          ! Read parameters of the formulation if needed
+          select case (tmp_type_value)
+            ! Read delta_sbie
+            case (2,3)
+              call fbem_search_section(input_fileunit,section_name,found)
+              call fbem_search_keyword(input_fileunit,keyword,':',found)
+              read(input_fileunit,*) tmp_type, tmp_delta_sbie
+            ! Read delta_hbie
+            case (4)
+              call fbem_search_section(input_fileunit,section_name,found)
+              call fbem_search_keyword(input_fileunit,keyword,':',found)
+              read(input_fileunit,*) tmp_type, tmp_delta_hbie
+            ! Read delta_hbie (=delta_sbie)
+            case (5)
+              call fbem_search_section(input_fileunit,section_name,found)
+              call fbem_search_keyword(input_fileunit,keyword,':',found)
+              read(input_fileunit,*) tmp_type, tmp_delta_hbie
+            ! Read delta_sbie y delta_hbie
+            case (6)
+              call fbem_search_section(input_fileunit,section_name,found)
+              call fbem_search_keyword(input_fileunit,keyword,':',found)
+              read(input_fileunit,*) tmp_type, tmp_delta_sbie, tmp_delta_hbie
+          end select
+          ! Loop through the nodes of the boundary
+          do kn=1,selected_n_nodes
+            ! Selected node
+            sn=selected_node(kn)
+            ! If the node belongs to continuous elements
+            if (element(node(sn)%element(1))%discontinuous.eqv.(.false.)) then
+              select case (tmp_type_value)
+                !
+                ! SBIE:
+                ! All nodes with nodal collocation. This is unsafe since at doubled nodes, depending on the boundary conditions, it
+                ! will lead to a singular linear system of equations.
+                !
+                case (1)
+                  node(sn)%sbie=fbem_sbie
+                  node(sn)%hbie=0
+                  node(sn)%dual=0
+                  node(sn)%dual_is_common=.false.
+                !
+                ! SBIE_BOUNDARY_MCA:
+                ! All nodes with nodal collocation, except nodes at the boundary of the boundary, which have SBIE MCA.
+                !
+                case (2)
+                  ! The node has SBIE formulation
+                  node(sn)%sbie=fbem_sbie
+                  node(sn)%hbie=0
+                  node(sn)%dual=0
+                  node(sn)%dual_is_common=.false.
+                  ! If it is in the boundary of the boundary
+                  if (node(sn)%in_boundary) then
+                    ! The node has SBIE MCA formulation
+                    node(sn)%sbie=fbem_sbie_mca
+                    ! The displacement towards inside each element of the node for SBIE MCA formulation
+                    ! Loop through the elements of the node
+                    do ke=1,node(sn)%n_elements
+                      ! Selected element
+                      se=node(sn)%element(ke)
+                      ! Index of the node in the selected element
+                      k=node(sn)%element_node_iid(ke)
+                      ! Depending on tmp_delta_sbie, use the automatic value
+                      if (tmp_delta_sbie.le.0.0d0) then
+                        ! It depends on the element type
+                        select case (element(se)%type)
+                          ! Linear elements
+                          case (fbem_line2,fbem_tri3,fbem_quad4)
+                            element(se)%delta_sbie_mca(k)=0.42264973d0
+                          ! Quadratic elements
+                          case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
+                            element(se)%delta_sbie_mca(k)=0.22540333d0
+                        end select
+                      else
+                        element(se)%delta_sbie_mca(k)=tmp_delta_sbie
+                      end if
+                    end do
+                  end if
+                !
+                ! SBIE_MCA:
+                ! All nodes with SBIE MCA collocation.
+                !
+                case (3)
+                  ! The node has SBIE MCA formulation
+                  node(sn)%sbie=fbem_sbie_mca
+                  node(sn)%hbie=0
+                  node(sn)%dual=0
+                  node(sn)%dual_is_common=.false.
+                  ! The displacement towards inside each element of the node for SBIE MCA formulation
+                  ! Loop through the elements of the node
+                  do ke=1,node(sn)%n_elements
+                    ! Selected element
+                    se=node(sn)%element(ke)
+                    ! Index of the node in the selected element
+                    k=node(sn)%element_node_iid(ke)
+                    ! Depending on tmp_delta_sbie, use the automatic value
+                    if (tmp_delta_sbie.le.0.0d0) then
+                      ! It depends on the element type
+                      select case (element(se)%type)
+                        ! Linear elements
+                        case (fbem_line2,fbem_tri3,fbem_quad4)
+                          element(se)%delta_sbie_mca(k)=0.42264973d0
+                        ! Quadratic elements
+                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
+                          element(se)%delta_sbie_mca(k)=0.22540333d0
+                      end select
+                    else
+                      element(se)%delta_sbie_mca(k)=tmp_delta_sbie
+                    end if
+                  end do
+                !
+                ! HBIE:
+                ! All nodes with HBIE collocation.
+                !
+                case (4)
+                  ! The node has HBIE MCA formulation
+                  node(sn)%sbie=0
+                  node(sn)%hbie=fbem_hbie
+                  node(sn)%dual=0
+                  node(sn)%dual_is_common=.false.
+                  ! The displacement towards inside each element of the node for HBIE MCA formulation
+                  ! Loop through the elements of the node
+                  do ke=1,node(sn)%n_elements
+                    ! Selected element
+                    se=node(sn)%element(ke)
+                    ! Index of the node in the selected element
+                    k=node(sn)%element_node_iid(ke)
+                    ! Depending on tmp_delta_hbie, use the automatic value
+                    if (tmp_delta_hbie.le.0.0d0) then
+                      ! It depends on the element type
+                      select case (element(se)%type)
+                        ! Linear elements
+                        case (fbem_line2,fbem_tri3,fbem_quad4)
+                          element(se)%delta_hbie(k)=0.42264973d0
+                        ! Quadratic elements
+                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
+                          element(se)%delta_hbie(k)=0.22540333d0
+                      end select
+                    else
+                      element(se)%delta_hbie(k)=tmp_delta_hbie
+                    end if
+                  end do
+                !
+                ! DUAL_BM_SAME:
+                ! All nodes with SBIE MCA + HBIE MCA (Burton & Miller).
+                !
+                case (5)
+                  ! Assign values
+                  node(sn)%sbie=fbem_sbie_mca
+                  node(sn)%hbie=fbem_hbie
+                  node(sn)%dual=fbem_dual_burton_miller
+                  node(sn)%dual_is_common=.true.
+                  node(sn)%alpha=1.0d0
+                  ! The displacement towards inside each element of the node for HBIE MCA formulation
+                  ! Loop through the elements of the node
+                  do ke=1,node(sn)%n_elements
+                    ! Selected element
+                    se=node(sn)%element(ke)
+                    ! Index of the node in the selected element
+                    k=node(sn)%element_node_iid(ke)
+                    ! Depending on tmp_delta_hbie, use the automatic value
+                    if (tmp_delta_hbie.le.0.0d0) then
+                      ! It depends on the element type
+                      select case (element(se)%type)
+                        ! Linear elements
+                        case (fbem_line2,fbem_tri3,fbem_quad4)
+                          element(se)%delta_sbie_mca(k)=0.42264973d0
+                          element(se)%delta_hbie(k)    =0.42264973d0
+                        ! Quadratic elements
+                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
+                          element(se)%delta_sbie_mca(k)=0.22540333d0
+                          element(se)%delta_hbie(k)    =0.22540333d0
+                      end select
+                    else
+                      element(se)%delta_sbie_mca(k)=tmp_delta_hbie
+                      element(se)%delta_hbie(k)    =tmp_delta_hbie
+                    end if
+                  end do
+                !
+                ! DUAL_BM_MIXED:
+                ! All nodes with SBIE + HBIE MCA (Burton & Miller), except nodes at the boundary, which have MCA collocation.
+                !
+                case (6)
+                  ! Assign values
+                  node(sn)%sbie=fbem_sbie
+                  node(sn)%hbie=fbem_hbie
+                  node(sn)%dual=fbem_dual_burton_miller
+                  node(sn)%dual_is_common=.false.
+                  ! The displacement towards inside each element of the node for HBIE formulation
+                  ! Loop through the elements of the node
+                  do ke=1,node(sn)%n_elements
+                    ! Selected element
+                    se=node(sn)%element(ke)
+                    ! Index of the node in the selected element
+                    k=node(sn)%element_node_iid(ke)
+                    ! Depending on tmp_delta_hbie, use the automatic value
+                    if (tmp_delta_hbie.le.0.0d0) then
+                      ! It depends on the element type
+                      select case (element(se)%type)
+                        ! Linear elements
+                        case (fbem_line2,fbem_tri3,fbem_quad4)
+                          element(se)%delta_hbie(k)=0.42264973d0
+                        ! Quadratic elements
+                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
+                          element(se)%delta_hbie(k)=0.22540333d0
+                      end select
+                    else
+                      element(se)%delta_hbie(k)=tmp_delta_hbie
+                    end if
+                  end do
+                  ! If it is in the boundary of the boundary
+                  if (node(sn)%in_boundary) then
+                    ! Instead of having SBIE formulation, the node has SBIE MCA formulation
+                    node(sn)%sbie=fbem_sbie_mca
+                    ! The displacement towards inside each element of the node for SBIE MCA formulation
+                    ! Loop through the elements of the node
+                    do ke=1,node(sn)%n_elements
+                      ! Selected element
+                      se=node(sn)%element(ke)
+                      ! Index of the node in the selected element
+                      k=node(sn)%element_node_iid(ke)
+                      ! Depending on tmp_delta_sbie, use the automatic value
+                      if (tmp_delta_sbie.le.0.0d0) then
+                        ! It depends on the element type
+                        select case (element(se)%type)
+                          ! Linear elements
+                          case (fbem_line2,fbem_tri3,fbem_quad4)
+                            element(se)%delta_sbie_mca(k)=0.42264973d0
+                          ! Quadratic elements
+                          case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
+                            element(se)%delta_sbie_mca(k)=0.22540333d0
+                        end select
+                      else
+                        element(se)%delta_sbie_mca(k)=tmp_delta_sbie
+                      end if
+                    end do
+                  end if
+              end select
+            !
+            ! If the node belongs to a discontinuous element
+            !
+            else
+              select case (tmp_type_value)
+                !
+                ! SBIE
+                !
+                case (1,2,3)
+                  ! Assign values
+                  node(sn)%sbie=fbem_sbie
+                  node(sn)%hbie=0
+                  node(sn)%dual=0
+                  node(sn)%dual_is_common=.false.
+                !
+                ! HBIE
+                !
+                case (4)
+                  ! Assign values
+                  node(sn)%sbie=0
+                  node(sn)%hbie=fbem_hbie
+                  node(sn)%dual=0
+                  node(sn)%dual_is_common=.false.
+                !
+                ! SBIE + HBIE (Burton & Miller)
+                !
+                case (5,6)
+                  ! Assign values
+                  node(sn)%sbie=fbem_sbie
+                  node(sn)%hbie=fbem_hbie
+                  node(sn)%dual=fbem_dual_burton_miller
+                  node(sn)%dual_is_common=.true.
+                  node(sn)%alpha=1.0d0
+              end select
+            end if
+          end do
+
+        ! ------------------------------------------------------------------------------------------------------------------------
+        ! CRACK-LIKE
+        ! ------------------------------------------------------------------------------------------------------------------------
+
+        case (fbem_boundary_class_cracklike)
+          ! Read the type of formulation
+          read(input_fileunit,*) tmp_type
+          tmp_type_value=0
+          if (trim(tmp_type).eq.'same' ) tmp_type_value=1
+          if (trim(tmp_type).eq.'mixed') tmp_type_value=2
+          ! Check if valid
+          if (tmp_type_value.eq.0) then
+            call fbem_error_message(error_unit,0,'boundary',boundary(sb)%id,'the indicated BEM formulation is not valid.')
+          end if
+          ! Read parameters of the formulation if needed
+          select case (tmp_type_value)
+            ! Read delta_hbie (=delta_sbie)
+            case (1)
+              call fbem_search_section(input_fileunit,section_name,found)
+              call fbem_search_keyword(input_fileunit,keyword,':',found)
+              read(input_fileunit,*) tmp_type, tmp_delta_hbie
+            ! Read delta_sbie y delta_hbie
+            case (2)
+              call fbem_search_section(input_fileunit,section_name,found)
+              call fbem_search_keyword(input_fileunit,keyword,':',found)
+              read(input_fileunit,*) tmp_type, tmp_delta_sbie, tmp_delta_hbie
+          end select
+          ! Loop through the nodes of the boundary
+          do kn=1,part(boundary(sb)%part)%n_nodes
+            ! Selected node
+            sn=part(boundary(sb)%part)%node(kn)
+            ! If the node belongs to continuous elements
+            if (element(node(sn)%element(1))%discontinuous.eqv.(.false.)) then
+              select case (tmp_type_value)
+                !
+                ! SAME:
+                ! The node has SBIE MCA / HBIE (Dual BEM) formulation. SBIE and HBIE have the same collocation point.
+                !
+                case (1)
+                  ! Assign values
+                  node(sn)%sbie=fbem_sbie_mca
+                  node(sn)%hbie=fbem_hbie
+                  node(sn)%dual=fbem_dual_boundary
+                  node(sn)%dual_is_common=.true.
+                  ! The displacement towards inside each element of the node for HBIE formulation
+                  ! Loop through the elements of the node
+                  do ke=1,node(sn)%n_elements
+                    ! Selected element
+                    se=node(sn)%element(ke)
+                    ! Index of the node in the selected element
+                    k=node(sn)%element_node_iid(ke)
+                    ! Depending on tmp_delta_hbie, use the automatic value
+                    if (tmp_delta_hbie.le.0.0d0) then
+                      ! It depends on the element type
+                      select case (element(se)%type)
+                        ! Linear elements
+                        case (fbem_line2,fbem_tri3,fbem_quad4)
+                          element(se)%delta_sbie_mca(k)=0.42264973d0
+                          element(se)%delta_hbie(k)    =0.42264973d0
+                        ! Quadratic elements
+                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
+                          element(se)%delta_sbie_mca(k)=0.22540333d0
+                          element(se)%delta_hbie(k)    =0.22540333d0
+                      end select
+                    else
+                      element(se)%delta_sbie_mca(k)=tmp_delta_hbie
+                      element(se)%delta_hbie(k)    =tmp_delta_hbie
+                    end if
+                  end do
+                !
+                ! MIXED:
+                ! The node has SBIE / HBIE (Dual BEM) formulation. The SBIE is collocated at nodal positions, except at the
+                ! boundaries of the boundary.
+                !
+                case (2)
+                  ! Assign values
+                  node(sn)%sbie=fbem_sbie
+                  node(sn)%hbie=fbem_hbie
+                  node(sn)%dual=fbem_dual_boundary
+                  node(sn)%dual_is_common=.false.
+                  ! The displacement towards inside each element of the node for HBIE formulation
+                  ! Loop through the elements of the node
+                  do ke=1,node(sn)%n_elements
+                    ! Selected element
+                    se=node(sn)%element(ke)
+                    ! Index of the node in the selected element
+                    k=node(sn)%element_node_iid(ke)
+                    ! Depending on tmp_delta_hbie, use the automatic value
+                    if (tmp_delta_hbie.le.0.0d0) then
+                      ! It depends on the element type
+                      select case (element(se)%type)
+                        ! Linear elements
+                        case (fbem_line2,fbem_tri3,fbem_quad4)
+                          element(se)%delta_hbie(k)=0.42264973d0
+                        ! Quadratic elements
+                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
+                          element(se)%delta_hbie(k)=0.22540333d0
+                      end select
+                    else
+                      element(se)%delta_hbie(k)=tmp_delta_hbie
+                    end if
+                  end do
+                  ! If it is in the boundary of the boundary
+                  if (node(sn)%in_boundary) then
+                    ! Instead of having SBIE formulation, the node has SBIE MCA formulation
+                    node(sn)%sbie=fbem_sbie_mca
+                    ! The displacement towards inside each element of the node for SBIE MCA formulation
+                    ! Loop through the elements of the node
+                    do ke=1,node(sn)%n_elements
+                      ! Selected element
+                      se=node(sn)%element(ke)
+                      ! Index of the node in the selected element
+                      k=node(sn)%element_node_iid(ke)
+                      ! Depending on tmp_delta_sbie, use the automatic value
+                      if (tmp_delta_sbie.le.0.0d0) then
+                        ! It depends on the element type
+                        select case (element(se)%type)
+                          ! Linear elements
+                          case (fbem_line2,fbem_tri3,fbem_quad4)
+                            element(se)%delta_sbie_mca(k)=0.42264973d0
+                          ! Quadratic elements
+                          case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
+                            element(se)%delta_sbie_mca(k)=0.22540333d0
+                        end select
+                      else
+                        element(se)%delta_sbie_mca(k)=tmp_delta_sbie
+                      end if
+                    end do
+                  end if
+              end select
+            !
+            ! If the node belongs to a discontinuous element
+            !
+            else
+              ! The node has SBIE / HBIE (Dual BEM) formulation.
+              ! Assign values
+              node(sn)%sbie=fbem_sbie
+              node(sn)%hbie=fbem_hbie
+              node(sn)%dual=fbem_dual_boundary
+              node(sn)%dual_is_common=.true.
+            end if
+          end do
+      end select
+
+    !
+    ! BE BODYLOAD
+    !
+    case (fbem_part_be_bodyload)
       ! Read the type of formulation
       read(input_fileunit,*) tmp_type
       tmp_type_value=0
-      if (trim(tmp_type).eq.'sbie'             ) tmp_type_value=1
-      if (trim(tmp_type).eq.'sbie_boundary_mca') tmp_type_value=2
-      if (trim(tmp_type).eq.'sbie_mca'         ) tmp_type_value=3
-      if (trim(tmp_type).eq.'hbie'             ) tmp_type_value=4
-      if (trim(tmp_type).eq.'dual_bm_same'     ) tmp_type_value=5
-      if (trim(tmp_type).eq.'dual_bm_mixed'    ) tmp_type_value=6
+      if (trim(tmp_type).eq.'sbie'                      ) tmp_type_value=1
+      if (trim(tmp_type).eq.'sbie_mca'                  ) tmp_type_value=2
+      if (trim(tmp_type).eq.'sbie_lineload_end_boundary') tmp_type_value=3
       ! Check if valid
       if (tmp_type_value.eq.0) then
-        call fbem_error_message(error_unit,0,'boundary',boundary(sb)%id,'the indicated BEM formulation does not exist.')
+        call fbem_error_message(error_unit,0,'be_bodyload',be_bodyload(sb)%id,'the indicated BEM formulation does not exist.')
       end if
       ! Read parameters of the formulation if needed
-      select case (tmp_type_value)
-        ! Read delta_sbie
-        case (2,3)
-          call fbem_search_section(input_fileunit,section_name,found)
-          call fbem_search_keyword(input_fileunit,keyword,':',found)
-          read(input_fileunit,*) tmp_type, tmp_delta_sbie
-        ! Read delta_hbie
-        case (4)
-          call fbem_search_section(input_fileunit,section_name,found)
-          call fbem_search_keyword(input_fileunit,keyword,':',found)
-          read(input_fileunit,*) tmp_type, tmp_delta_hbie
-        ! Read delta_hbie (=delta_sbie)
-        case (5)
-          call fbem_search_section(input_fileunit,section_name,found)
-          call fbem_search_keyword(input_fileunit,keyword,':',found)
-          read(input_fileunit,*) tmp_type, tmp_delta_hbie
-        ! Read delta_sbie y delta_hbie
-        case (6)
-          call fbem_search_section(input_fileunit,section_name,found)
-          call fbem_search_keyword(input_fileunit,keyword,':',found)
-          read(input_fileunit,*) tmp_type, tmp_delta_sbie, tmp_delta_hbie
-      end select
+      if (tmp_type_value.eq.2) then
+        call fbem_search_section(input_fileunit,section_name,found)
+        call fbem_search_keyword(input_fileunit,keyword,':',found)
+        read(input_fileunit,*) tmp_type, tmp_delta_sbie
+      end if
       ! Loop through the nodes of the boundary
       do kn=1,selected_n_nodes
         ! Selected node
         sn=selected_node(kn)
-        ! If the node belongs to continuous elements
-        if (element(node(sn)%element(1))%discontinuous.eqv.(.false.)) then
-          select case (tmp_type_value)
-            !
-            ! SBIE:
-            ! All nodes with nodal collocation. This is unsafe since at doubled nodes, depending on the boundary conditions, it
-            ! will lead to a singular linear system of equations.
-            !
-            case (1)
-              node(sn)%sbie=fbem_sbie
-              node(sn)%hbie=0
-              node(sn)%dual=0
-              node(sn)%dual_is_common=.false.
-            !
-            ! SBIE_BOUNDARY_MCA:
-            ! All nodes with nodal collocation, except nodes at the boundary of the boundary, which have SBIE MCA.
-            !
-            case (2)
-              ! The node has SBIE formulation
-              node(sn)%sbie=fbem_sbie
-              node(sn)%hbie=0
-              node(sn)%dual=0
-              node(sn)%dual_is_common=.false.
-              ! If it is in the boundary of the boundary
-              if (node(sn)%in_boundary) then
-                ! The node has SBIE MCA formulation
-                node(sn)%sbie=fbem_sbie_mca
-                ! The displacement towards inside each element of the node for SBIE MCA formulation
-                ! Loop through the elements of the node
-                do ke=1,node(sn)%n_elements
-                  ! Selected element
-                  se=node(sn)%element(ke)
-                  ! Index of the node in the selected element
-                  k=node(sn)%element_node_iid(ke)
-                  ! Depending on tmp_delta_sbie, use the automatic value
-                  if (tmp_delta_sbie.le.0.0d0) then
-                    ! It depends on the element type
-                    select case (element(se)%type)
-                      ! Linear elements
-                      case (fbem_line2,fbem_tri3,fbem_quad4)
-                        element(se)%delta_sbie_mca(k)=0.42264973d0
-                      ! Quadratic elements
-                      case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                        element(se)%delta_sbie_mca(k)=0.22540333d0
-                    end select
-                  else
-                    element(se)%delta_sbie_mca(k)=tmp_delta_sbie
-                  end if
-                end do
+        select case (tmp_type_value)
+          !
+          ! SBIE:
+          ! All nodes with nodal collocation. This is unsafe since at doubled nodes, depending on the boundary conditions, it
+          ! will lead to a singular linear system of equations.
+          !
+          case (1,3)
+            node(sn)%sbie=fbem_sbie
+            node(sn)%hbie=0
+            node(sn)%dual=0
+            node(sn)%dual_is_common=.false.
+            if (tmp_type_value.eq.3) node(sn)%sbie_lineload_end_boundary=.true.
+          !
+          ! SBIE_MCA:
+          ! All nodes with SBIE MCA collocation.
+          !
+          case (2)
+            ! The node has SBIE MCA formulation
+            node(sn)%sbie=fbem_sbie_mca
+            node(sn)%hbie=0
+            node(sn)%dual=0
+            node(sn)%dual_is_common=.false.
+            ! The displacement towards inside each element of the node for SBIE MCA formulation
+            ! Loop through the elements of the node
+            do ke=1,node(sn)%n_elements
+              ! Selected element
+              se=node(sn)%element(ke)
+              ! Index of the node in the selected element
+              k=node(sn)%element_node_iid(ke)
+              ! Depending on tmp_delta_sbie, use the automatic value
+              if (tmp_delta_sbie.le.0.0d0) then
+                ! It depends on the element type
+                select case (element(se)%type)
+                  case (fbem_line2,fbem_tri3,fbem_quad4)
+                    element(se)%delta_sbie_mca(k)=0.42264973d0
+                  case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
+                    element(se)%delta_sbie_mca(k)=0.22540333d0
+                  case (fbem_line4)
+                    element(se)%delta_sbie_mca(k)=0.138863688d0
+                end select
+              else
+                element(se)%delta_sbie_mca(k)=tmp_delta_sbie
               end if
-            !
-            ! SBIE_MCA:
-            ! All nodes with SBIE MCA collocation.
-            !
-            case (3)
-              ! The node has SBIE MCA formulation
-              node(sn)%sbie=fbem_sbie_mca
-              node(sn)%hbie=0
-              node(sn)%dual=0
-              node(sn)%dual_is_common=.false.
-              ! The displacement towards inside each element of the node for SBIE MCA formulation
-              ! Loop through the elements of the node
-              do ke=1,node(sn)%n_elements
-                ! Selected element
-                se=node(sn)%element(ke)
-                ! Index of the node in the selected element
-                k=node(sn)%element_node_iid(ke)
-                ! Depending on tmp_delta_sbie, use the automatic value
-                if (tmp_delta_sbie.le.0.0d0) then
-                  ! It depends on the element type
-                  select case (element(se)%type)
-                    ! Linear elements
-                    case (fbem_line2,fbem_tri3,fbem_quad4)
-                      element(se)%delta_sbie_mca(k)=0.42264973d0
-                    ! Quadratic elements
-                    case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                      element(se)%delta_sbie_mca(k)=0.22540333d0
-                  end select
-                else
-                  element(se)%delta_sbie_mca(k)=tmp_delta_sbie
-                end if
-              end do
-            !
-            ! HBIE:
-            ! All nodes with HBIE collocation.
-            !
-            case (4)
-              ! The node has HBIE MCA formulation
-              node(sn)%sbie=0
-              node(sn)%hbie=fbem_hbie
-              node(sn)%dual=0
-              node(sn)%dual_is_common=.false.
-              ! The displacement towards inside each element of the node for HBIE MCA formulation
-              ! Loop through the elements of the node
-              do ke=1,node(sn)%n_elements
-                ! Selected element
-                se=node(sn)%element(ke)
-                ! Index of the node in the selected element
-                k=node(sn)%element_node_iid(ke)
-                ! Depending on tmp_delta_hbie, use the automatic value
-                if (tmp_delta_hbie.le.0.0d0) then
-                  ! It depends on the element type
-                  select case (element(se)%type)
-                    ! Linear elements
-                    case (fbem_line2,fbem_tri3,fbem_quad4)
-                      element(se)%delta_hbie(k)=0.42264973d0
-                    ! Quadratic elements
-                    case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                      element(se)%delta_hbie(k)=0.22540333d0
-                  end select
-                else
-                  element(se)%delta_hbie(k)=tmp_delta_hbie
-                end if
-              end do
-            !
-            ! DUAL_BM_SAME:
-            ! All nodes with SBIE MCA + HBIE MCA (Burton & Miller).
-            !
-            case (5)
-              ! Assign values
-              node(sn)%sbie=fbem_sbie_mca
-              node(sn)%hbie=fbem_hbie
-              node(sn)%dual=fbem_dual_burton_miller
-              node(sn)%dual_is_common=.true.
-              node(sn)%alpha=1.0d0
-              ! The displacement towards inside each element of the node for HBIE MCA formulation
-              ! Loop through the elements of the node
-              do ke=1,node(sn)%n_elements
-                ! Selected element
-                se=node(sn)%element(ke)
-                ! Index of the node in the selected element
-                k=node(sn)%element_node_iid(ke)
-                ! Depending on tmp_delta_hbie, use the automatic value
-                if (tmp_delta_hbie.le.0.0d0) then
-                  ! It depends on the element type
-                  select case (element(se)%type)
-                    ! Linear elements
-                    case (fbem_line2,fbem_tri3,fbem_quad4)
-                      element(se)%delta_sbie_mca(k)=0.42264973d0
-                      element(se)%delta_hbie(k)    =0.42264973d0
-                    ! Quadratic elements
-                    case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                      element(se)%delta_sbie_mca(k)=0.22540333d0
-                      element(se)%delta_hbie(k)    =0.22540333d0
-                  end select
-                else
-                  element(se)%delta_sbie_mca(k)=tmp_delta_hbie
-                  element(se)%delta_hbie(k)    =tmp_delta_hbie
-                end if
-              end do
-            !
-            ! DUAL_BM_MIXED:
-            ! All nodes with SBIE + HBIE MCA (Burton & Miller), except nodes at the boundary, which have MCA collocation.
-            !
-            case (6)
-              ! Assign values
-              node(sn)%sbie=fbem_sbie
-              node(sn)%hbie=fbem_hbie
-              node(sn)%dual=fbem_dual_burton_miller
-              node(sn)%dual_is_common=.false.
-              ! The displacement towards inside each element of the node for HBIE formulation
-              ! Loop through the elements of the node
-              do ke=1,node(sn)%n_elements
-                ! Selected element
-                se=node(sn)%element(ke)
-                ! Index of the node in the selected element
-                k=node(sn)%element_node_iid(ke)
-                ! Depending on tmp_delta_hbie, use the automatic value
-                if (tmp_delta_hbie.le.0.0d0) then
-                  ! It depends on the element type
-                  select case (element(se)%type)
-                    ! Linear elements
-                    case (fbem_line2,fbem_tri3,fbem_quad4)
-                      element(se)%delta_hbie(k)=0.42264973d0
-                    ! Quadratic elements
-                    case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                      element(se)%delta_hbie(k)=0.22540333d0
-                  end select
-                else
-                  element(se)%delta_hbie(k)=tmp_delta_hbie
-                end if
-              end do
-              ! If it is in the boundary of the boundary
-              if (node(sn)%in_boundary) then
-                ! Instead of having SBIE formulation, the node has SBIE MCA formulation
-                node(sn)%sbie=fbem_sbie_mca
-                ! The displacement towards inside each element of the node for SBIE MCA formulation
-                ! Loop through the elements of the node
-                do ke=1,node(sn)%n_elements
-                  ! Selected element
-                  se=node(sn)%element(ke)
-                  ! Index of the node in the selected element
-                  k=node(sn)%element_node_iid(ke)
-                  ! Depending on tmp_delta_sbie, use the automatic value
-                  if (tmp_delta_sbie.le.0.0d0) then
-                    ! It depends on the element type
-                    select case (element(se)%type)
-                      ! Linear elements
-                      case (fbem_line2,fbem_tri3,fbem_quad4)
-                        element(se)%delta_sbie_mca(k)=0.42264973d0
-                      ! Quadratic elements
-                      case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                        element(se)%delta_sbie_mca(k)=0.22540333d0
-                    end select
-                  else
-                    element(se)%delta_sbie_mca(k)=tmp_delta_sbie
-                  end if
-                end do
-              end if
-          end select
-        !
-        ! If the node belongs to a discontinuous element
-        !
-        else
-          select case (tmp_type_value)
-            !
-            ! SBIE
-            !
-            case (1,2,3)
-              ! Assign values
-              node(sn)%sbie=fbem_sbie
-              node(sn)%hbie=0
-              node(sn)%dual=0
-              node(sn)%dual_is_common=.false.
-            !
-            ! HBIE
-            !
-            case (4)
-              ! Assign values
-              node(sn)%sbie=0
-              node(sn)%hbie=fbem_hbie
-              node(sn)%dual=0
-              node(sn)%dual_is_common=.false.
-            !
-            ! SBIE + HBIE (Burton & Miller)
-            !
-            case (5,6)
-              ! Assign values
-              node(sn)%sbie=fbem_sbie
-              node(sn)%hbie=fbem_hbie
-              node(sn)%dual=fbem_dual_burton_miller
-              node(sn)%dual_is_common=.true.
-              node(sn)%alpha=1.0d0
-          end select
-        end if
+            end do
+        end select
       end do
 
-    ! ------------------------------------------------------------------------------------------------------------------------
-    ! CRACK-LIKE
-    ! ------------------------------------------------------------------------------------------------------------------------
-
-    case (fbem_boundary_class_cracklike)
-      ! Read the type of formulation
-      read(input_fileunit,*) tmp_type
-      tmp_type_value=0
-      if (trim(tmp_type).eq.'same' ) tmp_type_value=1
-      if (trim(tmp_type).eq.'mixed') tmp_type_value=2
-      ! Check if valid
-      if (tmp_type_value.eq.0) then
-        call fbem_error_message(error_unit,0,'boundary',boundary(sb)%id,'the indicated BEM formulation is not valid.')
-      end if
-      ! Read parameters of the formulation if needed
-      select case (tmp_type_value)
-        ! Read delta_hbie (=delta_sbie)
-        case (1)
-          call fbem_search_section(input_fileunit,section_name,found)
-          call fbem_search_keyword(input_fileunit,keyword,':',found)
-          read(input_fileunit,*) tmp_type, tmp_delta_hbie
-        ! Read delta_sbie y delta_hbie
-        case (2)
-          call fbem_search_section(input_fileunit,section_name,found)
-          call fbem_search_keyword(input_fileunit,keyword,':',found)
-          read(input_fileunit,*) tmp_type, tmp_delta_sbie, tmp_delta_hbie
-      end select
-      ! Loop through the nodes of the boundary
-      do kn=1,part(boundary(sb)%part)%n_nodes
-        ! Selected node
-        sn=part(boundary(sb)%part)%node(kn)
-        ! If the node belongs to continuous elements
-        if (element(node(sn)%element(1))%discontinuous.eqv.(.false.)) then
-          select case (tmp_type_value)
-            !
-            ! SAME:
-            ! The node has SBIE MCA / HBIE (Dual BEM) formulation. SBIE and HBIE have the same collocation point.
-            !
-            case (1)
-              ! Assign values
-              node(sn)%sbie=fbem_sbie_mca
-              node(sn)%hbie=fbem_hbie
-              node(sn)%dual=fbem_dual_boundary
-              node(sn)%dual_is_common=.true.
-              ! The displacement towards inside each element of the node for HBIE formulation
-              ! Loop through the elements of the node
-              do ke=1,node(sn)%n_elements
-                ! Selected element
-                se=node(sn)%element(ke)
-                ! Index of the node in the selected element
-                k=node(sn)%element_node_iid(ke)
-                ! Depending on tmp_delta_hbie, use the automatic value
-                if (tmp_delta_hbie.le.0.0d0) then
-                  ! It depends on the element type
-                  select case (element(se)%type)
-                    ! Linear elements
-                    case (fbem_line2,fbem_tri3,fbem_quad4)
-                      element(se)%delta_sbie_mca(k)=0.42264973d0
-                      element(se)%delta_hbie(k)    =0.42264973d0
-                    ! Quadratic elements
-                    case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                      element(se)%delta_sbie_mca(k)=0.22540333d0
-                      element(se)%delta_hbie(k)    =0.22540333d0
-                  end select
-                else
-                  element(se)%delta_sbie_mca(k)=tmp_delta_hbie
-                  element(se)%delta_hbie(k)    =tmp_delta_hbie
-                end if
-              end do
-            !
-            ! MIXED:
-            ! The node has SBIE / HBIE (Dual BEM) formulation. The SBIE is collocated at nodal positions, except at the
-            ! boundaries of the boundary.
-            !
-            case (2)
-              ! Assign values
-              node(sn)%sbie=fbem_sbie
-              node(sn)%hbie=fbem_hbie
-              node(sn)%dual=fbem_dual_boundary
-              node(sn)%dual_is_common=.false.
-              ! The displacement towards inside each element of the node for HBIE formulation
-              ! Loop through the elements of the node
-              do ke=1,node(sn)%n_elements
-                ! Selected element
-                se=node(sn)%element(ke)
-                ! Index of the node in the selected element
-                k=node(sn)%element_node_iid(ke)
-                ! Depending on tmp_delta_hbie, use the automatic value
-                if (tmp_delta_hbie.le.0.0d0) then
-                  ! It depends on the element type
-                  select case (element(se)%type)
-                    ! Linear elements
-                    case (fbem_line2,fbem_tri3,fbem_quad4)
-                      element(se)%delta_hbie(k)=0.42264973d0
-                    ! Quadratic elements
-                    case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                      element(se)%delta_hbie(k)=0.22540333d0
-                  end select
-                else
-                  element(se)%delta_hbie(k)=tmp_delta_hbie
-                end if
-              end do
-              ! If it is in the boundary of the boundary
-              if (node(sn)%in_boundary) then
-                ! Instead of having SBIE formulation, the node has SBIE MCA formulation
-                node(sn)%sbie=fbem_sbie_mca
-                ! The displacement towards inside each element of the node for SBIE MCA formulation
-                ! Loop through the elements of the node
-                do ke=1,node(sn)%n_elements
-                  ! Selected element
-                  se=node(sn)%element(ke)
-                  ! Index of the node in the selected element
-                  k=node(sn)%element_node_iid(ke)
-                  ! Depending on tmp_delta_sbie, use the automatic value
-                  if (tmp_delta_sbie.le.0.0d0) then
-                    ! It depends on the element type
-                    select case (element(se)%type)
-                      ! Linear elements
-                      case (fbem_line2,fbem_tri3,fbem_quad4)
-                        element(se)%delta_sbie_mca(k)=0.42264973d0
-                      ! Quadratic elements
-                      case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                        element(se)%delta_sbie_mca(k)=0.22540333d0
-                    end select
-                  else
-                    element(se)%delta_sbie_mca(k)=tmp_delta_sbie
-                  end if
-                end do
-              end if
-          end select
-        !
-        ! If the node belongs to a discontinuous element
-        !
-        else
-          ! The node has SBIE / HBIE (Dual BEM) formulation.
-          ! Assign values
-          node(sn)%sbie=fbem_sbie
-          node(sn)%hbie=fbem_hbie
-          node(sn)%dual=fbem_dual_boundary
-          node(sn)%dual_is_common=.true.
-        end if
-      end do
   end select
+
 
 end subroutine read_bem_formulation_selected_nodes
