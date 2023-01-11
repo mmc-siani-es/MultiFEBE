@@ -40,6 +40,7 @@ subroutine calculate_internal_points_mechanics_static
   integer                    :: kip
   integer                    :: kb_int, sb_int
   logical                    :: sb_int_reversion
+  integer                    :: sp_int
   integer                    :: ke_int, se_int
   integer                    :: se_int_n_nodes
   integer                    :: etype, ke, se, i, j
@@ -55,80 +56,53 @@ subroutine calculate_internal_points_mechanics_static
 
   ! Initialize internal points
   do kip=1,n_internalpoints
-    internalpoint(kip)%value_r=0.
+    internalpoint(kip)%value_r=0
   end do
 
-  !
-  ! Loop through REGIONS
-  !
+  ! REGIONS
   do kr=1,n_regions
     if ((region(kr)%class.eq.fbem_be).and.(region(kr)%n_internalpoints.gt.0)) then
-
-      ! Message
-      if (verbose_level.ge.2) then
-        write(fmtstr,*) '(1x,a6,i',fbem_nchar_int(region(kr)%id),',1x,a26)'
-        call fbem_trimall(fmtstr)
-        write(output_unit,fmtstr) 'Region', region(kr)%id, '(BE region, elastic solid)'
-      end if
 
       ! Copy material properties
       mu=region(kr)%property_r(2)
       nu=region(kr)%property_r(3)
       if ((problem%n.eq.2).and.(problem%subtype.eq.fbem_mechanics_plane_stress)) nu=nu/(1.d0+nu)
 
-      !
-      ! Loop through the BOUNDARIES of the REGION for INTEGRATION
-      !
+      ! REGION BOUNDARIES
       do kb_int=1,region(kr)%n_boundaries
-        ! INTEGRATION BOUNDARY
         sb_int=region(kr)%boundary(kb_int)
         sb_int_reversion=region(kr)%boundary_reversion(kb_int)
-
-        ! Message
-        if (verbose_level.ge.3) then
-          write(fmtstr,*) '(2x,a20,1x,i',fbem_nchar_int(boundary(sb_int)%id),',1x,a8)'
-          call fbem_trimall(fmtstr)
-          if (sb_int_reversion) then
-            write(output_unit,fmtstr) 'Integrating boundary', boundary(sb_int)%id, '(-n) ...'
-          else
-            write(output_unit,fmtstr) 'Integrating boundary', boundary(sb_int)%id, '(+n) ...'
-          end if
-        end if
-
-        !
-        ! Loop through the ELEMENTS of the BOUNDARY for INTEGRATION
-        !
-        !$omp parallel do schedule (dynamic) default (shared) private (se_int,se_int_n_nodes,fmtstr)
-        do ke_int=1,part(boundary(sb_int)%part)%n_elements
+        sp_int=boundary(sb_int)%part
+        !$omp parallel do schedule (dynamic) default (shared) private (se_int,se_int_n_nodes)
+        do ke_int=1,part(sp_int)%n_elements
           se_int=part(boundary(sb_int)%part)%element(ke_int)
           se_int_n_nodes=element(se_int)%n_nodes
-
-          ! Message
-          if (verbose_level.ge.4) then
-            write(fmtstr,*) '(3x,a19,1x,i',fbem_nchar_int(element(se_int)%id),',1x,a3)'
-            call fbem_trimall(fmtstr)
-            if (sb_int_reversion) then
-              write(output_unit,fmtstr) 'Integrating element', element(se_int)%id, '...'
-            else
-              write(output_unit,fmtstr) 'Integrating element', element(se_int)%id, '...'
-            end if
-          end if
-
-          ! Build and assemble the element
           call calculate_internal_points_mechanics_bem_staela_element(kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,mu,nu)
-
-          ! Ending message
-          if (verbose_level.ge.4) write(output_unit,'(3x,a)') 'done.'
-
-        end do ! Loop through the ELEMENTS of the BOUNDARY for INTEGRATION
+        end do
         !$omp end parallel do
+      end do
 
-      end do ! Loop through the BOUNDARIES of the REGION for INTEGRATION
+      ! REGION BODY LOADS
+      do kb_int=1,region(kr)%n_be_bodyloads
+        sb_int=region(kr)%be_bodyload(kb_int)
+        sp_int=be_bodyload(sb_int)%part
+        !$omp parallel do schedule (dynamic) default (shared) private (se_int,se_int_n_nodes)
+        do ke_int=1,part(sp_int)%n_elements
+          se_int=part(sp_int)%element(ke_int)
+          se_int_n_nodes=element(se_int)%n_nodes
+          call calculate_internal_points_mechanics_bem_staela_bl(kr,sb_int,se_int,se_int_n_nodes,mu,nu)
+        end do
+        !$omp end parallel do
+      end do
 
     end if
-  end do ! Loop through REGIONS
+  end do
 
   if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'END calculating internal points solutions at BE regions')
+
+  ! ======================================================================
+  ! TRANSFER INTERNAL POINT SOLUTIONS TO INTERNAL ELEMENTS INTERNAL POINTS
+  ! ======================================================================
 
   if (internalelements) then
 
@@ -526,3 +500,189 @@ subroutine calculate_internal_points_mechanics_bem_staela_element(kr,sb_int,sb_i
   end do ! Loop through SYMMETRICAL ELEMENTS
 
 end subroutine calculate_internal_points_mechanics_bem_staela_element
+
+
+subroutine calculate_internal_points_mechanics_bem_staela_bl(kr,sb_int,se_int,se_int_n_nodes,mu,nu)
+
+  ! Fortran 2003 intrinsic module
+  use iso_fortran_env
+
+  ! fbem modules
+  use fbem_data_structures
+  use fbem_string_handling
+  use fbem_numerical
+  use fbem_symmetry
+  use fbem_bem_general
+  use fbem_bem_staela2d
+  use fbem_bem_staela3d
+
+  ! Module of problem variables
+  use problem_variables
+
+  ! No implicit variables
+  implicit none
+
+  ! I/O variables
+  integer           :: kr
+  integer           :: sb_int
+  integer           :: se_int
+  integer           :: se_int_n_nodes
+  real(kind=real64) :: mu
+  real(kind=real64) :: nu
+  ! Local variables
+  integer                :: ks
+  integer                :: il, ik, kc
+  integer                :: kn_int, sn_int
+  type(fbem_bem_element) :: se_int_data
+  logical                :: se_int_reversion
+  integer                :: kip, sip
+  integer                :: kn
+  real(kind=real64)      :: x_i(problem%n), n_i(problem%n)
+  ! Kernels for SBIE integration
+  real(kind=real64)      :: g (se_int_n_nodes,problem%n,problem%n)
+  ! Kernels for HBIE integration
+  real(kind=real64)      :: l (se_int_n_nodes,problem%n,problem%n)
+  ! Associated with symmetry
+  real(kind=real64)      :: symconf_m(problem%n), symconf_t(problem%n), symconf_r(problem%n), symconf_s
+  logical                :: reversed
+
+  ! Initialize calculation element
+  call se_int_data%init
+  se_int_data%gtype=element(se_int)%type_g
+  se_int_data%d=element(se_int)%n_dimension
+  se_int_data%n_gnodes=se_int_n_nodes
+  se_int_data%n=problem%n
+  allocate (se_int_data%x(problem%n,se_int_n_nodes))
+  se_int_data%x=element(se_int)%x_gn
+  se_int_data%ptype=element(se_int)%type_f1
+  se_int_data%ptype_delta=element(se_int)%delta_f
+  se_int_data%n_pnodes=se_int_n_nodes
+  se_int_data%stype=element(se_int)%type_f2
+  se_int_data%stype_delta=element(se_int)%delta_f
+  se_int_data%n_snodes=se_int_n_nodes
+  se_int_data%cl=element(se_int)%csize
+  se_int_data%gln_far=element(se_int)%n_phi
+  allocate (se_int_data%bball_centre(problem%n))
+  se_int_data%bball_centre=element(se_int)%bball_centre
+  se_int_data%bball_radius=element(se_int)%bball_radius
+
+  !
+  ! Loop through symmetrical elements
+  !
+  do ks=1,n_symelements
+    ! SYMMETRY SETUP
+    call fbem_symmetry_multipliers(ks,problem%n,n_symplanes,symplane_m,symplane_s,symplane_t,symplane_r,&
+                                   symconf_m,symconf_s,symconf_t,symconf_r,reversed)
+    do kn=1,se_int_n_nodes
+      se_int_data%x(:,kn)=symconf_m*element(se_int)%x_gn(:,kn)
+    end do
+    ! Initialize precalculated datasets
+    call se_int_data%init_precalculated_datasets(n_precalsets,precalset_gln)
+
+    !
+    ! Loop through INTERNAL POINTS
+    !
+    do kip=1,region(kr)%n_internalpoints
+      sip=region(kr)%internalpoint(kip)
+      x_i=internalpoint(sip)%x
+
+      ! ------------ !
+      ! DISPLACEMENT !
+      ! ------------ !
+
+      ! CALCULATE KERNELS
+      select case (problem%n)
+        case (2)
+          call fbem_bem_staela2d_sbie_bl_auto(se_int_data,x_i,mu,nu,qsi_parameters,qsi_ns_max,g)
+        case (3)
+          call fbem_bem_staela3d_sbie_bl_auto(se_int_data,x_i,mu,nu,qsi_parameters,qsi_ns_max,g)
+      end select
+      ! Additional kernels for half-space fundamental solution
+      if (region(kr)%space.eq.fbem_half_space) then
+        select case (problem%n)
+          case (2)
+            x_i(abs(region(kr)%halfspace_n))=2.d0*region(kr)%halfspace_x-x_i(abs(region(kr)%halfspace_n))
+            n_i(abs(region(kr)%halfspace_n))=-n_i(abs(region(kr)%halfspace_n))
+            stop 'Error: staela: 2D half-space HBIE for BE body loads not available'
+          case (3)
+            stop 'Error: staela: 3D half-space HBIE for BE body loads not available'
+        end select
+        select case (region(kr)%halfspace_bc)
+          case (0)
+            stop 'Error: staela: region(kr)%halfspace_bc=0 not yet'
+          case (1)
+        end select
+      end if
+      ! BUILD KERNELS ACCORDING TO SYMMETRY
+      if (ks.gt.1) then
+        do ik=1,problem%n
+          g(:,:,ik)=symconf_t(ik)*g(:,:,ik)
+        end do
+      end if
+      ! ASSEMBLE
+      !$omp critical
+      do il=1,problem%n
+        do ik=1,problem%n
+          do kn_int=1,se_int_n_nodes
+            sn_int=element(se_int)%node(kn_int)
+            internalpoint(sip)%value_r(il,0)=internalpoint(sip)%value_r(il,0)+g(kn_int,il,ik)*node(sn_int)%value_r(problem%n+ik,1)
+          end do
+        end do
+      end do
+      !$omp end critical
+
+      ! ======== !
+      ! TRACTION !
+      ! ======== !
+
+      do kc=1,problem%n
+        ! UNIT NORMAL
+        n_i=0.0d0
+        n_i(kc)=1.0d0
+        ! CALCULATE KERNELS
+        select case (problem%n)
+          case (2)
+            call fbem_bem_staela2d_hbie_bl_auto(se_int_data,x_i,n_i,mu,nu,qsi_parameters,qsi_ns_max,l)
+          case (3)
+            call fbem_bem_staela3d_hbie_bl_auto(se_int_data,x_i,n_i,mu,nu,qsi_parameters,qsi_ns_max,l)
+        end select
+        ! Additional kernels for half-space fundamental solution
+        if (region(kr)%space.eq.fbem_half_space) then
+          select case (problem%n)
+            case (2)
+              x_i(abs(region(kr)%halfspace_n))=2.d0*region(kr)%halfspace_x-x_i(abs(region(kr)%halfspace_n))
+              n_i(abs(region(kr)%halfspace_n))=-n_i(abs(region(kr)%halfspace_n))
+              stop 'Error: staela: 2D half-space HBIE for BE body loads not available'
+            case (3)
+              stop 'Error: staela: 3D half-space HBIE for BE body loads not available'
+          end select
+          select case (region(kr)%halfspace_bc)
+            case (0)
+              stop 'Error: staela: region(kr)%halfspace_bc=0 not yet'
+            case (1)
+          end select
+        end if
+        ! BUILD KERNELS ACCORDING TO SYMMETRY
+        if (ks.gt.1) then
+          do ik=1,problem%n
+            l(:,:,ik)=symconf_t(ik)*l(:,:,ik)
+          end do
+        end if
+        ! ASSEMBLE
+        !$omp critical
+        do il=1,problem%n
+          do ik=1,problem%n
+            do kn_int=1,se_int_n_nodes
+              sn_int=element(se_int)%node(kn_int)
+              internalpoint(sip)%value_r(il,kc)=internalpoint(sip)%value_r(il,kc)+l(kn_int,il,ik)*node(sn_int)%value_r(problem%n+ik,1)
+            end do
+          end do
+        end do
+        !$omp end critical
+      end do
+
+    end do ! Loop through INTERNAL POINTS
+
+  end do ! Loop through SYMMETRICAL ELEMENTS
+
+end subroutine calculate_internal_points_mechanics_bem_staela_bl
