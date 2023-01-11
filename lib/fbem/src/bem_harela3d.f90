@@ -1601,7 +1601,7 @@ contains
           rv=x-x_i
           r=sqrt(dot_product(rv,rv))
           d1r1=1.d0/r
-          d1r2=d1r1**2
+          d1r2=d1r1*d1r1
           d1r3=d1r2*d1r1
           d1r4=d1r3*d1r1
           drdx=rv*d1r1
@@ -2290,9 +2290,12 @@ contains
       ! OTHERS
       !
       case default
+
         write(*,*) xi_i
         write(*,*) x_nodes
+
         call fbem_error_message(output_unit,0,'fbem_bem_harela3d_sbie_bl_int',0,'it is only possible to integrate surface or volume loads')
+
     end select
   end subroutine fbem_bem_harela3d_sbie_bl_int
 
@@ -2359,6 +2362,7 @@ contains
         end if
     end select
   end subroutine fbem_bem_harela3d_sbie_bl_auto
+
   ! --------------------------------------------------------------------------------------------------------------------------------
   ! ================================================================================================================================
 
@@ -2479,6 +2483,7 @@ contains
     integer                      :: k2                              ! Counter variable for reference coordinate xi_2
     real(kind=real64)            :: aux(10)                         ! Auxiliary variable needed for shape_functions module resources
     real(kind=real64)            :: gphi(e%n_gnodes)                ! Geometrical shape functions values
+    real(kind=real64)            :: dgphidxi(e%n_gnodes)
     real(kind=real64)            :: dgphidxi1(e%n_gnodes)           ! Geometrical shape functions derivatives values
     real(kind=real64)            :: dgphidxi2(e%n_gnodes)           ! Geometrical shape functions derivatives values
     real(kind=real64)            :: pphi(e%n_pnodes)                ! Functional shape functions values
@@ -3584,6 +3589,7 @@ contains
     integer                      :: k2                              ! Counter variable for reference coordinate xi_2
     real(kind=real64)            :: aux(10)                         ! Auxiliary variable needed for shape_functions module resources
     real(kind=real64)            :: gphi(e%n_gnodes)                ! Geometrical shape functions values
+    real(kind=real64)            :: dgphidxi(e%n_gnodes)            ! Geometrical shape functions first derivatives values
     real(kind=real64)            :: dgphidxi1(e%n_gnodes)           ! Geometrical shape functions derivatives values
     real(kind=real64)            :: dgphidxi2(e%n_gnodes)           ! Geometrical shape functions derivatives values
     real(kind=real64)            :: sphi(e%n_snodes)                ! Functional shape functions values
@@ -3592,6 +3598,7 @@ contains
     real(kind=real64)            :: xip(2)                          ! Vector of xip_1,xip_2 coordinates
     real(kind=real64)            :: dxidxi1p(2), dxidxi2p(2)        ! xi derivatives with respect to xip
     real(kind=real64)            :: js                              ! Subdivision jacobian
+    real(kind=real64)            :: xin(e%d)                        ! Coordinate xi [xi_s(1,1),xi_s(1,2)]
     real(kind=real64)            :: xi(2)                           ! Vector of xi_1,xi_2 coordinates
     real(kind=real64)            :: xipp(2)                         ! Coordinate xipp used for quadrilateral-triangle transformation
     real(kind=real64)            :: barxipp(2)                      ! Coordinate xipp of collocation point
@@ -3599,7 +3606,7 @@ contains
     type(fbem_telles_parameters) :: telles_parameters(2)            ! Telles parameters for each coordinate
     real(kind=real64)            :: jt(2)                           ! Telles jacobian for each coordinate: xi_1->gamma_1 and xi_2->gamma_2
     real(kind=real64)            :: x(3)                            ! Position vector at xi_1,xi_2
-    real(kind=real64)            :: T1(3), T2(3)                    ! Tangent vectors at xi_1,xi_2
+    real(kind=real64)            :: T(3), T1(3), T2(3)              ! Tangent vectors at xi_1,xi_2
     real(kind=real64)            :: N(3)                            ! Normal vector at xi_1,xi_2
     real(kind=real64)            :: rv(3)                           ! Distance vector between collocation point and integration point (x-x_i)
     real(kind=real64)            :: r, d1r1, d1r2, d1r3, d1r4, d1r5 ! Distance vector module and its inverse
@@ -3617,274 +3624,377 @@ contains
     complex(kind=real64)         :: fs_d                            ! Fundamental solutions values
     ! Initialization
     l=(0.d0,0.d0)
-    ! Numerical integration
-    select case (fbem_n_vertices(e%gtype))
-      ! QUADRILATERAL ELEMENTS
-      case (4)
-        ! Calculate Telles parameters for each direction
+    select case (e%d)
+      !
+      ! LINE LOAD
+      !
+      case (1)
+        ! Calculate Telles parameters
         telles_parameters(1)=fbem_telles11_calculate_parameters(barxip(1),barr)
-        telles_parameters(2)=fbem_telles11_calculate_parameters(barxip(2),barr)
-        ! Loop through INTEGRATION POINTS
+        ! Numerical integration
         do k1=1,gl11_n(gln)
-          ! GAMMA1 COORDINATE
+          ! GAMMA COORDINATE
           gamma(1)=gl11_xi(k1,gln)
           w(1)=gl11_w(k1,gln)
-          ! GAMMA1->XIP1 TRANSFORMATION
+          ! GAMMA->XIP TRANSFORMATION
           call fbem_telles_xi_and_jacobian(telles_parameters(1),gamma(1),xip(1),jt(1))
-          do k2=1,gl11_n(gln)
-            ! GAMMA2 COORDINATE
-            gamma(2)=gl11_xi(k2,gln)
-            w(2)=gl11_w(k2,gln)
-            ! GAMMA2->XIP2 TRANSFORMATION
-            call fbem_telles_xi_and_jacobian(telles_parameters(2),gamma(2),xip(2),jt(2))
-            ! XIP->XI TRANSFORMATION
-            ! Shape functions and its derivatives
-#           define delta 0.d0
-#           define xi xip
-#           define phi gphi
-#           define dphidxi1 dgphidxi1
-#           define dphidxi2 dgphidxi2
-#           include <phi_quad4.rc>
-#           include <dphidxi1_quad4.rc>
-#           include <dphidxi2_quad4.rc>
-#           undef delta
-#           undef xi
-#           undef phi
-#           undef dphidxi1
-#           undef dphidxi2
-            ! xi coordinates, and xi derivatives
-            xi=0.d0
-            dxidxi1p=0.d0
-            dxidxi2p=0.d0
-            do kphi=1,4
-              xi=xi+gphi(kphi)*xi_s(:,kphi)
-              dxidxi1p=dxidxi1p+dgphidxi1(kphi)*xi_s(:,kphi)
-              dxidxi2p=dxidxi2p+dgphidxi2(kphi)*xi_s(:,kphi)
-            end do
-            ! xip->xi jacobian
-            js=dxidxi1p(1)*dxidxi2p(2)-dxidxi1p(2)*dxidxi2p(1)
-            ! XI->X TRANSFORMATION
-            ! Geometrical shape functions and first derivatives at xi
-#           define etype e%gtype
-#           define delta 0.d0
-#           define phi gphi
-#           define dphidxi1 dgphidxi1
-#           define dphidxi2 dgphidxi2
-#           include <phi_and_dphidxik_2d.rc>
-#           undef etype
-#           undef delta
-#           undef phi
-#           undef dphidxi1
-#           undef dphidxi2
-            ! Components calculation of x, T1 and T2 at xi
-            x=0.d0
-            T1=0.d0
-            T2=0.d0
-            do kphi=1,e%n_gnodes
-              x=x+gphi(kphi)*e%x(:,kphi)
-              T1=T1+dgphidxi1(kphi)*e%x(:,kphi)
-              T2=T2+dgphidxi2(kphi)*e%x(:,kphi)
-            end do
-            ! Normal vector as T1 x T2 at xi
-            N(1)=T1(2)*T2(3)-T1(3)*T2(2)
-            N(2)=T1(3)*T2(1)-T1(1)*T2(3)
-            N(3)=T1(1)*T2(2)-T1(2)*T2(1)
-            ! Geometric jacobian
-            jg=sqrt(dot_product(N,N))
-            ! Unit normal
-            n=N/jg
-            ! Distance vector
-            rv=x-x_i
-            ! Distance vector norm
-            r=sqrt(dot_product(rv,rv))
-            d1r1=1.d0/r
-            d1r2=d1r1**2
-            d1r3=d1r2*d1r1
-            d1r4=d1r3*d1r1
-            d1r5=d1r4*d1r1
-            drdx=rv*d1r1
-            drdn=dot_product(drdx,n)
-            drdni=-dot_product(drdx,n_i)
-            n_dot_ni=dot_product(n,n_i)
-            ! Jacobians * weights
-            jw=jg*js*jt(1)*jt(2)*w(1)*w(2)
-            ! FUNCTIONAL SHAPE FUNCTIONS
-            ! Functional shape functions (secondary variables) at xi
-#           define etype e%stype
-#           define delta e%stype_delta
-#           define phi sphi
-#           include <phi_2d.rc>
-#           undef etype
-#           undef delta
-#           undef phi
-            ! Functional shape functions * jacobians * weights
-            sphijw=sphi*jw
-            ! COMPONENTS OF THE FUNDAMENTAL SOLUTION
-            z(1)=-c_im*p%k1*r
-            z(2)=-c_im*p%k2*r
-            call fbem_zexp_decomposed(2,z,EnR)
-            EnR(2,:)=EnR(2,:)*d1r1
-            EnR(3,:)=EnR(3,:)*d1r2
-            EnR(4,:)=EnR(4,:)*d1r3
-            EnR(5,:)=EnR(5,:)*d1r4
-            EnR(6,:)=EnR(6,:)*d1r5
-            TT1=p%T1(1)*d1r2+p%T1(2)+p%T1(3)*EnR(2,1)+p%T1(4)*EnR(2,2)+p%T1(5)*EnR(3,1)+p%T1(6)*EnR(3,2)+p%T1(7)*EnR(4,1)&
-               +p%T1(8)*EnR(4,2)+p%T1(9)*EnR(5,1)+p%T1(10)*EnR(5,2)
-            TT2=p%T2(1)*d1r2+p%T2(2)+p%T2(3)*EnR(2,2)+p%T2(4)*EnR(3,1)+p%T2(5)*EnR(3,2)+p%T2(6)*EnR(4,1)+p%T2(7)*EnR(4,2)&
-               +p%T2(8)*EnR(5,1)+p%T2(9)*EnR(5,2)
-            TT3=p%T3(1)*d1r2+p%T3(2)+p%T3(3)*EnR(2,1)+p%T3(4)*EnR(3,1)+p%T3(5)*EnR(3,2)+p%T3(6)*EnR(4,1)+p%T3(7)*EnR(4,2)&
-               +p%T3(8)*EnR(5,1)+p%T3(9)*EnR(5,2)
-            ! Add
-            do il=1,3
-              do ik=1,3
-                fs_d=TT1*drdx(il)*drdx(ik)*drdni-TT2*(drdx(il)*n_i(ik)-c_dkr(il,ik)*drdni)-TT3*drdx(ik)*n_i(il)
-                l(:,il,ik)=l(:,il,ik)+fs_d*sphijw
-              end do
+          ! XIP->XI TRANSFORMATION
+          xin(1)=0.5d0*(1.d0-xip(1))*xi_s(1,1)+0.5d0*(1.d0+xip(1))*xi_s(1,2)
+          js=0.5d0*(xi_s(1,2)-xi_s(1,1))
+          ! XI->X TRANSFORMATION
+#         define etype e%gtype
+#         define delta 0.d0
+#         define xi xin(1)
+#         define phi gphi
+#         define dphidxi dgphidxi
+#         include <phi_and_dphidxi_1d.rc>
+#         undef etype
+#         undef delta
+#         undef xi
+#         undef phi
+#         undef dphidxi
+          x=0.d0
+          T=0.d0
+          do kphi=1,e%n_gnodes
+            x=x+gphi(kphi)*e%x(:,kphi)
+            T=T+dgphidxi(kphi)*e%x(:,kphi)
+          end do
+          ! Geometric jacobian
+          jg=sqrt(dot_product(T,T))
+          ! Distance and functions of distance and unit normal
+          rv=x-x_i
+          r=sqrt(dot_product(rv,rv))
+          d1r1=1.d0/r
+          d1r2=d1r1**2
+          d1r3=d1r2*d1r1
+          d1r4=d1r3*d1r1
+          d1r5=d1r4*d1r1
+          drdx=rv*d1r1
+          drdn=dot_product(drdx,n)
+          drdni=-dot_product(drdx,n_i)
+          n_dot_ni=dot_product(n,n_i)
+          ! Jacobians * weight
+          jw=jg*js*jt(1)*w(1)
+          ! FUNCTIONAL SHAPE FUNCTIONS
+          ! Functional shape functions (body load variables) at xi
+#         define etype e%stype
+#         define delta e%stype_delta
+#         define xi xin(1)
+#         define phi sphi
+#         include <phi_1d.rc>
+#         undef etype
+#         undef delta
+#         undef xi
+#         undef phi
+          ! Functional shape functions * jacobians* weights
+          sphijw=sphi*jw
+          ! COMPONENTS OF THE FUNDAMENTAL SOLUTION
+          z(1)=-c_im*p%k1*r
+          z(2)=-c_im*p%k2*r
+          call fbem_zexp_decomposed(2,z,EnR)
+          EnR(2,:)=EnR(2,:)*d1r1
+          EnR(3,:)=EnR(3,:)*d1r2
+          EnR(4,:)=EnR(4,:)*d1r3
+          EnR(5,:)=EnR(5,:)*d1r4
+          EnR(6,:)=EnR(6,:)*d1r5
+          TT1=p%T1(1)*d1r2+p%T1(2)+p%T1(3)*EnR(2,1)+p%T1(4)*EnR(2,2)+p%T1(5)*EnR(3,1)+p%T1(6)*EnR(3,2)+p%T1(7)*EnR(4,1)&
+             +p%T1(8)*EnR(4,2)+p%T1(9)*EnR(5,1)+p%T1(10)*EnR(5,2)
+          TT2=p%T2(1)*d1r2+p%T2(2)+p%T2(3)*EnR(2,2)+p%T2(4)*EnR(3,1)+p%T2(5)*EnR(3,2)+p%T2(6)*EnR(4,1)+p%T2(7)*EnR(4,2)&
+             +p%T2(8)*EnR(5,1)+p%T2(9)*EnR(5,2)
+          TT3=p%T3(1)*d1r2+p%T3(2)+p%T3(3)*EnR(2,1)+p%T3(4)*EnR(3,1)+p%T3(5)*EnR(3,2)+p%T3(6)*EnR(4,1)+p%T3(7)*EnR(4,2)&
+             +p%T3(8)*EnR(5,1)+p%T3(9)*EnR(5,2)
+          ! Add
+          do il=1,3
+            do ik=1,3
+              fs_d=TT1*drdx(il)*drdx(ik)*drdni-TT2*(drdx(il)*n_i(ik)-c_dkr(il,ik)*drdni)-TT3*drdx(ik)*n_i(il)
+              l(:,il,ik)=l(:,il,ik)+fs_d*sphijw
             end do
           end do
         end do
-      ! TRIANGULAR ELEMENTS
+      !
+      ! SURFACE LOAD
+      !
+      case (2)
+        ! Numerical integration
+        select case (fbem_n_vertices(e%gtype))
+          ! QUADRILATERAL ELEMENTS
+          case (4)
+            ! Calculate Telles parameters for each direction
+            telles_parameters(1)=fbem_telles11_calculate_parameters(barxip(1),barr)
+            telles_parameters(2)=fbem_telles11_calculate_parameters(barxip(2),barr)
+            ! Loop through INTEGRATION POINTS
+            do k1=1,gl11_n(gln)
+              ! GAMMA1 COORDINATE
+              gamma(1)=gl11_xi(k1,gln)
+              w(1)=gl11_w(k1,gln)
+              ! GAMMA1->XIP1 TRANSFORMATION
+              call fbem_telles_xi_and_jacobian(telles_parameters(1),gamma(1),xip(1),jt(1))
+              do k2=1,gl11_n(gln)
+                ! GAMMA2 COORDINATE
+                gamma(2)=gl11_xi(k2,gln)
+                w(2)=gl11_w(k2,gln)
+                ! GAMMA2->XIP2 TRANSFORMATION
+                call fbem_telles_xi_and_jacobian(telles_parameters(2),gamma(2),xip(2),jt(2))
+                ! XIP->XI TRANSFORMATION
+                ! Shape functions and its derivatives
+#               define delta 0.d0
+#               define xi xip
+#               define phi gphi
+#               define dphidxi1 dgphidxi1
+#               define dphidxi2 dgphidxi2
+#               include <phi_quad4.rc>
+#               include <dphidxi1_quad4.rc>
+#               include <dphidxi2_quad4.rc>
+#               undef delta
+#               undef xi
+#               undef phi
+#               undef dphidxi1
+#               undef dphidxi2
+                ! xi coordinates, and xi derivatives
+                xi=0.d0
+                dxidxi1p=0.d0
+                dxidxi2p=0.d0
+                do kphi=1,4
+                  xi=xi+gphi(kphi)*xi_s(:,kphi)
+                  dxidxi1p=dxidxi1p+dgphidxi1(kphi)*xi_s(:,kphi)
+                  dxidxi2p=dxidxi2p+dgphidxi2(kphi)*xi_s(:,kphi)
+                end do
+                ! xip->xi jacobian
+                js=dxidxi1p(1)*dxidxi2p(2)-dxidxi1p(2)*dxidxi2p(1)
+                ! XI->X TRANSFORMATION
+                ! Geometrical shape functions and first derivatives at xi
+#               define etype e%gtype
+#               define delta 0.d0
+#               define phi gphi
+#               define dphidxi1 dgphidxi1
+#               define dphidxi2 dgphidxi2
+#               include <phi_and_dphidxik_2d.rc>
+#               undef etype
+#               undef delta
+#               undef phi
+#               undef dphidxi1
+#               undef dphidxi2
+                ! Components calculation of x, T1 and T2 at xi
+                x=0.d0
+                T1=0.d0
+                T2=0.d0
+                do kphi=1,e%n_gnodes
+                  x=x+gphi(kphi)*e%x(:,kphi)
+                  T1=T1+dgphidxi1(kphi)*e%x(:,kphi)
+                  T2=T2+dgphidxi2(kphi)*e%x(:,kphi)
+                end do
+                ! Normal vector as T1 x T2 at xi
+                N(1)=T1(2)*T2(3)-T1(3)*T2(2)
+                N(2)=T1(3)*T2(1)-T1(1)*T2(3)
+                N(3)=T1(1)*T2(2)-T1(2)*T2(1)
+                ! Geometric jacobian
+                jg=sqrt(dot_product(N,N))
+                ! Unit normal
+                n=N/jg
+                ! Distance vector
+                rv=x-x_i
+                ! Distance vector norm
+                r=sqrt(dot_product(rv,rv))
+                d1r1=1.d0/r
+                d1r2=d1r1**2
+                d1r3=d1r2*d1r1
+                d1r4=d1r3*d1r1
+                d1r5=d1r4*d1r1
+                drdx=rv*d1r1
+                drdn=dot_product(drdx,n)
+                drdni=-dot_product(drdx,n_i)
+                n_dot_ni=dot_product(n,n_i)
+                ! Jacobians * weights
+                jw=jg*js*jt(1)*jt(2)*w(1)*w(2)
+                ! FUNCTIONAL SHAPE FUNCTIONS
+                ! Functional shape functions (secondary variables) at xi
+#               define etype e%stype
+#               define delta e%stype_delta
+#               define phi sphi
+#               include <phi_2d.rc>
+#               undef etype
+#               undef delta
+#               undef phi
+                ! Functional shape functions * jacobians * weights
+                sphijw=sphi*jw
+                ! COMPONENTS OF THE FUNDAMENTAL SOLUTION
+                z(1)=-c_im*p%k1*r
+                z(2)=-c_im*p%k2*r
+                call fbem_zexp_decomposed(2,z,EnR)
+                EnR(2,:)=EnR(2,:)*d1r1
+                EnR(3,:)=EnR(3,:)*d1r2
+                EnR(4,:)=EnR(4,:)*d1r3
+                EnR(5,:)=EnR(5,:)*d1r4
+                EnR(6,:)=EnR(6,:)*d1r5
+                TT1=p%T1(1)*d1r2+p%T1(2)+p%T1(3)*EnR(2,1)+p%T1(4)*EnR(2,2)+p%T1(5)*EnR(3,1)+p%T1(6)*EnR(3,2)+p%T1(7)*EnR(4,1)&
+                   +p%T1(8)*EnR(4,2)+p%T1(9)*EnR(5,1)+p%T1(10)*EnR(5,2)
+                TT2=p%T2(1)*d1r2+p%T2(2)+p%T2(3)*EnR(2,2)+p%T2(4)*EnR(3,1)+p%T2(5)*EnR(3,2)+p%T2(6)*EnR(4,1)+p%T2(7)*EnR(4,2)&
+                   +p%T2(8)*EnR(5,1)+p%T2(9)*EnR(5,2)
+                TT3=p%T3(1)*d1r2+p%T3(2)+p%T3(3)*EnR(2,1)+p%T3(4)*EnR(3,1)+p%T3(5)*EnR(3,2)+p%T3(6)*EnR(4,1)+p%T3(7)*EnR(4,2)&
+                   +p%T3(8)*EnR(5,1)+p%T3(9)*EnR(5,2)
+                ! Add
+                do il=1,3
+                  do ik=1,3
+                    fs_d=TT1*drdx(il)*drdx(ik)*drdni-TT2*(drdx(il)*n_i(ik)-c_dkr(il,ik)*drdni)-TT3*drdx(ik)*n_i(il)
+                    l(:,il,ik)=l(:,il,ik)+fs_d*sphijw
+                  end do
+                end do
+              end do
+            end do
+          ! TRIANGULAR ELEMENTS
+          case (3)
+            ! Telles transformation is applied to Gauss-Legendre*Gauss-Legendre quadrature before the quadrilateral->triangle
+            ! transformation. Because barxi for triangles are given in area triangle coordinates, for Telles transformation
+            ! they must be transformed to quadrilateral coordinates. A special treatment is needed when barxi_2 is near 1, because
+            ! transformation diverges.
+            if (barxip(2).gt.0.995d0) then
+              barxipp(1)=0.5d0
+              barxipp(2)=1.0d0
+            else
+              barxipp(1)=barxip(1)/(1.0d0-barxip(2))
+              barxipp(2)=barxip(2)
+            end if
+            ! Calculate Telles parameters
+            telles_parameters(1)=fbem_telles01_calculate_parameters(barxipp(1),barr)
+            telles_parameters(2)=fbem_telles01_calculate_parameters(barxipp(2),barr)
+            ! Loop through INTEGRATION POINTS
+            do k1=1,gl01_n(gln)
+              ! GAMMA1 COORDINATE
+              gamma(1)=gl01_xi(k1,gln)
+              w(1)=gl01_w(k1,gln)
+              ! GAMMA1->XIPP1 TRANSFORMATION
+              ! xipp_1 coordinate and jacobian from Telles transformation
+              call fbem_telles_xi_and_jacobian(telles_parameters(1),gamma(1),xipp(1),jt(1))
+              do k2=1,gl01_n(gln)
+                ! GAMMA2 COORDINATE
+                gamma(2)=gl01_xi(k2,gln)
+                w(2)=gl01_w(k2,gln)
+                ! GAMMA2->XIPP2 TRANSFORMATION
+                call fbem_telles_xi_and_jacobian(telles_parameters(2),gamma(2),xipp(2),jt(2))
+                ! XIPP->XIP TRANSFORMATION (QUAD->TRI)
+                xip(1)=(1.d0-xipp(2))*xipp(1)
+                xip(2)=xipp(2)
+                jqt=1.d0-xipp(2)
+                ! XIP->XI TRANSFORMATION
+                ! Shape functions and its derivatives
+#               define delta 0.d0
+#               define xi xip
+#               define phi gphi
+#               define dphidxi1 dgphidxi1
+#               define dphidxi2 dgphidxi2
+#               include <phi_tri3.rc>
+#               include <dphidxi1_tri3.rc>
+#               include <dphidxi2_tri3.rc>
+#               undef delta
+#               undef xi
+#               undef phi
+#               undef dphidxi1
+#               undef dphidxi2
+                ! xi coordinates, and xi derivatives
+                xi=0.d0
+                dxidxi1p=0.d0
+                dxidxi2p=0.d0
+                do kphi=1,3
+                  xi=xi+gphi(kphi)*xi_s(:,kphi)
+                  dxidxi1p=dxidxi1p+dgphidxi1(kphi)*xi_s(:,kphi)
+                  dxidxi2p=dxidxi2p+dgphidxi2(kphi)*xi_s(:,kphi)
+                end do
+                ! xip->xi jacobian
+                js=dxidxi1p(1)*dxidxi2p(2)-dxidxi1p(2)*dxidxi2p(1)
+                ! XI->X transformation
+                ! Geometrical shape functions and first derivatives at xi
+#               define etype e%gtype
+#               define delta 0.d0
+#               define phi gphi
+#               define dphidxi1 dgphidxi1
+#               define dphidxi2 dgphidxi2
+#               include <phi_and_dphidxik_2d.rc>
+#               undef etype
+#               undef delta
+#               undef phi
+#               undef dphidxi1
+#               undef dphidxi2
+                ! Components calculation of x, T1 and T2 at xi
+                x=0.d0
+                T1=0.d0
+                T2=0.d0
+                do kphi=1,e%n_gnodes
+                  x=x+gphi(kphi)*e%x(:,kphi)
+                  T1=T1+dgphidxi1(kphi)*e%x(:,kphi)
+                  T2=T2+dgphidxi2(kphi)*e%x(:,kphi)
+                end do
+                ! Normal vector as T1 x T2 at xi
+                N(1)=T1(2)*T2(3)-T1(3)*T2(2)
+                N(2)=T1(3)*T2(1)-T1(1)*T2(3)
+                N(3)=T1(1)*T2(2)-T1(2)*T2(1)
+                ! Geometric jacobian
+                jg=sqrt(dot_product(N,N))
+                ! Unit normal
+                n=N/jg
+                ! Distance vector
+                rv=x-x_i
+                ! Distance vector norm
+                r=sqrt(dot_product(rv,rv))
+                d1r1=1.d0/r
+                d1r2=d1r1**2
+                d1r3=d1r2*d1r1
+                d1r4=d1r3*d1r1
+                d1r5=d1r4*d1r1
+                drdx=rv*d1r1
+                drdn=dot_product(drdx,n)
+                drdni=-dot_product(drdx,n_i)
+                n_dot_ni=dot_product(n,n_i)
+                ! Jacobians * weights
+                jw=jg*js*jqt*jt(1)*jt(2)*w(1)*w(2)
+                ! FUNCTIONAL SHAPE FUNCTIONS
+                ! Functional shape functions (secondary variables) at xi
+#               define etype e%stype
+#               define delta e%stype_delta
+#               define phi sphi
+#               include <phi_2d.rc>
+#               undef etype
+#               undef delta
+#               undef phi
+                ! Functional shape functions * jacobians * weights
+                sphijw=sphi*jw
+                ! COMPONENTS OF THE FUNDAMENTAL SOLUTION
+                z(1)=-c_im*p%k1*r
+                z(2)=-c_im*p%k2*r
+                call fbem_zexp_decomposed(2,z,EnR)
+                EnR(2,:)=EnR(2,:)*d1r1
+                EnR(3,:)=EnR(3,:)*d1r2
+                EnR(4,:)=EnR(4,:)*d1r3
+                EnR(5,:)=EnR(5,:)*d1r4
+                EnR(6,:)=EnR(6,:)*d1r5
+                TT1=p%T1(1)*d1r2+p%T1(2)+p%T1(3)*EnR(2,1)+p%T1(4)*EnR(2,2)+p%T1(5)*EnR(3,1)+p%T1(6)*EnR(3,2)+p%T1(7)*EnR(4,1)&
+                   +p%T1(8)*EnR(4,2)+p%T1(9)*EnR(5,1)+p%T1(10)*EnR(5,2)
+                TT2=p%T2(1)*d1r2+p%T2(2)+p%T2(3)*EnR(2,2)+p%T2(4)*EnR(3,1)+p%T2(5)*EnR(3,2)+p%T2(6)*EnR(4,1)+p%T2(7)*EnR(4,2)&
+                   +p%T2(8)*EnR(5,1)+p%T2(9)*EnR(5,2)
+                TT3=p%T3(1)*d1r2+p%T3(2)+p%T3(3)*EnR(2,1)+p%T3(4)*EnR(3,1)+p%T3(5)*EnR(3,2)+p%T3(6)*EnR(4,1)+p%T3(7)*EnR(4,2)&
+                   +p%T3(8)*EnR(5,1)+p%T3(9)*EnR(5,2)
+                ! Add
+                do il=1,3
+                  do ik=1,3
+                    fs_d=TT1*drdx(il)*drdx(ik)*drdni-TT2*(drdx(il)*n_i(ik)-c_dkr(il,ik)*drdni)-TT3*drdx(ik)*n_i(il)
+                    l(:,il,ik)=l(:,il,ik)+fs_d*sphijw
+                  end do
+                end do
+              end do
+            end do
+            case default
+              call fbem_error_message(error_unit,0,__FILE__,__LINE__,'n_edges not valid')
+        end select
+      !
+      ! VOLUME LOADS
+      !
       case (3)
-        ! Telles transformation is applied to Gauss-Legendre*Gauss-Legendre quadrature before the quadrilateral->triangle
-        ! transformation. Because barxi for triangles are given in area triangle coordinates, for Telles transformation
-        ! they must be transformed to quadrilateral coordinates. A special treatment is needed when barxi_2 is near 1, because
-        ! transformation diverges.
-        if (barxip(2).gt.0.995d0) then
-          barxipp(1)=0.5d0
-          barxipp(2)=1.0d0
-        else
-          barxipp(1)=barxip(1)/(1.0d0-barxip(2))
-          barxipp(2)=barxip(2)
-        end if
-        ! Calculate Telles parameters
-        telles_parameters(1)=fbem_telles01_calculate_parameters(barxipp(1),barr)
-        telles_parameters(2)=fbem_telles01_calculate_parameters(barxipp(2),barr)
-        ! Loop through INTEGRATION POINTS
-        do k1=1,gl01_n(gln)
-          ! GAMMA1 COORDINATE
-          gamma(1)=gl01_xi(k1,gln)
-          w(1)=gl01_w(k1,gln)
-          ! GAMMA1->XIPP1 TRANSFORMATION
-          ! xipp_1 coordinate and jacobian from Telles transformation
-          call fbem_telles_xi_and_jacobian(telles_parameters(1),gamma(1),xipp(1),jt(1))
-          do k2=1,gl01_n(gln)
-            ! GAMMA2 COORDINATE
-            gamma(2)=gl01_xi(k2,gln)
-            w(2)=gl01_w(k2,gln)
-            ! GAMMA2->XIPP2 TRANSFORMATION
-            call fbem_telles_xi_and_jacobian(telles_parameters(2),gamma(2),xipp(2),jt(2))
-            ! XIPP->XIP TRANSFORMATION (QUAD->TRI)
-            xip(1)=(1.d0-xipp(2))*xipp(1)
-            xip(2)=xipp(2)
-            jqt=1.d0-xipp(2)
-            ! XIP->XI TRANSFORMATION
-            ! Shape functions and its derivatives
-#           define delta 0.d0
-#           define xi xip
-#           define phi gphi
-#           define dphidxi1 dgphidxi1
-#           define dphidxi2 dgphidxi2
-#           include <phi_tri3.rc>
-#           include <dphidxi1_tri3.rc>
-#           include <dphidxi2_tri3.rc>
-#           undef delta
-#           undef xi
-#           undef phi
-#           undef dphidxi1
-#           undef dphidxi2
-            ! xi coordinates, and xi derivatives
-            xi=0.d0
-            dxidxi1p=0.d0
-            dxidxi2p=0.d0
-            do kphi=1,3
-              xi=xi+gphi(kphi)*xi_s(:,kphi)
-              dxidxi1p=dxidxi1p+dgphidxi1(kphi)*xi_s(:,kphi)
-              dxidxi2p=dxidxi2p+dgphidxi2(kphi)*xi_s(:,kphi)
-            end do
-            ! xip->xi jacobian
-            js=dxidxi1p(1)*dxidxi2p(2)-dxidxi1p(2)*dxidxi2p(1)
-            ! XI->X transformation
-            ! Geometrical shape functions and first derivatives at xi
-#           define etype e%gtype
-#           define delta 0.d0
-#           define phi gphi
-#           define dphidxi1 dgphidxi1
-#           define dphidxi2 dgphidxi2
-#           include <phi_and_dphidxik_2d.rc>
-#           undef etype
-#           undef delta
-#           undef phi
-#           undef dphidxi1
-#           undef dphidxi2
-            ! Components calculation of x, T1 and T2 at xi
-            x=0.d0
-            T1=0.d0
-            T2=0.d0
-            do kphi=1,e%n_gnodes
-              x=x+gphi(kphi)*e%x(:,kphi)
-              T1=T1+dgphidxi1(kphi)*e%x(:,kphi)
-              T2=T2+dgphidxi2(kphi)*e%x(:,kphi)
-            end do
-            ! Normal vector as T1 x T2 at xi
-            N(1)=T1(2)*T2(3)-T1(3)*T2(2)
-            N(2)=T1(3)*T2(1)-T1(1)*T2(3)
-            N(3)=T1(1)*T2(2)-T1(2)*T2(1)
-            ! Geometric jacobian
-            jg=sqrt(dot_product(N,N))
-            ! Unit normal
-            n=N/jg
-            ! Distance vector
-            rv=x-x_i
-            ! Distance vector norm
-            r=sqrt(dot_product(rv,rv))
-            d1r1=1.d0/r
-            d1r2=d1r1**2
-            d1r3=d1r2*d1r1
-            d1r4=d1r3*d1r1
-            d1r5=d1r4*d1r1
-            drdx=rv*d1r1
-            drdn=dot_product(drdx,n)
-            drdni=-dot_product(drdx,n_i)
-            n_dot_ni=dot_product(n,n_i)
-            ! Jacobians * weights
-            jw=jg*js*jqt*jt(1)*jt(2)*w(1)*w(2)
-            ! FUNCTIONAL SHAPE FUNCTIONS
-            ! Functional shape functions (secondary variables) at xi
-#           define etype e%stype
-#           define delta e%stype_delta
-#           define phi sphi
-#           include <phi_2d.rc>
-#           undef etype
-#           undef delta
-#           undef phi
-            ! Functional shape functions * jacobians * weights
-            sphijw=sphi*jw
-            ! COMPONENTS OF THE FUNDAMENTAL SOLUTION
-            z(1)=-c_im*p%k1*r
-            z(2)=-c_im*p%k2*r
-            call fbem_zexp_decomposed(2,z,EnR)
-            EnR(2,:)=EnR(2,:)*d1r1
-            EnR(3,:)=EnR(3,:)*d1r2
-            EnR(4,:)=EnR(4,:)*d1r3
-            EnR(5,:)=EnR(5,:)*d1r4
-            EnR(6,:)=EnR(6,:)*d1r5
-            TT1=p%T1(1)*d1r2+p%T1(2)+p%T1(3)*EnR(2,1)+p%T1(4)*EnR(2,2)+p%T1(5)*EnR(3,1)+p%T1(6)*EnR(3,2)+p%T1(7)*EnR(4,1)&
-               +p%T1(8)*EnR(4,2)+p%T1(9)*EnR(5,1)+p%T1(10)*EnR(5,2)
-            TT2=p%T2(1)*d1r2+p%T2(2)+p%T2(3)*EnR(2,2)+p%T2(4)*EnR(3,1)+p%T2(5)*EnR(3,2)+p%T2(6)*EnR(4,1)+p%T2(7)*EnR(4,2)&
-               +p%T2(8)*EnR(5,1)+p%T2(9)*EnR(5,2)
-            TT3=p%T3(1)*d1r2+p%T3(2)+p%T3(3)*EnR(2,1)+p%T3(4)*EnR(3,1)+p%T3(5)*EnR(3,2)+p%T3(6)*EnR(4,1)+p%T3(7)*EnR(4,2)&
-               +p%T3(8)*EnR(5,1)+p%T3(9)*EnR(5,2)
-            ! Add
-            do il=1,3
-              do ik=1,3
-                fs_d=TT1*drdx(il)*drdx(ik)*drdni-TT2*(drdx(il)*n_i(ik)-c_dkr(il,ik)*drdni)-TT3*drdx(ik)*n_i(il)
-                l(:,il,ik)=l(:,il,ik)+fs_d*sphijw
-              end do
-            end do
-          end do
-        end do
-        case default
-          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'n_edges not valid')
+        stop 'not yet : fbem_bem_harela3d_hbie_bl_ext_st'
+      !
+      ! OTHERS
+      !
+      case default
+        call fbem_error_message(output_unit,0,'fbem_bem_harela3d_hbie_bl_ext_st',0,&
+                                'it is only possible to integrate line, surface or volume loads')
     end select
     l=p%cte_d*l
   end subroutine fbem_bem_harela3d_hbie_bl_ext_st
