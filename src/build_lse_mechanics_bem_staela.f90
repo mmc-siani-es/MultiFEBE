@@ -584,7 +584,7 @@ subroutine build_lse_mechanics_bem_staela(kr)
             do il=1,problem%n
               h(kn_col,il,il)=1.d0
             end do
-          end if 
+          end if
         end if
 
         ! ======== !
