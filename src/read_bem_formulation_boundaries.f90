@@ -75,7 +75,6 @@ subroutine read_bem_formulation_boundaries(input_fileunit)
     ! Read formulation for BE nodes from parts
     do i=1,n_parts
       write(keyword,*) 'part ', part(i)%id
-      write(*,*) 'part ', part(i)%id
       call fbem_trim2b(keyword)
       call fbem_search_section(input_fileunit,section_name,found)
       call fbem_search_keyword(input_fileunit,keyword,':',found)
