@@ -67,6 +67,10 @@ subroutine calculate_internal_points_mechanics_harmonic(kf)
 
   if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'END calculating internal points solutions at BE regions')
 
+  ! ======================================================================
+  ! TRANSFER INTERNAL POINT SOLUTIONS TO INTERNAL ELEMENTS INTERNAL POINTS
+  ! ======================================================================
+
   if (internalelements) then
 
     if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'START mapping the internal points corresponding to internal elements')
