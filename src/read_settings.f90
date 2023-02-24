@@ -224,20 +224,14 @@ subroutine read_settings(fileunit)
   if (found) call fbem_search_keyword(fileunit,'mesh_file_mode','=',found)
   if (found) then
     read(fileunit,*) mesh_file_mode, mesh_filename
-    call fbem_trimall(mesh_filename)
-    ! If path to the same directory, remove it.
-    if (mesh_filename(1:2).eq.'./') then
-      mesh_filename=trim(mesh_filename(3:len_trim(mesh_filename)))
+    call fbem_trim(mesh_filename)
+    if (.not.fbem_file_exists(mesh_filename)) then
+      write(output_unit,'(a76)') 'Mesh file does not exist ([settings] : mesh_filename), check the given path.'
+      write(output_unit,*)
     end if
-    ! Not yet allowed the full syntax to navigate between folders
-    if (mesh_filename(1:2).eq.'..') then
-      call fbem_error_message(error_unit,1,'mesh_filename',0,'wrong path to the file')
+    if (fbem_path_is_relative(mesh_filename)) then
+      mesh_filename=trim(input_filedir)//trim(mesh_filename)
     end if
-    ! Add path from the input file
-    if (mesh_filename(1:1).ne.'/') then
-      mesh_filename=trim(pwd)//trim(mesh_filename)
-    end if
-    call fbem_trimall(mesh_filename)
     ! Check
     if ((mesh_file_mode.lt.0).or.(mesh_file_mode.gt.2)) then
       call fbem_error_message(error_unit,1,'mesh_file_mode',0,'wrong type of mesh mode')
@@ -259,20 +253,14 @@ subroutine read_settings(fileunit)
   if (found) call fbem_search_keyword(fileunit,'frequencies_file','=',found)
   if (found) then
     read(fileunit,*) frequencies_filename
-    call fbem_trimall(frequencies_filename)
-    ! If path to the same directory, remove it.
-    if (frequencies_filename(1:2).eq.'./') then
-      frequencies_filename=trim(frequencies_filename(3:len_trim(frequencies_filename)))
+    call fbem_trim(frequencies_filename)
+    if (.not.fbem_file_exists(frequencies_filename)) then
+      write(output_unit,'(a88)') 'Frequency file does not exist ([settings] : frequencies_filename), check the given path.'
+      write(output_unit,*)
     end if
-    ! Not yet allowed the full syntax to navigate between folders
-    if (frequencies_filename(1:2).eq.'..') then
-      call fbem_error_message(error_unit,1,'frequencies_filename',0,'wrong path to the file')
+    if (fbem_path_is_relative(frequencies_filename)) then
+      frequencies_filename=trim(input_filedir)//trim(frequencies_filename)
     end if
-    ! Add path from the input file
-    if (frequencies_filename(1:1).ne.'/') then
-      frequencies_filename=trim(pwd)//trim(frequencies_filename)
-    end if
-    call fbem_trimall(frequencies_filename)
     if (verbose_level.ge.3) then
       write(output_unit,'(2x,a,a)') 'frequencies_filename = ', trim(frequencies_filename)
     end if
