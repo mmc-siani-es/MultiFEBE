@@ -45,9 +45,9 @@ module problem_variables
   ! Files configuration
   ! -------------------
   !
-  character(len=fbem_filename_max_length) :: input_filename        !! Input filename.
-  character(len=fbem_filename_max_length) :: output_filename       !! Output filename.
-  character(len=fbem_filename_max_length) :: pwd                   !! Working directory, i.e. where the input file is.
+  character(len=fbem_path_max_length)     :: input_filename        !! Input file path
+  character(len=fbem_path_max_length)     :: output_filename       !! Output files path (without extension)
+  character(len=fbem_path_max_length)     :: input_filedir         !! Input file directory path
   character(len=8)                        :: timestamp_date_start  !! Timestamps
   character(len=10)                       :: timestamp_time_start  !! Timestamps
   character(len=8)                        :: timestamp_date_tick   !! Timestamps
@@ -81,9 +81,9 @@ module problem_variables
   logical                                 :: lse_refine            !! Refine the solution of the LSE.
   ! Mesh file
   integer                                 :: mesh_file_mode        !! 0 (mesh is in the input file), 1 (mesh is in an auxiliary file), 2 (mesh is in an auxiliary file in gmsh format)
-  character(len=fbem_filename_max_length) :: mesh_filename         !! Filename of the mesh
+  character(len=fbem_path_max_length)     :: mesh_filename         !! Filename of the mesh
   ! Frequencies
-  character(len=fbem_filename_max_length) :: frequencies_filename  !! Filename of frequencies
+  character(len=fbem_path_max_length)     :: frequencies_filename  !! Filename of frequencies
   ! --------------------------------------------------------------------------------------------------------------------------------
   ! Linear system of equations (LSE)
   ! --------------------------------
@@ -229,7 +229,7 @@ module problem_variables
   ! ---------------------------------------
   !
   logical                                 :: internalelements            !! True if an internal elements mesh has been defined
-  character(len=fbem_filename_max_length) :: internalelements_filename   !! Filename of the internal elements' mesh
+  character(len=fbem_path_max_length)     :: internalelements_filename   !! Filename of the internal elements' mesh
   integer                                 :: internalelements_fileformat !! File format
   type(fbem_mesh)                         :: internalelements_mesh       !! Internal elements mesh data structure
   integer                                 :: internalelements_order      !! Order of the mesh for the stress resultants calculation ! to be deprecated
