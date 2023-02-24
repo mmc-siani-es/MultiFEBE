@@ -76,20 +76,14 @@ subroutine read_internal_elements(input_fileunit)
     if (found) call fbem_search_keyword(input_fileunit,'mesh_file','=',found)
     if (found) then
       read(input_fileunit,*) internalelements_fileformat, internalelements_filename
-      call fbem_trimall(internalelements_filename)
-      ! If path to the same directory, remove it.
-      if (internalelements_filename(1:2).eq.'./') then
-        internalelements_filename=trim(internalelements_filename(3:len_trim(internalelements_filename)))
+      call fbem_trim(internalelements_filename)
+      if (.not.fbem_file_exists(internalelements_filename)) then
+        write(output_unit,'(a97)') 'Mesh file does not exist ([internal elements] : internalelements_filename), check the given path.'
+        write(output_unit,*)
       end if
-      ! Not yet allowed the full syntax to navigate between folders
-      if (internalelements_filename(1:2).eq.'..') then
-        call fbem_error_message(error_unit,0,'mesh_file',0,'wrong path to the file')
+      if (fbem_path_is_relative(internalelements_filename)) then
+        internalelements_filename=trim(input_filedir)//trim(internalelements_filename)
       end if
-      ! Add path from the input file
-      if (internalelements_filename(1:1).ne.'/') then
-        internalelements_filename=trim(pwd)//trim(internalelements_filename)
-      end if
-      call fbem_trimall(internalelements_filename)
       if (verbose_level.ge.3) then
         write(output_unit,'(2x,a,i1)') 'internalelements_fileformat = ', internalelements_fileformat
         write(output_unit,'(2x,a,a)') 'internalelements_filename = ', trim(internalelements_filename)
@@ -375,7 +369,6 @@ subroutine read_internal_elements(input_fileunit)
             eid=eid+1
             iid=iid+1
           end do
-
 !            !
 !            ! Internal points directly at Gauss points
 !            !
