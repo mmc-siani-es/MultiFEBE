@@ -71,24 +71,22 @@ subroutine read_internal_points_from_mesh(input_fileunit)
     ! READ INTERNAL MESH FILE
     ! -----------------------
 
+    !
+    ! TO-DO: save mesh location in order to export de results to a *.pos there
+    !
+
     call fbem_search_section(input_fileunit,section_name,found)
     if (found) call fbem_search_keyword(input_fileunit,'mesh_file','=',found)
     if (found) then
       read(input_fileunit,*) mesh_file_format, mesh_file_name
-      call fbem_trimall(mesh_file_name)
-      ! If path to the same directory, remove it.
-      if (mesh_file_name(1:2).eq.'./') then
-        mesh_file_name=trim(mesh_file_name(3:len_trim(mesh_file_name)))
+      call fbem_trim(mesh_file_name)
+      if (.not.fbem_file_exists(mesh_file_name)) then
+        write(output_unit,'(a89)') 'Mesh file does not exist ([internal points from mesh] : mesh_file), check the given path.'
+        write(output_unit,*)
       end if
-      ! Not yet allowed the full syntax to navigate between folders
-      if (mesh_file_name(1:2).eq.'..') then
-        call fbem_error_message(error_unit,0,'mesh_file',0,'wrong path to the file')
+      if (fbem_path_is_relative(mesh_file_name)) then
+        mesh_file_name=trim(input_filedir)//trim(mesh_file_name)
       end if
-      ! Add path from the input file
-      if (mesh_file_name(1:1).ne.'/') then
-        mesh_file_name=trim(pwd)//trim(mesh_file_name)
-      end if
-      call fbem_trimall(mesh_file_name)
       if (verbose_level.ge.3) then
         write(output_unit,'(2x,a,a)') 'mesh_file_format = ', mesh_file_format
         write(output_unit,'(2x,a,a)') 'mesh_file_name = ', trim(mesh_file_name)
