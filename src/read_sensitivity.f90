@@ -121,19 +121,15 @@ subroutine read_sensitivity(fileunit)
           allocate (affectedpart(n_affectedparts))
           backspace(fileunit)
           read(fileunit,*) mesh_format, auxmesh_filename, delta_a, n_affectedparts, (affectedpart(j),j=1,n_affectedparts)
-          ! If path to the same directory, remove it.
-          if (auxmesh_filename(1:2).eq.'./') then
-            auxmesh_filename=trim(auxmesh_filename(3:len_trim(auxmesh_filename)))
+          ! Check mesh file path
+          call fbem_trim(auxmesh_filename)
+          if (.not.fbem_file_exists(auxmesh_filename)) then
+            write(output_unit,'(a82)') 'Mesh file does not exist ([sensitivity] : auxmesh_filename), check the given path.'
+            write(output_unit,*)
           end if
-          ! Not yet allowed the full syntax to navigate between folders
-          if (auxmesh_filename(1:2).eq.'..') then
-            call fbem_error_message(error_unit,0,'auxmesh_filename',0,'wrong path to the file')
+          if (fbem_path_is_relative(auxmesh_filename)) then
+            auxmesh_filename=trim(input_filedir)//trim(auxmesh_filename)
           end if
-          ! Add path from the input file
-          if (auxmesh_filename(1:1).ne.'/') then
-            auxmesh_filename=trim(pwd)//trim(auxmesh_filename)
-          end if
-          call fbem_trimall(auxmesh_filename)
           ! Build the mesh
           call tmpmesh%read_from_file(problem%n,geometric_tolerance,auxmesh_filename,mesh_format)
           ! Check of this auxiliary mesh is topologically identical to the base mesh
