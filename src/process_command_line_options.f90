@@ -92,76 +92,51 @@ subroutine process_command_line_options
   ! CHECK INPUT FILE
   !
   if (len_trim(input_filename).eq.0) then
-    write(output_unit,'(a29)') 'Input file name is mandatory.'
+    write(output_unit,'(a24)') 'Input file is mandatory.'
     write(output_unit,*)
     call help
   else
-    ! Condense blanks of the input path
-    call fbem_trim2b(input_filename)
-    ! Check if the path contains a parent folder
-    if (len_trim(input_filename).ge.2) then
-      if (input_filename(1:2).eq.'..') then
-        write(output_unit,'(a53)') 'A relative path to a parent directory is not allowed.'
-        write(output_unit,*)
-        call help
-      end if
+    call fbem_trim(input_filename)
+    if (.not.fbem_file_exists(input_filename)) then
+      write(output_unit,'(a48)') 'Input file does not exist, check the given path.'
+      write(output_unit,*)
+      call help
     end if
-    ! Save the working directory
-    pwd=''
-    ! Find if any '/' character from the end of the input file, if so, copy the directory that contains the file.
-    ok=.false.
-    do i=len_trim(input_filename),1,-1
-      if (ok.eqv.(.false.)) then
-        if (input_filename(i:i).eq.'/') then
-          ok=.true.
-          pwd(i:i)='/'
-        end if
-      else
-        pwd(i:i)=input_filename(i:i)
-      end if
-    end do
-    call fbem_trim2b(pwd)
+    input_filedir = fbem_get_dirname(input_filename)
+    call fbem_trim(input_filedir)
   end if
-  if (len_trim(pwd).eq.0) pwd='./'
   !
   ! CHECK OUTPUT FILE
   !
   if (len_trim(output_filename).eq.0) then
-    write(fmtstr,*) '(a',len_trim(input_filename),')'
-    call fbem_trimall(fmtstr)
-    write(output_filename,fmtstr) trim(input_filename)
+    output_filename = input_filename
   else
-    ! Condense blanks of the input path
-    call fbem_trim2b(output_filename)
-    ! Check if the path contains a parent folder
-    if (len_trim(output_filename).ge.2) then
-      if (output_filename(1:2).eq.'..') then
-        write(output_unit,'(a53)') 'A relative path to a parent directory is not allowed.'
-        write(output_unit,*)
-        call help
-      end if
-    end if
+    call fbem_trim(output_filename)
   end if
   !
   ! Print
   !
   if (verbose_level.ge.1) then
-    ! Working directory
-    write(fmtstr,*) '(a19,a',len_trim(pwd),')'
+    ! Input file directory path
+    if (len_trim(input_filedir).eq.0) then
+      write(output_unit,'(a22)') 'Input file directory: '
+    else
+      write(fmtstr,*) '(a22,a',len_trim(input_filedir),')'
+      call fbem_trimall(fmtstr)
+      write(output_unit,fmtstr) 'Input file directory: ', trim(input_filedir)
+    end if
+    ! Input file path
+    write(fmtstr,*) '(a22,a',len_trim(input_filename),')'
     call fbem_trimall(fmtstr)
-    write(output_unit,fmtstr) 'Working directory: ', trim(pwd)
-    ! Input filename
-    write(fmtstr,*) '(a19,a',len_trim(input_filename),')'
+    write(output_unit,fmtstr) 'Input file          : ', trim(input_filename)
+    ! Output files base path
+    write(fmtstr,*) '(a22,a',len_trim(output_filename),',a2)'
     call fbem_trimall(fmtstr)
-    write(output_unit,fmtstr) 'Input file       : ', trim(input_filename)
-    ! Output filename
-    write(fmtstr,*) '(a19,a',len_trim(output_filename),',a2)'
-    call fbem_trimall(fmtstr)
-    write(output_unit,fmtstr) 'Output files     : ', trim(output_filename), '.*'
+    write(output_unit,fmtstr) 'Output files        : ', trim(output_filename), '.*'
     ! Verbose level
-    write(fmtstr,*) '(a19,i',fbem_nchar_int(verbose_level),')'
+    write(fmtstr,*) '(a22,i',fbem_nchar_int(verbose_level),')'
     call fbem_trimall(fmtstr)
-    write(output_unit,fmtstr) 'Verbose level    : ', verbose_level
+    write(output_unit,fmtstr) 'Verbose level       : ', verbose_level
   end if
 
 end subroutine process_command_line_options
