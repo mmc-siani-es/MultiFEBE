@@ -246,68 +246,35 @@ subroutine build_lse_mechanics_bem_harpor(kf,kr)
     end select
     close(unit=output_fileunit)
   end if
-
-  ! ==================================== !
-  ! CALCULATE AND ASSEMBLE BEM INTEGRALS !
-  ! ==================================== !
+  ! ================================================================================================================================
+  ! CALCULATE AND ASSEMBLE BEM INTEGRALS
+  ! ================================================================================================================================
 
   ! Message
   if (verbose_level.ge.2) then
-    write(fmtstr,*) '(1x,a43)'
+    write(fmtstr,*) '(a23,1x,i',fbem_nchar_int(region(kr)%id),')'
     call fbem_trimall(fmtstr)
-    write(output_unit,fmtstr) 'Calculating and assembling BEM integrals ...'
+    call fbem_timestamp_message(output_unit,2)
+    write(output_unit,fmtstr) 'START assembling region',region(kr)%id
   end if
 
-  !
-  ! Loop through the BOUNDARIES of the REGION for INTEGRATION
-  !
+  ! --------------------------------------------
+  ! CALCULATE AND ASSEMBLE ELEMENT BEM INTEGRALS
+  ! --------------------------------------------
+
+  ! REGION BOUNDARIES
   do kb_int=1,region(kr)%n_boundaries
     sb_int=region(kr)%boundary(kb_int)
     sb_int_reversion=region(kr)%boundary_reversion(kb_int)
     sp_int=boundary(sb_int)%part
-
-    ! Message
-    if (verbose_level.ge.3) then
-      write(fmtstr,*) '(2x,a20,1x,i',fbem_nchar_int(boundary(sb_int)%id),',1x,a8)'
-      call fbem_trimall(fmtstr)
-      if (sb_int_reversion) then
-        write(output_unit,fmtstr) 'Integrating boundary', boundary(sb_int)%id, '(-n) ...'
-      else
-        write(output_unit,fmtstr) 'Integrating boundary', boundary(sb_int)%id, '(+n) ...'
-      end if
-    end if
-
-    !
-    ! Loop through the ELEMENTS of the BOUNDARY for INTEGRATION
-    !
-    !$omp parallel do schedule (dynamic) default (shared) private (se_int,se_int_n_nodes,fmtstr)
+    !$omp parallel do schedule (dynamic) default (shared) private (se_int,se_int_n_nodes)
     do ke_int=1,part(sp_int)%n_elements
       se_int=part(sp_int)%element(ke_int)
       se_int_n_nodes=element(se_int)%n_nodes
-
-      ! Message
-      if (verbose_level.ge.4) then
-        write(fmtstr,*) '(3x,a19,1x,i',fbem_nchar_int(element(se_int)%id),',1x,a3)'
-        call fbem_trimall(fmtstr)
-        if (sb_int_reversion) then
-          write(output_unit,fmtstr) 'Integrating element', element(se_int)%id, '(-n) ...'
-        else
-          write(output_unit,fmtstr) 'Integrating element', element(se_int)%id, '(+n) ...'
-        end if
-      end if
-
       ! Build and assemble the element
       call build_lse_mechanics_bem_harpor_element(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,p2d,p3d)
-
-      ! Ending message
-      if (verbose_level.ge.4) write(output_unit,'(3x,a)') 'done.'
-
     end do
     !$omp end parallel do
-
-    ! Ending message
-    if (verbose_level.ge.3) write(output_unit,'(2x,a)') 'done.'
-
   end do
 
   ! Ending message
