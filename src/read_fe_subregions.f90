@@ -48,11 +48,16 @@ subroutine read_fe_subregions(fileunit)
   integer                        :: i, j, k           ! Counters
   integer                        :: kr, ksr, ssr
 
-  ! Return if not needed
-  if (n_fe_regions.eq.0) then
-    n_fe_subregions=0
-    return
-  end if
+  ! Default value
+  n_fe_subregions=0
+
+  ! Detect if there are FE subregions in FE regions
+  n_region_fe_subregions=0
+  do i=1,n_regions
+    if (region(i)%class.eq.fbem_fe) then
+      n_region_fe_subregions=n_region_fe_subregions+region(i)%n_fe_subregions
+    end if
+  end do
 
   ! Locate the section
   section_name='fe subregions'
@@ -171,12 +176,21 @@ subroutine read_fe_subregions(fileunit)
       end do
     end do
 
+    ! Check if each FE subregion is connected to a FE region
+    do i=1,n_fe_subregions
+      if (fe_subregion(i)%region.eq.0) then
+        call fbem_warning_message(error_unit,0,'['//trim(section_name)//']',fe_subregion(i)%id,'this FE subregion is not connected to any FE region.')
+      end if
+    end do
+
     ! Ending message
     if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'END reading section ['//trim(section_name)//']')
 
   else
 
-    call fbem_error_message(error_unit,0,'['//trim(section_name)//']',0,'this section is required')
+    if (n_region_fe_subregions.gt.0) then
+      call fbem_error_message(error_unit,0,'['//trim(section_name)//']',0,'this section is required')
+    end if
 
   end if
 
