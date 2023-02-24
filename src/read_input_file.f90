@@ -159,6 +159,8 @@ subroutine read_input_file
 
   call fbem_node_symplanes_connectivity(n_nodes,node,n_symplanes,symplane_eid,geometric_tolerance)
 
+  call fbem_element_symplanes_connectivity(problem%n,n_nodes,node,n_elements,element)
+
   if (collapse_nodal_pos) call fbem_transformation_collapse_nodal_positions(problem%n,n_nodes,node,n_symplanes,symplane_eid)
 
   call fbem_check_nodes_symplanes_configuration(n_nodes,node,n_symplanes,symplane_eid)
