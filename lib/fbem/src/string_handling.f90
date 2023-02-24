@@ -55,12 +55,20 @@ module fbem_string_handling
   public :: fbem_search_section
   public :: fbem_search_section_gmsh
   public :: fbem_search_keyword
-  public :: fbem_get_valid_unit ! TO-DO: in another module called fbem_file_handling
+  ! TO-DO: in another module called fbem_file_handling or similar
+  public :: fbem_get_valid_unit
+  public :: fbem_get_current_working_directory
+  public :: fbem_get_os_path_type
+  public :: fbem_path_is_absolute
+  public :: fbem_path_is_relative
+  public :: fbem_get_dirname
+  public :: fbem_file_exists
 
   ! Parameters
   integer, parameter, public :: fbem_stdcharlen         =32   !! Standard length for entities names
   integer, parameter, public :: fbem_string_max_length  =2048 !! Maximum string length for subroutines
   integer, parameter, public :: fbem_filename_max_length=255  !! Maximum file name length
+  integer, parameter, public :: fbem_path_max_length    =4096 !! Maximum path length
   integer, parameter, public :: fbem_file_record_length =8192 !! File record length
   integer, parameter, public :: fbem_fmtstr             =1024 !! Format string length
   ! ANSI escape codes
@@ -766,6 +774,93 @@ contains
     end do
     call fbem_error_message(error_unit,0,'fbem_get_valid_unit',0,'no units available.')
   end function fbem_get_valid_unit
+
+  function fbem_get_current_working_directory()
+    use iso_fortran_env
+    implicit none
+    character(len=4096) :: fbem_get_current_working_directory
+    integer :: st
+    ! Use GNU Extension, only valid for GNU Fortran
+    call getcwd(fbem_get_current_working_directory,st)
+    if (st.ne.0) then
+      write(*,*) 'getcwd() error with status flag', st
+      stop
+    end if
+    fbem_get_current_working_directory = trim(adjustl(fbem_get_current_working_directory))
+  end function fbem_get_current_working_directory
+
+  function fbem_get_os_path_type()
+    use iso_fortran_env
+    implicit none
+    integer :: fbem_get_os_path_type !! 0: unknown, 1: unix-type, 2: Windows-type
+    character(len=4096) :: cwd
+    cwd = fbem_get_current_working_directory()
+    if (cwd(1:1) == '/') then
+      fbem_get_os_path_type = 1
+    else if ((cwd(2:2) == ':').or.(cwd(1:2).eq.'\\')) then
+      fbem_get_os_path_type = 2
+    else
+      stop 'Unknown OS path type'
+    end if
+  end function fbem_get_os_path_type
+
+  function fbem_path_is_absolute(filename)
+    use iso_fortran_env
+    implicit none
+    character(len=*), intent(in) :: filename
+    logical                      :: fbem_path_is_absolute
+    character(len=len(filename)) :: filename_copy
+    filename_copy = trim(adjustl(filename))
+    fbem_path_is_absolute=.false.
+    select case (fbem_get_os_path_type())
+      case (1)
+        if (scan(filename_copy,'/').eq.1) fbem_path_is_absolute=.true.
+      case (2)
+        if (len_trim(filename_copy).ge.2) then
+          if ((filename_copy(2:2) == ':').or.(filename_copy(1:2).eq.'\\')) then
+            fbem_path_is_absolute=.true.
+          end if
+        end if
+    end select
+  end function fbem_path_is_absolute
+
+  function fbem_path_is_relative(filename)
+    use iso_fortran_env
+    implicit none
+    character(len=*), intent(in) :: filename
+    logical                      :: fbem_path_is_relative
+    fbem_path_is_relative = .not.fbem_path_is_absolute(filename)
+  end function fbem_path_is_relative
+
+  function fbem_get_dirname(filename)
+    use iso_fortran_env
+    implicit none
+    character(len=*), intent(in) :: filename
+    character(len=len(filename)) :: fbem_get_dirname
+    character(len=1)             :: separator
+    integer                      :: kseparator, kseparator2
+    select case (fbem_get_os_path_type())
+      case (1)
+        kseparator = scan(filename,'/',.true.)
+        fbem_get_dirname = ''
+        if (kseparator.gt.1) then
+           fbem_get_dirname = filename(1:kseparator)
+        endif
+      case (2)
+        kseparator = max(scan(filename,'\',.true.),scan(filename,'/',.true.))
+        fbem_get_dirname = ''
+        if (kseparator.gt.1) then
+           fbem_get_dirname = filename(1:kseparator)
+        endif
+    end select
+  end function fbem_get_dirname
+
+  function fbem_file_exists(filename)
+    implicit none
+    character(len=*) :: filename
+    logical          :: fbem_file_exists
+    inquire(file=trim(adjustl(filename)),exist=fbem_file_exists)
+  end function fbem_file_exists
 
 ! ----------------------------------------------------------------------------------------------------------------------------------
 !
