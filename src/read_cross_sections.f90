@@ -550,11 +550,6 @@ subroutine read_cross_sections(fileunit)
             end if
             ! Reference vector for y' axis
             element(se)%ep(:,2)=v2ref(1:problem%n)
-            ! Force a straight element
-            if (element(se)%type.eq.fbem_line3) then
-              sn=element(se)%node(3)
-              node(sn)%x=0.5d0*(node(element(se)%node(1))%x+node(element(se)%node(2))%x)
-            end if
           end if
 
           !
