@@ -538,6 +538,13 @@ subroutine calculate_internal_points_mechanics_bem_harela_bl(omega,kr,sb_int,se_
   complex(kind=real64)   :: g (se_int_n_nodes,problem%n,problem%n)
   ! Kernels for HBIE integration
   complex(kind=real64)   :: l (se_int_n_nodes,problem%n,problem%n)
+  ! Symmetry plane configuration for the current element
+  integer                :: se_n_symplanes
+  integer                :: se_n_symelements
+  real(kind=real64)      :: se_symplane_m(3,3)
+  real(kind=real64)      :: se_symplane_s(3)
+  real(kind=real64)      :: se_symplane_t(3,3)
+  real(kind=real64)      :: se_symplane_r(3,3)
   ! Associated with symmetry
   real(kind=real64)      :: symconf_m(problem%n), symconf_t(problem%n), symconf_r(problem%n), symconf_s
   logical                :: reversed
@@ -564,12 +571,15 @@ subroutine calculate_internal_points_mechanics_bem_harela_bl(omega,kr,sb_int,se_
   ! Copy the incident field over the element
   ! not needed..
 
+  ! ACTIVE SYMMETRY PLANES FOR THE CURRENT ELEMENT
+  call build_symplane_bodyload_elements(se_int,se_n_symplanes,se_n_symelements,se_symplane_m,se_symplane_s,se_symplane_t,se_symplane_r)
+
   !
   ! Loop through symmetrical elements
   !
-  do ks=1,n_symelements
+  do ks=1,se_n_symelements
     ! SYMMETRY SETUP
-    call fbem_symmetry_multipliers(ks,problem%n,n_symplanes,symplane_m,symplane_s,symplane_t,symplane_r,&
+    call fbem_symmetry_multipliers(ks,problem%n,se_n_symplanes,se_symplane_m,se_symplane_s,se_symplane_t,se_symplane_r,&
                                    symconf_m,symconf_s,symconf_t,symconf_r,reversed)
     do kn=1,se_int_n_nodes
       se_int_data%x(:,kn)=symconf_m*element(se_int)%x_gn(:,kn)
