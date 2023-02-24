@@ -126,6 +126,7 @@ module fbem_data_structures
   public :: fbem_node_parts_connectivity
   public :: fbem_part_nodes_connectivity
   public :: fbem_node_symplanes_connectivity
+  public :: fbem_element_symplanes_connectivity
   public :: fbem_check_nodes_symplanes_configuration
   public :: fbem_build_mesh_subelements
   public :: fbem_check_and_characterize_be_mesh
@@ -340,6 +341,9 @@ module fbem_data_structures
     ! Connectivity to a BE with the same dimension (if a FE)
     integer                           :: element                        !! Element (internal identifier), if 0, it is uncoupled.
     integer, allocatable              :: element_node(:)                !! The coupled node of each corresponding node (element_node(k)=i means that the node k of the current element is connected to the node i)
+    ! With symmetry planes that pass through the whole element
+    integer                           :: n_symplanes                    !! Number of symmetry planes
+    integer, allocatable              :: symplane(:)                    !! Symmetry planes (internal identifiers)
     !
     ! Connectivity to the design mesh
     !
@@ -1124,7 +1128,7 @@ contains
         k=0
         do j=1,n_symplanes
           ! Check if the coordinate of the node in the direction of the normal of the symmetry plane is < tolerance
-          if (node(i)%x(symplane_eid(j)).le.tol) then
+          if (abs(node(i)%x(symplane_eid(j))).le.tol) then
             ! Increment the counter
             k=k+1
             ! Save the symmetry plane
@@ -1134,6 +1138,47 @@ contains
       end if
     end do
   end subroutine fbem_node_symplanes_connectivity
+
+  ! Build the connectivity of elements with symmetry planes.
+  subroutine fbem_element_symplanes_connectivity(n,n_nodes,node,n_elements,element)
+    implicit none
+    ! I/O
+    integer            :: n
+    integer            :: n_nodes
+    type(fbem_node)    :: node(n_nodes)
+    integer            :: n_elements
+    type(fbem_element) :: element(n_elements)
+    ! Local
+    integer :: ke, kn, sn, ksp, kk, e_symplane(3), n_symplane(3)
+    ! Build connectivity
+    do ke=1,n_elements
+      element(ke)%n_symplanes=0
+      if (element(ke)%n_dimension.eq.n) cycle
+      e_symplane=1
+      do kn=1,element(ke)%n_nodes
+        sn=element(ke)%node(kn)
+        n_symplane=0
+        do ksp=1,node(sn)%n_symplanes
+          n_symplane(node(sn)%symplane(ksp))=1
+        end do
+        do ksp=1,3
+          if ((e_symplane(ksp)+n_symplane(ksp)).ne.2) e_symplane(ksp)=0
+        end do
+        if (sum(e_symplane).eq.0) exit
+      end do
+      element(ke)%n_symplanes=sum(e_symplane)
+      if (element(ke)%n_symplanes.gt.0) then
+        allocate (element(ke)%symplane(element(ke)%n_symplanes))
+        kk=1
+        do ksp=1,3
+          if (e_symplane(ksp).eq.1) then
+            element(ke)%symplane(kk)=ksp
+            kk=kk+1
+          end if
+        end do
+      end if
+    end do
+  end subroutine fbem_element_symplanes_connectivity
 
   ! Check the position of all nodes with respect to the symmetry planes
   subroutine fbem_check_nodes_symplanes_configuration(n_nodes,node,n_symplanes,symplane_eid)
