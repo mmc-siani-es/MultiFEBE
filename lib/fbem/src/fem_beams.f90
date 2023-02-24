@@ -119,11 +119,15 @@ module fbem_fem_beams
   ! DOF for mid-node of line3 with subtype=0:
   !   2D: (u1,u2)'
   !   3D: (u1,u2,u3)'
+  ! DOF for mid-nodes of line4 with subtype=0:
+  !   2D: (u1')'
   !
   public :: fbem_fem_strbeam_L_element
+  public :: fbem_fem_strbeam_Na
   public :: fbem_fem_strbeam_Ka
   public :: fbem_fem_strbeam_Ma
   public :: fbem_fem_strbeam_Qa
+  public :: fbem_fem_strbeam_Nl
   public :: fbem_fem_strbeam_Kl
   public :: fbem_fem_strbeam_Ml
   public :: fbem_fem_strbeam_Ql
@@ -135,6 +139,7 @@ module fbem_fem_beams
   public :: fbem_fem_strbeam_DBl
   public :: fbem_fem_strbeam_DB
   !
+  public :: fbem_fem_strbeam_N
   public :: fbem_fem_strbeam_K_static
   public :: fbem_fem_strbeam_K_harmonic
   public :: fbem_fem_strbeam_Q_midline
@@ -934,6 +939,7 @@ contains
     real(kind=real64) :: fbem_fem_strbeam_L_element(3*(rn-1)*fbem_n_nodes(etype),3*(rn-1)*fbem_n_nodes(etype))
     integer           :: kn, ki, kj
     real(kind=real64) :: e(rn,rn), Ln(rn,rn)
+    fbem_fem_strbeam_L_element=0
     select case (etype)
       case (fbem_line2)
       case (fbem_line3)
@@ -941,7 +947,6 @@ contains
         call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid type of strbeam')
     end select
     ki=1
-    fbem_fem_strbeam_L_element=0.d0
     do kn=1,fbem_n_nodes(etype)
       e=nodal_axes(:,:,kn)
       call fbem_coordinate_transformation_L(rn,local_axis,e,Ln)
@@ -955,6 +960,23 @@ contains
       ki=ki+3*(rn-1)
     end do
   end function fbem_fem_strbeam_L_element
+
+  !! Calculate the shape functions matrix N at a given local coordinate
+  function fbem_fem_strbeam_Na(etype,xi) result (N)
+    implicit none
+    ! I/O
+    integer           :: etype                     !! Type of element (displacements interpolation)
+    real(kind=real64) :: xi                        !! Local coordinate
+    real(kind=real64) :: N(fbem_n_nodes(etype))    !! Shape functions matrix (DOF in local coordinates)
+    ! Local
+    real(kind=real64) :: aux(10)                   ! Auxiliary variable needed for shape_functions module resources
+    N=0
+#   define phi N
+#   define delta 0.d0
+#   include <phi_1d.rc>
+#   undef delta
+#   undef phi
+  end function fbem_fem_strbeam_Na
 
   !! Axial stiffness matrix (displacement or torsion)
   function fbem_fem_strbeam_Ka(etype,L,A,E)
@@ -1029,10 +1051,10 @@ contains
     fbem_fem_strbeam_Qa=0
     select case (etype)
       case (fbem_line2)
-        fbem_fem_strbeam_Qa(1,1)=2.0d0
-        fbem_fem_strbeam_Qa(2,1)=1.0d0
-        fbem_fem_strbeam_Qa(1,2)=1.0d0
-        fbem_fem_strbeam_Qa(2,2)=2.0d0
+        fbem_fem_strbeam_Qa(1,1)=2
+        fbem_fem_strbeam_Qa(2,1)=1
+        fbem_fem_strbeam_Qa(1,2)=1
+        fbem_fem_strbeam_Qa(2,2)=2
         fbem_fem_strbeam_Qa=fbem_fem_strbeam_Qa*L/6
       case (fbem_line3)
         fbem_fem_strbeam_Qa(1,1)= 4
@@ -1049,6 +1071,46 @@ contains
         call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid type of strbeam')
     end select
   end function fbem_fem_strbeam_Qa
+
+  !! Calculate the shape functions matrix N at a given local coordinate
+  function fbem_fem_strbeam_Nl(etype,esubtype,L,phi,xi) result (N)
+    implicit none
+    ! I/O
+    integer           :: etype                     !! Type of element (displacements interpolation)
+    integer           :: esubtype                  !! Subtype (for line3)
+    real(kind=real64) :: L                         !! Length
+    real(kind=real64) :: phi                       !! Ratio of the beam bending stiffness to the shear stiffness
+    real(kind=real64) :: xi                        !! Local coordinate (between -1 and 1)
+    real(kind=real64) :: N(2*fbem_n_nodes(etype))  !! Shape functions matrix (DOF in local coordinates)
+    ! Local
+    real(kind=real64) :: xip                       !! Local coordinate (between 0 and 1)
+    N=0
+    xip=0.5d0*(xi+1.d0)
+    select case (etype)
+      case (fbem_line2)
+        N(1)=-((-1.d0+xip)*(1.d0+xip-2.d0*xip**2+phi))/(1.d0+phi)
+        N(2)=-(L*(-1.d0+xip)*xip*(2.d0-2.d0*xip+phi))/(2.d0*(1.d0+phi))
+        N(3)=(xip*((3.d0-2.d0*xip)*xip+phi))/(1.d0+phi)
+        N(4)=(L*(-1.d0+xip)*xip*(2.d0*xip+phi))/(2.d0*(1.d0+phi))
+      case (fbem_line3)
+        if (esubtype.eq.0) then
+          N(1)=-(((-1.d0+xip)*(-1.d0+2.d0*xip)*(4.d0*xip**2*(1.d0+phi)-3.d0*xip*(1.d0+2.d0*phi)-(1.d0+phi)*(1.d0+4.d0*phi)))/((1.d0+phi)*(1.d0+4.d0*phi)))
+          N(2)=-(L*xip*(1.d0-3.d0*xip+2.d0*xip**2)*(-2.d0-5.d0*phi+2.d0*xip*(1.d0+phi)))/(2.d0+10.d0*phi+8.d0*phi**2)
+          N(3)=-((xip*(-1.d0+2.d0*xip)*(4.d0*xip**2*(1.d0+phi)-xip*(5.d0+2.d0*phi)-phi*(7.d0+4.d0*phi)))/(1.d0+5.d0*phi+4.d0*phi**2))
+          N(4)=((L*xip*(1.d0-3.d0*xip+2.d0*xip**2)*(3.d0*phi+2.d0*xip*(1.d0+phi)))/(2.d0+10.d0*phi+8.d0*phi**2))
+          N(5)=(16.d0*(-1.d0+xip)*xip*((-1.d0+xip)*xip-phi))/(1.d0+4.d0*phi)
+        else
+          N(1)=((-1.d0+xip)*(-1.d0+2.d0*xip)*(1.d0+xip*(3.d0+4.d0*xip*(-4.d0+3.d0*xip))+9.d0*phi+2.d0*xip*(-3.d0+2.d0*xip)*(1.d0+12.d0*xip)*phi+20.d0*(1.d0-4.d0*xip)*phi**2))/((1.d0+4.d0*phi)*(1.d0+5.d0*phi))
+          N(2)=-(L*(-1.d0+xip)*xip*(-1.d0+2.d0*xip)*(-6.d0+12.d0*xip**2*(-1.d0+2.d0*phi)*(1.d0+4.d0*phi)+phi*(-15.d0+8.d0*(1.d0-20.d0*phi)*phi)+6.d0*xip*(3.d0+(9.d0-16.d0*phi)*phi)))/(6.d0*(1.d0+4.d0*phi)*(1.d0+5.d0*phi))
+          N(3)=-((xip*(-1.d0+2.d0*xip)*(12.d0*xip**3*(1.d0+4.d0*phi)-4.d0*xip**2*(5.d0+19.d0*phi)+phi*(17.d0+60.d0*phi)+xip*(7.d0+2.d0*phi-80.d0*phi**2)))/(1.d0+9.d0*phi+20.d0*phi**2))
+          N(4)=-(L*(-1.d0+xip)*xip*(-1.d0+2.d0*xip)*(12.d0*xip**2*(-1.d0+2.d0*phi)*(1.d0+4.d0*phi)+phi*(15.d0+8.d0*(1.d0-20.d0*phi)*phi)-6.d0*xip*(-1.d0+phi+16.d0*phi**2)))/(6.d0*(1.d0+4.d0*phi)*(1.d0+5.d0*phi))
+          N(5)=(16.d0*(-1.d0+xip)*xip*((-1.d0+xip)*xip-phi))/(1.d0+4.d0*phi)
+          N(6)=-(-8.d0*L*(-1.d0+xip)*xip*(-1.d0+2.d0*xip)*(3.d0*(-1.d0+xip)*xip+3.d0*(-2.d0+xip)*(1.d0+xip)*phi-5.d0*phi**2))/(3.d0+15.d0*phi)
+        end if
+      case default
+        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid type of strbeam')
+    end select
+  end function fbem_fem_strbeam_Nl
 
   !! Lateral stiffness matrix
   function fbem_fem_strbeam_Kl(etype,esubtype,L,I,E,phi)
@@ -1423,6 +1485,8 @@ contains
     real(kind=real64) :: Kat(fbem_n_nodes(etype),fbem_n_nodes(etype)), Kat2(2,2)
     real(kind=real64) :: Kl2(2*fbem_n_nodes(etype),2*fbem_n_nodes(etype))
     real(kind=real64) :: Kl3(2*fbem_n_nodes(etype),2*fbem_n_nodes(etype))
+    real(kind=real64) :: Kl22(4,4)
+    real(kind=real64) :: Kl32(4,4)
     ! Initialize
     fbem_fem_strbeam_K=0
     G=E/(2*(1+nu))
@@ -1508,6 +1572,8 @@ contains
     real(kind=real64) :: Mat(fbem_n_nodes(etype),fbem_n_nodes(etype)), Mat2(2,2)
     real(kind=real64) :: Ml2(2*fbem_n_nodes(etype),2*fbem_n_nodes(etype))
     real(kind=real64) :: Ml3(2*fbem_n_nodes(etype),2*fbem_n_nodes(etype))
+    real(kind=real64) :: Ml22(4,4)
+    real(kind=real64) :: Ml32(4,4)
     ! Initialize
     fbem_fem_strbeam_M=0
     G=E/(2*(1+nu))
@@ -1587,6 +1653,8 @@ contains
     real(kind=real64) :: Mau(fbem_n_nodes(etype),fbem_n_nodes(etype))
     real(kind=real64) :: Ml2(2*fbem_n_nodes(etype),2*fbem_n_nodes(etype))
     real(kind=real64) :: Ml3(2*fbem_n_nodes(etype),2*fbem_n_nodes(etype))
+    real(kind=real64) :: Ml22(4,4)
+    real(kind=real64) :: Ml32(4,4)
     ! Initialize
     fbem_fem_strbeam_Madd=0
     select case (etype)
@@ -1704,6 +1772,100 @@ contains
         call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid type of strbeam')
     end select
   end function fbem_fem_strbeam_Q
+
+  !! Shape function matrix (return displacements in global coordinates)
+  function fbem_fem_strbeam_N(rn,etype,esubtype,theory,x,local_axis,A,I,k,E,nu,nodal_axes,xi) result (N)
+    implicit none
+    ! I/O
+    integer           :: rn                                    !! Ambient space
+    integer           :: etype                                 !! Type of element
+    integer           :: esubtype                              !! Subtype (for line3)
+    integer           :: theory                                !! 1: Euler-Bernoulli, 2: Timoshenko
+    real(kind=real64) :: x(rn,fbem_n_nodes(etype))             !! Coordinates of the nodes
+    real(kind=real64) :: local_axis(rn,rn)                     !! Beam local axis (assumed correct, no checkings performed): axis 1' (axial) local_axis(:,1), axis 2' (lateral) local_axis(:,2), axis 3' (lateral) local_axis(:,3)
+    real(kind=real64) :: A                                     !! Length
+    real(kind=real64) :: I(3)                                  !! Moments of inertia:       I(1)=I11, I(2)=I22, I(3)=I33 (2D analysis).
+    real(kind=real64) :: k(3)                                  !! Shear correction factors: k(1)=kt , k(2)=k2 (2D analysis), k(3)=k3 .
+    real(kind=real64) :: E                                     !! Young' modulus
+    real(kind=real64) :: nu                                    !! Poisson's ratio
+    real(kind=real64) :: nodal_axes(rn,rn,fbem_n_nodes(etype)) !! Axes for each node DOFs nodal_axes(component,axis,node)
+    real(kind=real64) :: xi                                    !! Local coordinate
+    real(kind=real64) :: N(rn,3*(rn-1)*fbem_n_nodes(etype))
+    ! Local
+    integer           :: ki
+    real(kind=real64) :: Le                  !! Length
+    real(kind=real64) :: phi2, phi3          !! Ratio of the beam bending stiffness to the shear stiffness
+    real(kind=real64) :: G                   !! Shear modulus
+    real(kind=real64) :: Na(fbem_n_nodes(etype))
+    real(kind=real64) :: Nl(2*fbem_n_nodes(etype))
+    real(kind=real64) :: Nl2(4)
+    real(kind=real64) :: L(3*(rn-1)*fbem_n_nodes(etype),3*(rn-1)*fbem_n_nodes(etype))
+    real(kind=real64) :: ex(rn,rn), Ln(rn,rn)
+    !
+    ! Initialize
+    !
+    N=0
+    Le=sqrt(dot_product(x(:,2)-x(:,1),x(:,2)-x(:,1)))
+    G=E/(2*(1+nu))
+    ! Euler-Bernoulli or Timoshenko
+    if (theory.eq.1) then
+      phi2=0
+      phi3=0
+    else
+      phi2=12*E*I(3)/(Le**2*k(2)*G*A)
+      phi3=12*E*I(2)/(Le**2*k(3)*G*A)
+    end if
+    ! Shape function matrix, all in local coordinates
+    select case (etype)
+      case (fbem_line2)
+        select case (rn)
+          case (2)
+            Na=fbem_fem_strbeam_Na(etype,xi)
+            N(1,[1,4])=Na
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
+            N(2,[2,3,5,6])=Nl
+          case (3)
+            Na=fbem_fem_strbeam_Na(etype,xi)
+            N(1,[1,7])=Na
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
+            N(2,[2,6,8,12])=Nl
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi3,xi)
+            Nl([2,4])=-Nl([2,4])
+            N(3,[3,5,9,11])=Nl
+          case default
+            call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid value of rn')
+        end select
+      case (fbem_line3)
+        select case (rn)
+          case (2)
+            Na=fbem_fem_strbeam_Na(etype,xi)
+            N(1,[1,4,7])=Na
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
+            N(2,[2,3,5,6,8,9])=Nl
+          case (3)
+            Na=fbem_fem_strbeam_Na(etype,xi)
+            N(1,[1,7,13])=Na
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
+            N(2,[2,6,8,12,14,18])=Nl
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi3,xi)
+            Nl([2,4,6])=-Nl([2,4,6])
+            N(3,[3,5,9,11,15,17])=Nl
+          case default
+            call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid value of rn')
+        end select
+      case default
+        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid type of strbeam')
+    end select
+    ! Calculation of change of coordinate matrices
+    L=fbem_fem_strbeam_L_element(rn,etype,local_axis,nodal_axes)
+    ex=0
+    do ki=1,rn
+      ex(ki,ki)=1
+    end do
+    call fbem_coordinate_transformation_L(rn,local_axis,ex,Ln)
+    ! Perform change of coordinates
+    N=matmul(Ln,matmul(N,transpose(L)))
+  end function fbem_fem_strbeam_N
 
   !! Calculation of all matrices needed for static analysis
   subroutine fbem_fem_strbeam_K_static(rn,etype,esubtype,theory,x,local_axis,A,I,ksh,E,nu,nodal_axes,K)
