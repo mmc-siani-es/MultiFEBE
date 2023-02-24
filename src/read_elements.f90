@@ -135,6 +135,7 @@ subroutine read_elements(fileunit,mode)
         element(i)%part=0
         element(i)%n_nodes=0
         element(i)%element=0
+        element(i)%n_symplanes=0
         element(i)%dm_n_elements=0
         element(i)%dm_mode=0
         element(i)%plane=.false.
