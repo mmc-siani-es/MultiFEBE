@@ -216,61 +216,13 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
     sb_int=region(kr)%boundary(kb_int)
     sb_int_reversion=region(kr)%boundary_reversion(kb_int)
     sp_int=boundary(sb_int)%part
-
-    ! Message
-    if (verbose_level.ge.3) then
-      write(fmtstr,*) '(a26,1x,i',fbem_nchar_int(boundary(sb_int)%id),',1x,a4)'
-      call fbem_trimall(fmtstr)
-      call fbem_timestamp_message(output_unit,2)
-      if (sb_int_reversion) then
-        write(output_unit,fmtstr) 'START integrating boundary', boundary(sb_int)%id, '(-n)'
-      else
-        write(output_unit,fmtstr) 'START integrating boundary', boundary(sb_int)%id, '(+n)'
-      end if
-    end if
-
-    !
-    ! Loop through the ELEMENTS of the BOUNDARY for INTEGRATION
-    !
-    !$omp parallel do schedule (dynamic) default (shared) private (se_int,se_int_n_nodes,fmtstr)
+    !$omp parallel do schedule (dynamic) default (shared) private (se_int,se_int_n_nodes)
     do ke_int=1,part(sp_int)%n_elements
       se_int=part(sp_int)%element(ke_int)
       se_int_n_nodes=element(se_int)%n_nodes
-
-      ! Message
-      if (verbose_level.ge.4) then
-        write(fmtstr,*) '(a25,1x,i',fbem_nchar_int(element(se_int)%id),')'
-        call fbem_trimall(fmtstr)
-        call fbem_timestamp_message(output_unit,2)
-        write(output_unit,fmtstr) 'START integrating element', element(se_int)%id
-      end if
-
-      ! Build and assemble the element
       call build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,p2d,p3d)
-
-      ! Ending message
-      if (verbose_level.ge.4) then
-        write(fmtstr,*) '(a23,1x,i',fbem_nchar_int(element(se_int)%id),')'
-        call fbem_trimall(fmtstr)
-        call fbem_timestamp_message(output_unit,2)
-        write(output_unit,fmtstr) 'END integrating element', element(se_int)%id
-      end if
-
     end do
     !$omp end parallel do
-
-    ! Ending message
-    if (verbose_level.ge.3) then
-      write(fmtstr,*) '(a24,1x,i',fbem_nchar_int(boundary(sb_int)%id),',1x,a4)'
-      call fbem_trimall(fmtstr)
-      call fbem_timestamp_message(output_unit,2)
-      if (sb_int_reversion) then
-        write(output_unit,fmtstr) 'END integrating boundary', boundary(sb_int)%id, '(-n)'
-      else
-        write(output_unit,fmtstr) 'END integrating boundary', boundary(sb_int)%id, '(+n)'
-      end if
-    end if
-
   end do
 
   ! Message
@@ -287,8 +239,6 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
 
 
   ! Falta modificar esto para half-space f.s.
-
-
 
   ! Message
   if (verbose_level.ge.2) then
