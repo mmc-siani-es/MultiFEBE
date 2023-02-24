@@ -45,23 +45,20 @@ subroutine read_be_bodyloads(fileunit)
   ! Local
   character(len=fbem_stdcharlen) :: section_name      ! Name of the section
   logical                        :: found
-  integer                        :: i, j, k           ! Counters
+  integer                        :: i, j, k
+  integer                        :: n_region_be_bodyloads
   integer                        :: kr, kb, sb
 
-  ! Return if not needed
-  if (n_be_regions.eq.0) then
-    n_be_bodyloads=0
-    return
-  end if
+  ! Default value
+  n_be_bodyloads=0
 
   ! Detect if there are BE body loads in BE regions
-  k=0
+  n_region_be_bodyloads=0
   do i=1,n_regions
     if (region(i)%class.eq.fbem_be) then
-      k=k+region(i)%n_be_bodyloads
+      n_region_be_bodyloads=n_region_be_bodyloads+region(i)%n_be_bodyloads
     end if
   end do
-  if (k.eq.0) return
 
   ! Locate the section
   section_name='be body loads'
@@ -88,6 +85,8 @@ subroutine read_be_bodyloads(fileunit)
     else
       call fbem_error_message(error_unit,0,section_name,0,'the number of BE body loads must be >0')
     end if
+
+
 
     ! Read BE body load id, part
     do i=1,n_be_bodyloads
@@ -162,12 +161,21 @@ subroutine read_be_bodyloads(fileunit)
       end do
     end do
 
+    ! Check if each BE body load is connected to a region
+    do i=1,n_be_bodyloads
+      if (be_bodyload(i)%region.eq.0) then
+        call fbem_warning_message(error_unit,0,'['//trim(section_name)//']',be_bodyload(i)%id,'this BE body load is not connected to any region.')
+      end if
+    end do
+
     ! Ending message
     if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'END reading section ['//trim(section_name)//']')
 
   else
 
-    call fbem_error_message(error_unit,0,'['//trim(section_name)//']',0,'this section is required')
+    if (n_region_be_bodyloads.gt.0) then
+      call fbem_error_message(error_unit,0,'['//trim(section_name)//']',0,'this section is required.')
+    end if
 
   end if
 
