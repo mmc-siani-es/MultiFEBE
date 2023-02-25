@@ -46,6 +46,7 @@ subroutine read_fe_subregions(fileunit)
   character(len=fbem_stdcharlen) :: section_name      ! Name of the section
   logical                        :: found
   integer                        :: i, j, k           ! Counters
+  integer                        :: n_region_fe_subregions
   integer                        :: kr, ksr, ssr
 
   ! Default value
