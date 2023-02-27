@@ -163,9 +163,10 @@ Figure \ref{fig:owt} shows an example of the modeling capabilities, where an Off
 
 The \textbf{binaries} and the \textbf{source code} of MultiFEBE are available at the \href{http://www.mmc.siani.es/}{research group webpage} and at \href{https://github.com/mmc-siani-es/MultiFEBE}{GitHub}. MultiFEBE is released under \href{https://github.com/mmc-siani-es/MultiFEBE/blob/main/LICENSE}{GPLv2} license. That means that you may copy, distribute and modify the software as long as you track changes/dates in source files. Also, any modifications to or software including (via compiler) GPL-licensed code must also be made available under the GPL along with build \& install instructions.
 
-MultiFEBE is available for GNU/Linux and Windows 64-bit operating systems. Binaries are released in \texttt{*.deb} and \texttt{*.sh} installer packages for GNU/Linux, and in an \text{*.exe} installer for Windows. Source code can be compiled using \texttt{cmake} + \texttt{make} + \texttt{gfortran} in GNU/Linux, and through \texttt{MSYS2}/\texttt{mingw-w64} + \texttt{cmake} + \texttt{make} + \texttt{gcc-fortran}. The program requires multi-core linear algebra libraries: ATLAS or OpenBLAS; which are successors of single-core LAPACK and BLAS. OpenBLAS is the default choice as it can easily be used in both GNU/Linux and Windows. The whole package is configured as a static build, i.e. the program is statically linked against libraries. Details about installing are given next. The compilation procedure is given in Appendix \ref{ap:compilation}.
+MultiFEBE is available for GNU/Linux and Windows 64-bit operating systems. Binaries are released in \texttt{*.deb} and \texttt{*.sh} installer packages for GNU/Linux, and in an \text{*.exe} installer for Windows. Source code can be compiled using \texttt{cmake} + \texttt{make} + \texttt{gfortran} in GNU/Linux, and through \texttt{MSYS2}/\texttt{mingw-w64} + \texttt{cmake} + \texttt{make} + \texttt{gcc-fortran}. The program requires multi-core linear algebra libraries: ATLAS or OpenBLAS; which are successors of single-core LAPACK and BLAS. OpenBLAS is the default choice as it can easily be used in both GNU/Linux and Windows. The whole package is configured as a static build, i.e. the program is statically linked against libraries. Details about installing are given below. 
 
-\section{How to install}
+
+\section{How to install the binaries}
 
 \subsection{GNU/Linux \texttt{*.deb} installer}
 
@@ -192,8 +193,10 @@ $ chmod +x multifebe-x.x.x-Linux.sh
 \begin{Verbatim}[frame=single, fontsize=\small]
 $ ./multifebe-x.x.x-Linux.sh
 \end{Verbatim}
-    \item Follow the instructions of the installer. The program files are decompressed by default in the same directory as the installer. You will have to copy or move the binary \texttt{multifebe} to \texttt{/usr/bin}, or create a simbolic link, so that it is available in the terminal. See more details in Appendix \ref{ap:compilation}.
+    \item The program files are decompressed by default in the same directory as the installer. The executable file is placed inside the subfolder \texttt{bin}. You may copy or move the binary \texttt{multifebe} to any folder where you want to use it, and execute as \verb!./!\texttt{multifebe ...} or, if you have administrator privileges in your system, you might move the binary \texttt{multifebe} to \texttt{/usr/bin}, or create a simbolic link, so that it is available directly in the terminal as any other command. 
 \end{enumerate}
+
+For details about options and usage, see below section \textit{How to use}~\ref{sec:howto}.
 
 %\subsection{Windows installer}
 %
@@ -212,6 +215,11 @@ $ ./multifebe-x.x.x-Linux.sh
 %    \end{figure}
 %    \item Continue the installer steps up until the end.
 %\end{enumerate}
+
+\section{How to compile the source code}
+
+The procedure to compile from the source code is explained in Appendix \ref{ap:compilation}.
+
 
 \section{How to use}
 \label{sec:howto}
