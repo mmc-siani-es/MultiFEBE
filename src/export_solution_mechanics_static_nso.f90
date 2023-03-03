@@ -153,7 +153,7 @@ subroutine export_solution_mechanics_static_nso(output_fileunit)
             se=part(boundary(sb)%part)%element(ke)
             do kn=1,element(se)%n_nodes
               sn=element(se)%node(kn)
-              if (node_used(sn).eqv.(.false.)) then
+              if ((node_used(sn).eqv.(.false.)).and.(node(sn)%export)) then
                 node_used(sn)=.true.
                 !
                 ! Boundary coupling

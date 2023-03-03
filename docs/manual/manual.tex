@@ -630,6 +630,7 @@ complex_notation = cartesian
 \midrule
 \texttt{export\_wsp} & \texttt{T} or \texttt{F} & \texttt{F} & Export wave propagation speeds in each boundary element region. \\
 \texttt{export\_nso} & \texttt{T} or \texttt{F} & \texttt{T} & Export nodal solutions \\
+\texttt{nso\_nodes}   & \texttt{N $n_1$ ... $n_N$}   & \texttt{N=-1} &  Define the number \texttt{N}, and list, of nodes for which the results should be exported. If \texttt{N=-1}, results are exported for all nodes.\\
 \texttt{export\_eso} & \texttt{T} or \texttt{F} & \texttt{T} & Export element solutions \\
 \texttt{export\_pos} & \texttt{T} or \texttt{F} & - & Export results in \href{http://gmsh.info/}{Gmsh} MSH file format version 2.2. The default behaviour is \texttt{F}, but it is automatically set to \texttt{T} if \texttt{mesh\_file\_mode=2} (i.e. a Gmsh mesh file is read). \\
 \midrule
@@ -653,7 +654,7 @@ complex_notation = cartesian
 \texttt{integer\_format} & \texttt{I<W>} & \texttt{auto} & \multirow{3}{5cm}{A Fortran-like string (descriptor) with the format for integer numbers must be used, see Table \ref{tab:format_descriptor}.}  \\
   & \texttt{max} (\texttt{i11}) & & \\
   & \texttt{auto} (\texttt{<W>} = max id length) & & \\
-\texttt{complex\_notation} & \texttt{polar} & \texttt{polar} & \multirow{2}{5cm}{Complex notation to be used when exporting: polar (absolute value and argument), or cartesian (real part and imaginary part).}  \\
+\texttt{complex\_notation} & \texttt{polar} & \texttt{cartesian} & \multirow{2}{5cm}{Complex notation to be used when exporting: polar (absolute value and argument), or cartesian (real part and imaginary part).}  \\
   & \texttt{cartesian} & & 
 \end{tabular}
 \caption{List of export options and values in section \texttt{export}}
@@ -929,6 +930,8 @@ Next, it is shown an example with 4 boundaries, where boundary 1 is the part 1 o
 
 ...
 \end{Verbatim} 
+
+It is important to highlight that, in case of adjacent boundaries with different boundary conditions or with geometries such that a discontinuity in tractions will arrive, it is necessary to double (duplicate) the nodes in the boundaries of such BEM boundaries. A non-nodal collocation strategy is followed by default in all these boundary nodes.
 
 \subsection{Section \texttt{be bodyloads}}
 
@@ -1413,6 +1416,48 @@ node 41: 0 0.
          0 0.
          1 0.
 \end{Verbatim} 
+
+\subsection{Section \texttt{bem formulation over boundaries}}
+
+In this section, the collocation strategies over boundaries can be modified. The general format for the section is:
+\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [bem formulation over boundaries]}]
+[bem formulation over boundaries]
+boundary <boundary id>: <type of collocation strategy> <value>
+\end{Verbatim} 
+\noindent where the types of collocation strategies are given in table~\ref{tab:bem_formulation_boundaries}. 
+
+For instance, in a problem with six boundaries, where the collocation strategy in all boundaries must be nodal, with the exception of boundary 6, where a non-nodal collocation strategies is prefered for all the nodes along its boundaries, with a displacement towards inside each element of 5\% the width of the element, one should write:
+\begin{Verbatim}[frame=single, fontsize=\small, label={input.dat}]
+...
+
+[bem formulation over boundaries]
+boundary 1: sbie
+boundary 2: sbie
+boundary 3: sbie
+boundary 4: sbie
+boundary 5: sbie
+boundary 6: sbie_boundary_mca 0.05
+\end{Verbatim} 
+
+
+\begin{table}[p]
+\centering
+{\footnotesize
+\begin{tabular}{lL{10cm}}
+\textbf{Keyword} & \textbf{Description} \\
+\midrule
+\texttt{sbie} & Nodal collocation strategy for all nodes in the boundary. This is unsafe since at doubled nodes, depending on the boundary conditions, it can lead to a singular linear system of equations.\\
+\texttt{sbie\_boundary\_mca} & Nodal collocation strategy for all nodes in the boundary except for the nodes along its boundaries, where non-nodal collocation is used. The distance for such non-nodal collocation must be specified in relative terms, within the range (0.01-0.5). \\
+\texttt{sbie\_mca} & Non-nodal collocation strategy for all nodes in the boundary. The distance for such non-nodal collocation must be specified in relative terms, within the range (0.01-0.5). \\
+\texttt{hbie} & Nodal collocation strategy for all nodes in the boundary. This is unsafe since at doubled nodes, depending on the boundary conditions, it can lead to a singular linear system of equations. Applicable if the hypersingular formulation is used. \\
+\texttt{dual\_bm\_same} & Non-nodal collocation strategy for all nodes in the boundary both for the singular and hypersingular formulations (Burton and Miller). The distance for such non-nodal collocation must be specified in relative terms, within the range (0.01-0.5). \\
+\texttt{dual\_bm\_mixed} & Nodal collocation strategy for all nodes in the boundary for the singular equations, and non-nodal collocation for the hypersingluar equations only along the boundaries of the boundaries(Burton and Miller). The distance for such non-nodal collocation must be specified in relative terms, within the range (0.01-0.5). \\
+\end{tabular}
+\caption{List of options and values in section \texttt{bem formulation boundaries}}
+\label{tab:bem_formulation_boundaries}
+}
+\end{table}
+
 
 \subsection{Section \texttt{incident waves}}
 In this section, the incoming waves are defined. The incidence angles are shown in Figure \ref{fig:incidence}.

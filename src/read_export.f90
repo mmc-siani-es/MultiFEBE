@@ -47,6 +47,7 @@ subroutine read_export(input_fileunit)
   character(len=fbem_filename_max_length) :: tmp_string        ! Temporary file name
   integer                                 :: output_fileunit
   character(len=fbem_filename_max_length) :: tmp_filename
+  character(len=fbem_fmtstr)              :: fmtstr   ! String used for write format string
 
 
   ! Default settings
@@ -66,7 +67,7 @@ subroutine read_export(input_fileunit)
   call fbem_export_gmsh_fmt_real(fmt_real)
 
   ! Complex notation
-  complex_notation=1
+  complex_notation=2
 
   ! Default export files
   export_overwrite=.true.
@@ -248,6 +249,47 @@ subroutine read_export(input_fileunit)
       read(input_fileunit,*) vectors_scale_factor
       ! Check
       if (vectors_scale_factor.le.0) call fbem_error_message(error_unit,0,'[export]',0,'the indicated scale factor is not valid.')
+    end if
+    !
+    ! Find "nso_nodes"
+    !
+    call fbem_search_section(input_fileunit,'export',found)
+    call fbem_search_keyword(input_fileunit,'nso_nodes','=',found)
+    ! Read if found
+    if (found) then
+      read(input_fileunit,*) nso_nodes
+      if (nso_nodes.le.0) then
+        if (verbose_level.ge.3) then
+          write(output_unit,'(3x,a)') 'Results will be printed for all nodes if export_nso is True'
+        end if
+      else if (nso_nodes.gt.0) then
+        ! Allocate
+        allocate(nso_nodes_export(nso_nodes))
+        ! Set the cursor again at the correct position
+        call fbem_search_section(input_fileunit,'export',found)
+        call fbem_search_keyword(input_fileunit,'nso_nodes','=',found)
+        read(input_fileunit,*) nso_nodes, (nso_nodes_export(i),i=1,nso_nodes)
+        ! Sort the array in ascend order
+        call fbem_quicksort(1,nso_nodes,nso_nodes,nso_nodes_export)
+        ! Check if any value is repeated
+        do i=2,nso_nodes
+          if (nso_nodes_export(i).eq.nso_nodes_export(i-1)) then
+            call fbem_error_message(error_unit,0,__FILE__,__LINE__,&
+                                'there are repeated nodes for export')
+          end if
+        end do
+        ! Set for export only nodes in the list
+        do i=1,n_nodes
+          node(i)%export=.false.
+        end do
+          node(nso_nodes_export)%export=.true.
+        ! Write
+        if (verbose_level.ge.3) then
+          write(fmtstr,*) '(2x,a,i2,',nso_nodes,'i3)'
+          call fbem_trim2b(fmtstr)
+          write(output_unit,fmtstr) 'nso_nodes = ', nso_nodes, (nso_nodes_export(i),i=1,nso_nodes)
+        end if
+      end if
     end if
 
   if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'END reading section ['//trim(section_name)//']')
