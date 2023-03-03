@@ -609,13 +609,13 @@ The user can request the calculation of kinematic and stress resultants over BE 
 
 Finally, since each file contains basically integers, real and complex numbers, and the output files are plain text files, the user can establish how these are written in the file. Files really only contain integers and reals, whose number of digits, notation, etc, can be defined via keywords \texttt{integer\_format} and \texttt{real\_format} respectively. Complex numbers are written as two consecutive real numbers containing whether the absolute value and argument pair (polar notation), or the real part and the imaginary part (cartesian notation).
 
-Most of the times, you would not require to use this section. Perhaps, if you would like to directly have in your output files the complex results in polar notation, and you only require 8 digits after the decimal point (which reduce the file size), you could write the section as:
+Most of the times, you would not require to use this section. Perhaps, if you would like to directly have in your output files the complex results in cartesian notation, and you only require 8 digits after the decimal point (which reduce the file size), you could write the section as:
 \begin{Verbatim}[frame=single, fontsize=\small, label=input.dat]
 ...
 
-[settings]
+[export]
 real_format = eng_simple
-complex_notation = polar
+complex_notation = cartesian
 
 ...
 \end{Verbatim}
@@ -653,7 +653,7 @@ complex_notation = polar
 \texttt{integer\_format} & \texttt{I<W>} & \texttt{auto} & \multirow{3}{5cm}{A Fortran-like string (descriptor) with the format for integer numbers must be used, see Table \ref{tab:format_descriptor}.}  \\
   & \texttt{max} (\texttt{i11}) & & \\
   & \texttt{auto} (\texttt{<W>} = max id length) & & \\
-\texttt{complex\_notation} & \texttt{polar} & \texttt{cartesian} & \multirow{2}{5cm}{Complex notation to be used when exporting: polar (absolute value and argument), or cartesian (real part and imaginary part).}  \\
+\texttt{complex\_notation} & \texttt{polar} & \texttt{polar} & \multirow{2}{5cm}{Complex notation to be used when exporting: polar (absolute value and argument), or cartesian (real part and imaginary part).}  \\
   & \texttt{cartesian} & & 
 \end{tabular}
 \caption{List of export options and values in section \texttt{export}}
