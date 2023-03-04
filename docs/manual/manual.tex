@@ -339,7 +339,7 @@ plane_yz: antisymmetry
 
 All the identifiers of model entities (regions, boundaries, elements, nodes, etc) must be integers greater than 0. Floating point numbers can be expressed as \texttt{125.} (simple precision), \texttt{1.25e2} (simple precision) or \texttt{1.25d2} (double precision). Complex numbers are expressed as \texttt{(2.d3,1.d1)}.
 
-\begin{table}[p]
+\begin{table}
 {\footnotesize
 \centering
 \begin{tabular}{lL{7cm}L{2cm}}
@@ -393,7 +393,7 @@ All the identifiers of model entities (regions, boundaries, elements, nodes, etc
 
 This section defines the main aspects of the case. It is composed of one or more unordered lines containing one assignment \texttt{keyword = values}. Table \ref{tab:problem} shows the recognized keywords, the values they can take, and a brief description of them.
 
-\begin{table}[h]
+\begin{table}
 \centering
 {\footnotesize
 \begin{tabular}{llll}
@@ -546,7 +546,7 @@ log
 
 This section defines several settings of the solver. It is optional since all the parameters here defined have reasonable default values. It is composed of one or more lines containing an assignment \texttt{keyword = values}. Table \ref{tab:settings} shows the recognized settings and a brief description of each one. These are related to the boundary element integration, geometrical parameters, solving of linear system of equations and auxiliary files definition. 
 
-\begin{table}[p]
+\begin{table}
 \centering
 {\footnotesize
 \begin{tabular}{lllL{6cm}}
@@ -620,7 +620,7 @@ complex_notation = cartesian
 ...
 \end{Verbatim}
 
-\begin{table}[p]
+\begin{table}
 \centering
 {\footnotesize
 \begin{tabular}{lllL{6cm}}
@@ -662,7 +662,7 @@ complex_notation = cartesian
 }
 \end{table}
 
-\begin{table}[p]
+\begin{table}
 \centering
 {\footnotesize
 \begin{tabular}{llll}
@@ -703,7 +703,7 @@ The first line must contain the number of materials to be considered. Next, ther
 
 If the type of material is \texttt{fluid} (which can be used only for time harmonic analysis), then it is necessary to define two between the three following properties: bulk modulus $K$, density $\rho$ and wave propagation speed $c$. Optionally, you can define an articial hysteretic damping ratio $\xi$, which is zero by default. See Table \ref{tab:fluid} for more details.
 
-\begin{table}[h]
+\begin{table}
 \centering
 {\small
 \begin{tabular}{lcc}
@@ -721,7 +721,7 @@ Artificial hysteretic damping ratio  & $\xi$  & \texttt{xi}
 
 If the type of material is \texttt{elastic\_solid}, then it is necessary to define two of the five following properties: Young's modulus $E$, bulk modulus $K$, Lam\'e's first parameter, $\lambda$, shear modulus $\mu$ and Poisson's ratio $\nu$. If a time harmonic analysis is going to be performed, it is mandatory to define the density. Optionally, you can define the hysteretic damping ratio $\xi$, which is zero by default. See Table \ref{tab:elastic} for more details.
 
-\begin{table}[h]
+\begin{table}
 \centering
 {\small
 \begin{tabular}{lccl}
@@ -742,7 +742,7 @@ Hysteretic damping ratio                  & $\xi$     & \texttt{xi}
 
 If the type of material is \texttt{biot\_poroelastic\_medium}, then it is necessary to define two of the five following properties of the solid phase: Young's modulus $E$, bulk modulus $K$, Lam\'e's first parameter, $\lambda$, shear modulus $\mu$ and Poisson's ratio $\nu$. It is mandatory to define the solid and fluid phases densities, as well as the porosity, coupling parameters, additional density and dissipation constant. Optionally, you can define the solid phase hysteretic damping ratio $\xi$, which is zero by default. See Table \ref{tab:poroelastic} for more details.
 
-\begin{table}[h]
+\begin{table}
 \centering
 {\small
 \begin{tabular}{lcc}
@@ -1296,7 +1296,7 @@ In this section, the boundary conditions applied on the boundary elements bounda
 
 There are available four boundary conditions for \textbf{ordinary boundaries}, two on global coordinates, and two in local coordinates, see Table \ref{tab:bc_ordinary_viscoelastic}. The two boundary conditions of each group are known displacement and known traction. For each boundary, the user must specify the boundary condition for each coordinate in local coordinates or in global coordinates, but not mixed.
 
-\begin{table}[h]
+\begin{table}
 \centering
 {\footnotesize
 \begin{tabular}{crlll}
@@ -1325,7 +1325,7 @@ It is always preferable using the B.C. expressed in global axes (B.C. 0 or 1) wh
 
 There are available two boundary conditions for each face of a \textbf{crack-like boundary}. One establishes a displacement, while the other establishes a traction, see Table \ref{tab:bc_crack_viscoelastic}.
 
-\begin{table}[h]
+\begin{table}
 \centering
 {\footnotesize
 \begin{tabular}{crlll}
@@ -1419,14 +1419,38 @@ node 41: 0 0.
 
 \subsection{Section \texttt{bem formulation over boundaries}}
 
-In this section, the collocation strategies over boundaries can be modified. The general format for the section is:
+In this section, the user can modify the BEM formulation, i.e. the type of Boundary Integral Equations (BIEs) to be used when building the BEM equations and the collocation strategy to be used. The default formulations (BIEs and collocation strategies) work for almost all cases, and any change done here should be done with care and only when necessary, see below. 
+
+There are two fundamental types of BIEs used in MultiFEBE:
+\begin{description}
+    
+    \item[Singular BIE (SBIE)] It is also called the displacement or pressure BIE, since this equation relates the primary field variable (displacements in elasticity, pressure in acoustics, ...) at the collocation point with the the primary and secondary (tractions in elasticity, fluxes, ...) field variables over the boundaries and the body loads. This BIE can be collocated everywhere (the collocation point is the location of the Dirac delta of the Green's function). However, the nodal collocation (collocation at the boundary element nodes) is the ideal since it leads to the best conditioning of the system. Non-nodal collocation is also possible, but it should be used only where nodal collocation turns problematic. 
+    
+    \item[Hypersingular BIE (HBIE)] It is also called the traction or flux BIE, since it relates the secondary field variable with the the primary and secondary field variables over the boundaries and body loads. This BIE can be collocated only where the discretization has $\mathcal{C}^1$ displacement continuity. Since MultiFEBE only considers $\mathcal{C}^0$ continuous elements, this means that HBIE must have non-nodal collocation (except at element interior nodes).
+    
+\end{description}
+
+The non-nodal collocation strategy implemented here is the so-called Multiple Collocation Approach\footnote{J. Dom\'inguez \& M.P. Ariza. A direct traction BIE for three-dimensional
+crack problems. Engng Anal Bound Elem 2000;24:727–38.} (MCA). When building the BIE associated with a given node, the MCA consists on building the equation by adding up as many BIEs as the number of elements sharing the node, being each BIE collocated near the node but shifted towards inside the element. For a given element, the local coordinates of the collocation point $(\xi^i_k,\eta^i_k)$ contributing to the node $k$ located at $(\xi_k,\eta_k)$ is controlled by the dimensionless distance $\delta$, which is a measure of the separation between the collocation point and the corresponding node such that:
+\begin{align}
+\textnormal{Line elements:}\quad\xi^i_k &= \left(1-\delta\right)\xi_k,\;\xi_k\in\left[-1,1\right] \\
+\textnormal{Quadrilateral elements:}\quad\xi^i_k &= \left(1-\delta\right)\xi_k,\;\xi_k\in\left[-1,1\right] \\
+\quad\eta^i_k &= \left(1-\delta\right)\eta_k,\;\eta_k\in\left[-1,1\right] \\
+\textnormal{Triangular elements:}\quad\xi^i_k &= \left(1-\delta\right)\xi_k+\delta/3,\;\xi_k\in\left[0,1\right] \\
+\quad\eta^i_k &= \left(1-\delta\right)\eta_k+\delta/3,\;\eta_k\in\left[0,1\right],\;\xi_k+\eta_k\leq1
+\end{align}
+This way $\delta\rightarrow0$ means that the collocation point is approaching the node, and $\delta\rightarrow1$ means that the collocation point is approaching the element's centroid in local coordinates. Formally $0<\delta<1$, but in practice it should be $0.01<\delta<0.6$. By default, we use is $\delta=0.42$ for linear elements, $\delta=0.23$ for quadratic elements and $\delta=0.14$ for cubic elements.
+
+% Falta documentar la entrada via groups of nodes y parts. Falta implementar la entrada para opciones de formulacion de body loads.
+
+\noindent The general format for this data section is:
 \begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [bem formulation over boundaries]}]
 [bem formulation over boundaries]
-boundary <boundary id>: <type of collocation strategy> <value>
+boundary <boundary id>: <keyword: type of formulation> <values>
 \end{Verbatim} 
-\noindent where the types of collocation strategies are given in table~\ref{tab:bem_formulation_boundaries}. 
+\noindent where the available formulations and their options are given in Table~\ref{tab:bem_formulation_boundaries}. 
 
-For instance, in a problem with six boundaries, where the collocation strategy in all boundaries must be nodal, with the exception of boundary 6, where a non-nodal collocation strategies is prefered for all the nodes along its boundaries, with a displacement towards inside each element of 5\% the width of the element, one should write:
+For instance, in a problem with six boundaries, where the collocation strategy in all boundaries must be nodal, with the exception of boundary 6, where a non-nodal collocation strategy is prefered for all the nodes along its boundaries, with a displacement towards inside each element of 5\% the width of the element, one should write:
 \begin{Verbatim}[frame=single, fontsize=\small, label={input.dat}]
 ...
 
@@ -1440,19 +1464,29 @@ boundary 6: sbie_boundary_mca 0.05
 \end{Verbatim} 
 
 
-\begin{table}[p]
+\begin{table}
 \centering
 {\footnotesize
-\begin{tabular}{lL{10cm}}
-\textbf{Keyword} & \textbf{Description} \\
+\begin{tabular}{lcL{10cm}}
+\textbf{Keyword} & \textbf{Values} & \textbf{Description} \\
 \midrule
-\texttt{sbie} & Nodal collocation strategy for all nodes in the boundary. This is unsafe since at doubled nodes, depending on the boundary conditions, it can lead to a singular linear system of equations.\\
-\texttt{sbie\_boundary\_mca} & Nodal collocation strategy for all nodes in the boundary except for the nodes along its boundaries, where non-nodal collocation is used. The distance for such non-nodal collocation must be specified in relative terms, within the range (0.01-0.5). \\
-\texttt{sbie\_mca} & Non-nodal collocation strategy for all nodes in the boundary. The distance for such non-nodal collocation must be specified in relative terms, within the range (0.01-0.5). \\
-\texttt{hbie} & Nodal collocation strategy for all nodes in the boundary. This is unsafe since at doubled nodes, depending on the boundary conditions, it can lead to a singular linear system of equations. Applicable if the hypersingular formulation is used. \\
-\texttt{dual\_bm\_same} & Non-nodal collocation strategy for all nodes in the boundary both for the singular and hypersingular formulations (Burton and Miller). The distance for such non-nodal collocation must be specified in relative terms, within the range (0.01-0.5). \\
-\texttt{dual\_bm\_mixed} & Nodal collocation strategy for all nodes in the boundary for the singular equations, and non-nodal collocation for the hypersingluar equations only along the boundaries of the boundaries(Burton and Miller). The distance for such non-nodal collocation must be specified in relative terms, within the range (0.01-0.5). \\
+\multicolumn{3}{c}{\textit{Ordinary boundaries}} \\
+\midrule
+\texttt{sbie} & none & SBIE with nodal collocation strategy for all nodes of the boundary. This is unsafe since at doubled nodes, depending on the boundary conditions, it can lead to a singular linear system of equations. \\
+\texttt{sbie\_boundary\_mca} & $\delta$ & SBIE with nodal collocation strategy for all nodes of the boundary except for the nodes at the boundary of the boundary, where MCA is used. \\
+\texttt{sbie\_mca} & $\delta$ & SBIE with MCA for all nodes of the boundary.  \\
+\texttt{hbie} & $\delta$ & HBIE with MCA for all nodes. \\
+\texttt{dual\_bm\_same} & $\delta$ & Burton and Miller formulation (SBIE$+i/k$HBIE) for eliminating spurious frequencies when solving some exterior problems. SBIE and HBIE with MCA (same $\delta$) for all nodes. \\
+\texttt{dual\_bm\_mixed} & $\delta_\mathrm{S}$ $\delta_\mathrm{H}$ & Burton and Miller formulation (SBIE$+i/k$HBIE) for eliminating spurious frequencies when solving some exterior problems. SBIE with nodal collocation for all nodes of the boundary except for the nodes at the boundary of the boundary where MCA is used ($\delta_\mathrm{S}$), and HBIE with MCA ($\delta_\mathrm{H}$) for all nodes. \\
+\midrule
+\multicolumn{3}{c}{\textit{Crack-like boundaries}} \\
+\midrule
+\texttt{same} & $\delta$ & Dual BEM (SBIE/HBIE) formulation for crack boundary elements with MCA for all nodes \\
+\texttt{mixed} & $\delta_\mathrm{S}$ $\delta_\mathrm{H}$ & Dual BEM (SBIE/HBIE) formulation for crack boundary elements. SBIE with nodal collocation for all nodes of the boundary except for the nodes at the boundary of the boundary where MCA is used ($\delta_\mathrm{S}$), and HBIE with MCA ($\delta_\mathrm{H}$) for all nodes.  \\
 \end{tabular}
+
+By default, $\delta=0.42$ for linear elements, $\delta=0.23$ for quadratic elements, and $\delta=0.14$ for cubic elements. Formally $0<\delta<1$, but in practice it should be $0.01<\delta<0.6$.
+
 \caption{List of options and values in section \texttt{bem formulation boundaries}}
 \label{tab:bem_formulation_boundaries}
 }

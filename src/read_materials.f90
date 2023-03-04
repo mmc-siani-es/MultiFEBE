@@ -164,6 +164,7 @@ subroutine read_materials(fileunit)
         call fbem_harpot_properties(material(i)%property_defined(1),material(i)%property(1,1),&
                                     material(i)%property_defined(2),material(i)%property(2,1),&
                                     material(i)%property_defined(4),material(i)%property(4,1))
+        material(i)%property_defined([1,2,4])=.true.
         if (material(i)%property_defined(3)) then
           if (material(i)%property(3,1).lt.0.d0) then
             call fbem_error_message(error_unit,0,'material',material(i)%id,'xi must be >=0')
