@@ -666,6 +666,7 @@ subroutine read_regions(fileunit)
                   !   - property_r(7): c1, primary wave (P-wave) propagation speed (c_p)
                   !   - property_r(8): c2, secondary wave (S-wave) propagation speed (c_s)
                   !   - property_c(2): mu, complex shear modulus, includes damping
+                  !   - property_c(3): nu, complex (imaginary part different from 0 only if damping different in mu and lambda)
                   !   - property_c(5): E, complex Young modulus, includes damping
                   !   - property_c(6): lambda, complex Lame constant, includes damping
                   !   - property_c(7): c1, complex primary wave (P-wave) propagation speed (c_p), includes damping
@@ -712,6 +713,7 @@ subroutine read_regions(fileunit)
                   region(i)%property_r(7)=dsqrt((region(i)%property_r(6)+2.0d0*region(i)%property_r(2))/region(i)%property_r(1))
                   region(i)%property_r(8)=dsqrt(region(i)%property_r(2)/region(i)%property_r(1))
                   region(i)%property_c(2)=region(i)%property_r(2)*(1.0d0+c_im*2.0d0*region(i)%property_r(4))
+                  region(i)%property_c(3)=region(i)%property_r(3)
                   region(i)%property_c(5)=2.0d0*region(i)%property_c(2)*(1.0d0+region(i)%property_r(3))
                   region(i)%property_c(6)=2.0d0*region(i)%property_c(2)*region(i)%property_r(3)/(1.0d0-2.0d0*region(i)%property_r(3))
                   region(i)%property_c(7)=zsqrt((region(i)%property_c(6)+2.0d0*region(i)%property_c(2))/region(i)%property_r(1))
@@ -993,6 +995,7 @@ subroutine read_regions(fileunit)
                       !   - property_r(7): c1, primary wave (P-wave) propagation speed (c_p)
                       !   - property_r(8): c2, secondary wave (S-wave) propagation speed (c_s)
                       !   - property_c(2): =property_r(2)
+                      !   - property_c(3): =property_r(3)
                       !   - property_c(5): =property_r(5)
                       !   - property_c(6): =property_r(6)
                       !   - property_c(7): =property_r(7)

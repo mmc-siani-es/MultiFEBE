@@ -376,6 +376,7 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
           mm=0.
           lm=0.
           ! Calculate the shape functions vector at xi_i
+          x_i=element(se_int)%x_i_hbie(:,kn_col)
           xi_i=element(se_int)%xi_i_hbie(:,kn_col)
           pphi_i=fbem_phi_hybrid(element(se_int)%type_f1,element(se_int)%delta_f,xi_i)
           sphi_i=fbem_phi_hybrid(element(se_int)%type_f2,element(se_int)%delta_f,xi_i)
@@ -418,6 +419,7 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
             gp=0.
             hm=0.
             gm=0.
+            x_i=element(se_int)%x_i_sbie(:,kn_col)
             xi_i=element(se_int)%xi_i_sbie(:,kn_col)
             !
             ! If the collocation point is in an edge or a vertex, the free-term has to be calculated.
@@ -652,6 +654,7 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
             hm=0.
             gm=0.
             ! Calculate the shape functions vector at xi_i
+            x_i=element(se_int)%x_i_sbie_mca(:,kn_col)
             xi_i=element(se_int)%xi_i_sbie_mca(:,kn_col)
             pphi_i=fbem_phi_hybrid(element(se_int)%type_f1,element(se_int)%delta_f,xi_i)
             ! Add free-term to h+
@@ -679,6 +682,7 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
             mm=0.
             lm=0.
             ! Calculate the shape functions vector at xi_i
+            x_i=element(se_int)%x_i_hbie(:,kn_col)
             xi_i=element(se_int)%xi_i_hbie(:,kn_col)
             sphi_i=fbem_phi_hybrid(element(se_int)%type_f2,element(se_int)%delta_f,xi_i)
             ! Add free-term to h+
