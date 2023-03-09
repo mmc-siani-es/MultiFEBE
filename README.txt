@@ -3,7 +3,11 @@
 What is MultiFEBE?
 ==================
 
-MultiFEBE is a multi-domain Finite Element and Boundary Element linear mechanics solver. It implements mixed-dimensional couplings between finite elements and boundary elements. It is available for Windows and GNU/Linux 64 bits.
+MultiFEBE is a multi-domain Finite Element and Boundary Element linear mechanics solver. It is available for Windows and GNU/Linux 64 bits (see below).
+
+It implements several mixed-dimensional couplings between Finite Elements (FE) and Boundary Elements (BE), particularly those developed in our [research team](http://www.mmc.siani.es/) (see our [publications](http://www.mmc.siani.es/papers-in-referred-journals/)). It also implements ordinary and crack boundary elements for inviscid fluids (acoustic medium), elastic solid and poroelastic medium, allowing the interaction between regions of different kind of materials. If you use MultiFEBE please cite the following reference in your work (books, articles, reports, etc.):
+
+J.D.R. Bordón, G.M. Álamo, L.A. Padrón, J.J. Aznárez, O. Maeso. MultiFEBE: A multi-domain finite element–boundary element solver for linear mixed-dimensional mechanical problems, SoftwareX 20, 101265, 2022. [Link](https://www.sciencedirect.com/science/article/pii/S2352711022001832)
 
 How to install?
 ===============
@@ -47,19 +51,7 @@ This work has been developed with the support of research projects:
 
   * PID2020-120102RB-I00, funded by the Agencial Estatal de Investigación of Spain, MCIN/AEI/10.13039/501100011033.
 
-  <p align="center">
-    <img src="docs/img/miciinn-aei.png">
-  </p>  
-
   * ProID2020010025, funded by Consejerı́a de Economı́a, Conocimiento y Empleo (Agencia Canaria de la Investigación. Innovación y Sociedad de la Información) of the Gobierno de Canarias and FEDER;
-
-  <p align="center">
-    <img src="docs/img/gobcan-fse.png">
-  </p>
 
   * BIA2017-88770-R, funded by Subdirección General de Proyectos de Investigación of the Ministerio de Economı́a y Competitividad (MINECO) of Spain and FEDER.
   
-  <p align="center">
-    <img src="docs/img/miciinn-feder-aei.png">
-  </p> 
-
