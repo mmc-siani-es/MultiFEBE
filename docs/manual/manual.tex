@@ -1450,7 +1450,7 @@ boundary <boundary id>: <keyword: type of formulation> <values>
 \end{Verbatim} 
 \noindent where the available formulations and their options are given in Table~\ref{tab:bem_formulation_boundaries}. 
 
-For instance, in a problem with six boundaries, where the collocation strategy in all boundaries must be nodal, with the exception of boundary 6, where a non-nodal collocation strategy is prefered for all the nodes along its boundaries, with a displacement towards inside each element of 5\% the width of the element, one should write:
+For instance, in a problem with six boundaries, where the collocation strategy in all boundaries must be nodal, with the exception of boundary 6, where a non-nodal collocation strategy is prefered for all the nodes along its boundaries, with a displacement towards inside each element of 10\% the width of the element, one should write:
 \begin{Verbatim}[frame=single, fontsize=\small, label={input.dat}]
 ...
 
@@ -1460,7 +1460,7 @@ boundary 2: sbie
 boundary 3: sbie
 boundary 4: sbie
 boundary 5: sbie
-boundary 6: sbie_boundary_mca 0.05
+boundary 6: sbie_boundary_mca 0.1
 \end{Verbatim} 
 
 
@@ -1473,19 +1473,26 @@ boundary 6: sbie_boundary_mca 0.05
 \multicolumn{3}{c}{\textit{Ordinary boundaries}} \\
 \midrule
 \texttt{sbie} & none & SBIE with nodal collocation strategy for all nodes of the boundary. This is unsafe since at doubled nodes, depending on the boundary conditions, it can lead to a singular linear system of equations. \\
-\texttt{sbie\_boundary\_mca} & $\delta$ & SBIE with nodal collocation strategy for all nodes of the boundary except for the nodes at the boundary of the boundary, where MCA is used. \\
-\texttt{sbie\_mca} & $\delta$ & SBIE with MCA for all nodes of the boundary.  \\
-\texttt{hbie} & $\delta$ & HBIE with MCA for all nodes. \\
-\texttt{dual\_bm\_same} & $\delta$ & Burton and Miller formulation (SBIE$+i/k$HBIE) for eliminating spurious frequencies when solving some exterior problems. SBIE and HBIE with MCA (same $\delta$) for all nodes. \\
-\texttt{dual\_bm\_mixed} & $\delta_\mathrm{S}$ $\delta_\mathrm{H}$ & Burton and Miller formulation (SBIE$+i/k$HBIE) for eliminating spurious frequencies when solving some exterior problems. SBIE with nodal collocation for all nodes of the boundary except for the nodes at the boundary of the boundary where MCA is used ($\delta_\mathrm{S}$), and HBIE with MCA ($\delta_\mathrm{H}$) for all nodes. \\
+\texttt{sbie\_boundary\_mca} & $\delta$ & \textbf{This is the default formulation for ordinary boundaries.} SBIE with nodal collocation strategy for all nodes of the boundary except for the nodes at the boundary of the boundary, where MCA is used. The default value is $\delta=0.05$.  \\
+\texttt{sbie\_mca} & $\delta$ & SBIE with MCA for all nodes of the boundary. The default value is indicated by Note 1. \\
+\texttt{hbie} & $\delta$ & HBIE with MCA for all nodes. For using default values (see Note 1), the user must write a value $\delta\leq0$. Other values  \\
+\texttt{dual\_bm\_same} & $\delta$ & Burton and Miller formulation (SBIE$+i/k$HBIE) for eliminating spurious frequencies when solving some exterior problems. SBIE and HBIE with MCA (same $\delta$) for all nodes. The default value is indicated by Note 1. \\
+\texttt{dual\_bm\_mixed} & $\delta_\mathrm{S}$ $\delta_\mathrm{H}$ & Burton and Miller formulation (SBIE$+i/k$HBIE) for eliminating spurious frequencies when solving some exterior problems. SBIE with nodal collocation for all nodes of the boundary except for the nodes at the boundary of the boundary where MCA is used ($\delta_\mathrm{S}$), and HBIE with MCA ($\delta_\mathrm{H}$) for all nodes. For SBIE, the default value $\delta_\mathrm{S}=0.05$. For HBIE, the default value $\delta_\mathrm{H}$ is indicated by Note 1. \\
 \midrule
 \multicolumn{3}{c}{\textit{Crack-like boundaries}} \\
 \midrule
-\texttt{same} & $\delta$ & Dual BEM (SBIE/HBIE) formulation for crack boundary elements with MCA for all nodes \\
-\texttt{mixed} & $\delta_\mathrm{S}$ $\delta_\mathrm{H}$ & Dual BEM (SBIE/HBIE) formulation for crack boundary elements. SBIE with nodal collocation for all nodes of the boundary except for the nodes at the boundary of the boundary where MCA is used ($\delta_\mathrm{S}$), and HBIE with MCA ($\delta_\mathrm{H}$) for all nodes.  \\
+\texttt{same} & $\delta$ & \textbf{This is the default formulation for crack-like boundaries.} Dual BEM (SBIE/HBIE) formulation for crack boundary elements with MCA for all nodes. The default value $\delta$ is indicated by Note 1. \\
+\texttt{mixed} & $\delta_\mathrm{S}$ $\delta_\mathrm{H}$ & Dual BEM (SBIE/HBIE) formulation for crack boundary elements. SBIE with nodal collocation for all nodes of the boundary except for the nodes at the boundary of the boundary where MCA is used ($\delta_\mathrm{S}$), and HBIE with MCA ($\delta_\mathrm{H}$) for all nodes. For SBIE, the default value $\delta_\mathrm{S}=0.05$. For HBIE, the default value $\delta_\mathrm{H}$ is indicated by Note 1. \\
 \end{tabular}
+\begin{flushleft}
+\begin{itemize}
+\item General note 1: Formally $0<\delta<1$, but in practice it should be $0.01<\delta<0.6$.
+\item General note 2: If the user assigns a value $\delta\leq0$, default values are considered.
+\item Note 1: By default, $\delta=0.42$ for linear elements, $\delta=0.23$ for quadratic elements, and $\delta=0.14$ for cubic elements. 
+\end{itemize}
+\end{flushleft}
 
-By default, $\delta=0.42$ for linear elements, $\delta=0.23$ for quadratic elements, and $\delta=0.14$ for cubic elements. Formally $0<\delta<1$, but in practice it should be $0.01<\delta<0.6$.
+
 
 \caption{List of options and values in section \texttt{bem formulation boundaries}}
 \label{tab:bem_formulation_boundaries}
