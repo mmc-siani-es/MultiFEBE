@@ -234,6 +234,9 @@ module fbem_shape_functions
   !! It is useful when implementing functions/subroutines.
   integer, allocatable, public :: fbem_n_dimension(:)
 
+  !! Element order
+  integer, allocatable, public :: fbem_element_order(:)
+
   !! Element number of nodes.
   !!
   !! Example: <tt>fbem_n_nodes(fbem_quad9)</tt> returns <tt>9</tt>, which means that <tt>fbem_quad9</tt> has 9 nodes.
@@ -533,6 +536,36 @@ contains
       fbem_n_dimension(fbem_tri4       )=2
       fbem_n_dimension(fbem_tri1       )=2
       fbem_n_dimension(fbem_quad1      )=2
+    end if
+    if (.not.allocated(fbem_element_order)) then
+      allocate (fbem_element_order(maxtype))
+      fbem_element_order=0
+      fbem_element_order(fbem_point1     )=0
+      fbem_element_order(fbem_line1      )=0
+      fbem_element_order(fbem_line2      )=1
+      fbem_element_order(fbem_line3      )=2
+      fbem_element_order(fbem_line4      )=3
+      fbem_element_order(fbem_tri3       )=1
+      fbem_element_order(fbem_tri6       )=2
+      fbem_element_order(fbem_quad4      )=1
+      fbem_element_order(fbem_quad8      )=2
+      fbem_element_order(fbem_quad9      )=2
+      fbem_element_order(fbem_tet4       )=1
+      fbem_element_order(fbem_tet10      )=2
+      fbem_element_order(fbem_hex8       )=1
+      fbem_element_order(fbem_hex20      )=2
+      fbem_element_order(fbem_hex27      )=2
+      fbem_element_order(fbem_line2point1)=1
+      fbem_element_order(fbem_line3point1)=2
+      fbem_element_order(fbem_line3_qp1t )=2
+      fbem_element_order(fbem_line3_qp2t )=2
+      fbem_element_order(fbem_line3_mqp1u)=2
+      fbem_element_order(fbem_line3_mqp2u)=2
+      fbem_element_order(fbem_line3_mqp1t)=2
+      fbem_element_order(fbem_line3_mqp2t)=2
+      fbem_element_order(fbem_tri4       )=1
+      fbem_element_order(fbem_tri1       )=0
+      fbem_element_order(fbem_quad1      )=0
     end if
     if (.not.allocated(fbem_n_nodes)) then
       allocate (fbem_n_nodes(maxtype))
