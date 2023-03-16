@@ -37,8 +37,22 @@ subroutine assign_default_bem_formulation
 
   ! Local variables
   integer :: ke, se, kn, knj, sn, snj, i, k
+  real(kind=real64), parameter :: default_mca_boundary_delta  = 0.05d0
+  real(kind=real64), parameter :: default_mca_linear_delta    = 0.42264973d0
+  real(kind=real64), parameter :: default_mca_quadratic_delta = 0.22540333d0
+  real(kind=real64), parameter :: default_mca_cubic_delta     = 0.138863688d0
 
   if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'START assigning default BEM formulations')
+
+  !
+  ! Each node may have one of the following BEM formulations (BIE & collocation strategy)
+  !
+  ! SBIE                : SBIE with nodal collocation (standard)
+  ! SBIE MCA            : SBIE with Multiple Collocation Approach (MCA) (approach for avoiding corner problems at doubled nodes)
+  ! HBIE                : HBIE with Multiple Collocation Approach (MCA) (approach for avoiding C1 requirement at collocation point)
+  ! DUAL BURTON & MILLER: SBIE+alpha*HBIE formulation for avoiding spurious results for external problems with internal cavities
+  ! DUAL BOUNDARY       : Simultaneous use of SBIE and HBIE for crack-like boundaries
+  !
 
   ! =============
   ! BE BOUNDARIES
@@ -52,275 +66,74 @@ subroutine assign_default_bem_formulation
     end if
   end do
 
-  ! Loop through the BE BOUNDARIES
   do i=1,n_boundaries
-    !
-    ! Select between boundary class
-    !
     select case (boundary(i)%class)
       !
       ! ORDINARY BOUNDARY
       !
       case (fbem_boundary_class_ordinary)
-        ! Loop through the nodes of the boundary
         do kn=1,part(boundary(i)%part)%n_nodes
-          ! Selected node
           sn=part(boundary(i)%part)%node(kn)
-          ! If the node belongs to continuous elements
-          if (element(node(sn)%element(1))%discontinuous.eqv.(.false.)) then
-!            !
-!            ! SBIE by default
-!            !
-!            node(sn)%sbie=fbem_sbie
-!            node(sn)%hbie=0
-!            node(sn)%dual=0
-!            node(sn)%dual_is_common=.false.
-            !
-            ! SBIE by default, except nodes at the boundary of the boundary, which have SBIE MCA formulation.
-            !
-            ! The node has SBIE formulation
-            node(sn)%sbie=fbem_sbie
-            node(sn)%hbie=0
-            node(sn)%dual=0
-            node(sn)%dual_is_common=.false.
-            ! If it is in the boundary of the boundary
-            if (node(sn)%in_boundary) then
-              ! The node has SBIE MCA formulation
-              node(sn)%sbie=fbem_sbie_mca
-              ! The displacement towards inside each element of the node for SBIE MCA formulation
-              ! Loop through the elements of the node
-              do ke=1,node(sn)%n_elements
-                ! Selected element
-                se=node(sn)%element(ke)
-                ! Index of the node in the selected element
-                k=node(sn)%element_node_iid(ke)
-                ! It depends on the element type
-                select case (element(se)%type)
-                  ! Linear elements
-                  case (fbem_line2,fbem_tri3,fbem_quad4)
-                    element(se)%delta_sbie_mca(k)=0.42264973d0
-                  ! Quadratic elements
-                  case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                    element(se)%delta_sbie_mca(k)=0.22540333d0
-                  ! Cubic elements
-                  case (fbem_line4)
-                    element(se)%delta_sbie_mca(k)=0.138863688d0
-                end select
-              end do
-            end if
-!            !
-!            ! SBIE MCA by default
-!            !
-!            ! The node has SBIE MCA formulation
-!            node(sn)%sbie=fbem_sbie_mca
-!            node(sn)%hbie=0
-!            node(sn)%dual=0
-!            node(sn)%dual_is_common=.false.
-!            ! The displacement towards inside each element of the node for SBIE MCA formulation
-!            ! Loop through the elements of the node
-!            do ke=1,node(sn)%n_elements
-!              ! Selected element
-!              se=node(sn)%element(ke)
-!              ! Index of the node in the selected element
-!              k=node(sn)%element_node_iid(ke)
-!              ! It depends on the element type
-!              select case (element(se)%type)
-!                ! Linear elements
-!                case (fbem_line2,fbem_tri3,fbem_quad4)
-!                  element(se)%delta_sbie_mca(k)=0.42264973d0
-!                ! Quadratic elements
-!                case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-!                  element(se)%delta_sbie_mca(k)=0.22540333d0
-!                ! Cubic elements
-!                case (fbem_line4)
-!                  element(se)%delta_sbie_mca(k)=0.138863688d0
-!              end select
-!            end do
-!            !
-!            ! HBIE by default
-!            !
-!            ! The node has HBIE MCA formulation
-!            node(sn)%sbie=0
-!            node(sn)%hbie=fbem_hbie
-!            node(sn)%dual=0
-!            node(sn)%dual_is_common=.false.
-!            ! The displacement towards inside each element of the node for HBIE MCA formulation
-!            ! Loop through the elements of the node
-!            do ke=1,node(sn)%n_elements
-!              ! Selected element
-!              se=node(sn)%element(ke)
-!              ! Index of the node in the selected element
-!              k=node(sn)%element_node_iid(ke)
-!              ! It depends on the element type
-!              select case (element(se)%type)
-!                ! Linear elements
-!                case (fbem_line2,fbem_tri3,fbem_quad4)
-!                  element(se)%delta_hbie(k)=0.42264973d0
-!                ! Quadratic elements
-!                case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-!                  element(se)%delta_hbie(k)=0.22540333d0
-!                ! Cubic elements
-!                case (fbem_line4)
-!                  element(se)%delta_hbie(k)=0.138863688d0
-!              end select
-!            end do
-!            !
-!            ! SBIE MCA + HBIE MCA (Burton & Miller) by default
-!            !
-!            node(sn)%sbie=fbem_sbie_mca
-!            node(sn)%hbie=fbem_hbie
-!            node(sn)%dual=fbem_dual_burton_miller
-!            node(sn)%dual_is_common=.true.
-!            node(sn)%alpha=1.0d0
-!            ! The displacement towards inside each element of the node for HBIE MCA formulation
-!            ! Loop through the elements of the node
-!            do ke=1,node(sn)%n_elements
-!              ! Selected element
-!              se=node(sn)%element(ke)
-!              ! Index of the node in the selected element
-!              k=node(sn)%element_node_iid(ke)
-!              ! It depends on the element type
-!              select case (element(se)%type)
-!                ! Linear elements
-!                case (fbem_line2,fbem_tri3,fbem_quad4)
-!                  element(se)%delta_sbie_mca(k)=0.42264973d0
-!                  element(se)%delta_hbie(k)=0.42264973d0
-!                ! Quadratic elements
-!                case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-!                  element(se)%delta_sbie_mca(k)=0.22540333d0
-!                  element(se)%delta_hbie(k)=0.22540333d0
-!                ! Cubic elements
-!                case (fbem_line4)
-!                  element(se)%delta_sbie_mca(k)=0.138863688d0
-!                  element(se)%delta_hbie(k)=0.138863688d0
-!              end select
-!            end do
           !
-          ! If the node belongs to a discontinuous element
+          ! SBIE with nodal collocation by default, except for nodes at the boundary of the boundary in continuous elements, which
+          ! have SBIE with MCA with a small delta.
           !
-          else
-            !
-            ! SBIE by default
-            !
-            node(sn)%sbie=fbem_sbie
-            node(sn)%hbie=0
-            node(sn)%dual=0
-            node(sn)%dual_is_common=.false.
-!            !
-!            ! HBIE by default
-!            !
-!            node(sn)%sbie=0
-!            node(sn)%hbie=fbem_hbie
-!            node(sn)%dual=0
-!            node(sn)%dual_is_common=.false.
-!            !
-!            ! SBIE + HBIE (Burton & Miller) by default
-!            !
-!            node(sn)%sbie=fbem_sbie
-!            node(sn)%hbie=fbem_hbie
-!            node(sn)%dual=fbem_dual_burton_miller
-!            node(sn)%dual_is_common=.true.
-!            node(sn)%alpha=1.0d0
+          node(sn)%sbie=fbem_sbie
+          node(sn)%hbie=0
+          node(sn)%dual=0
+          node(sn)%dual_is_common=.false.
+          if (node(sn)%in_boundary.and.(.not.element(node(sn)%element(1))%discontinuous)) then
+            node(sn)%sbie=fbem_sbie_mca
+            do ke=1,node(sn)%n_elements
+              se=node(sn)%element(ke)
+              k=node(sn)%element_node_iid(ke)
+              element(se)%delta_sbie_mca(k)=default_mca_boundary_delta
+            end do
           end if
         end do
       !
       ! CRACK-LIKE BOUNDARY
       !
       case (fbem_boundary_class_cracklike)
-        ! Loop through the nodes of the boundary
         do kn=1,part(boundary(i)%part)%n_nodes
           ! Selected node
           sn=part(boundary(i)%part)%node(kn)
-          ! If the node belongs to continuous elements
+          !
+          ! If the node belongs to continuous element
+          !
           if (element(node(sn)%element(1))%discontinuous.eqv.(.false.)) then
             !
-            ! The node has SBIE MCA / HBIE (Dual BEM) formulation. SBIE and HBIE have the same collocation point.
+            ! SBIE & HBIE (Dual BEM) with MCA formulation. SBIE and HBIE have the same collocation point.
             !
             node(sn)%sbie=fbem_sbie_mca
             node(sn)%hbie=fbem_hbie
             node(sn)%dual=fbem_dual_boundary
             node(sn)%dual_is_common=.true.
-            ! The displacement towards inside each element of the node for HBIE formulation
-            ! Loop through the elements of the node
             do ke=1,node(sn)%n_elements
-              ! Selected element
               se=node(sn)%element(ke)
-              ! Index of the node in the selected element
               k=node(sn)%element_node_iid(ke)
-              ! It depends on the element type
-              select case (element(se)%type)
+              select case (fbem_element_order(element(se)%type))
                 ! Linear elements
-                case (fbem_line2,fbem_tri3,fbem_quad4)
-                  element(se)%delta_sbie_mca(k)=0.42264973d0
-                  element(se)%delta_hbie(k)    =0.42264973d0
+                case (1)
+                  element(se)%delta_sbie_mca(k)=default_mca_linear_delta
+                  element(se)%delta_hbie(k)    =default_mca_linear_delta
                 ! Quadratic elements
-                case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                  element(se)%delta_sbie_mca(k)=0.22540333d0
-                  element(se)%delta_hbie(k)    =0.22540333d0
+                case (2)
+                  element(se)%delta_sbie_mca(k)=default_mca_quadratic_delta
+                  element(se)%delta_hbie(k)    =default_mca_quadratic_delta
                 ! Cubic elements
-                case (fbem_line4)
-                  element(se)%delta_sbie_mca(k)=0.138863688d0
-                  element(se)%delta_hbie(k)    =0.138863688d0
+                case (3)
+                  element(se)%delta_sbie_mca(k)=default_mca_cubic_delta
+                  element(se)%delta_hbie(k)    =default_mca_cubic_delta
+                case default
+                  call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element order')
               end select
             end do
-!            !
-!            ! The node has SBIE / HBIE (Dual BEM) formulation
-!            !
-!            node(sn)%sbie=fbem_sbie
-!            node(sn)%hbie=fbem_hbie
-!            node(sn)%dual=fbem_dual_boundary
-!            node(sn)%dual_is_common=.false.
-!            ! The displacement towards inside each element of the node for HBIE formulation
-!            ! Loop through the elements of the node
-!            do ke=1,node(sn)%n_elements
-!              ! Selected element
-!              se=node(sn)%element(ke)
-!              ! Index of the node in the selected element
-!              k=node(sn)%element_node_iid(ke)
-!              ! It depends on the element type
-!              select case (element(se)%type)
-!                ! Linear elements
-!                case (fbem_line2,fbem_tri3,fbem_quad4)
-!                  element(se)%delta_hbie(k)=0.42264973d0
-!                ! Quadratic elements
-!                case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-!                  element(se)%delta_hbie(k)=0.22540333d0
-!                ! Cubic elements
-!                case (fbem_line4)
-!                  element(se)%delta_hbie(k)=0.138863688d0
-!              end select
-!            end do
-!            ! If it is in the boundary of the boundary
-!            if (node(sn)%in_boundary) then
-!              ! Instead of having SBIE formulation, the node has SBIE MCA formulation
-!              node(sn)%sbie=fbem_sbie_mca
-!              node(sn)%dual_is_common=.true.
-!              ! The displacement towards inside each element of the node for SBIE MCA formulation
-!              ! Loop through the elements of the node
-!              do ke=1,node(sn)%n_elements
-!                ! Selected element
-!                se=node(sn)%element(ke)
-!                ! Index of the node in the selected element
-!                k=node(sn)%element_node_iid(ke)
-!                ! It depends on the element type
-!                select case (element(se)%type)
-!                  ! Linear elements
-!                  case (fbem_line2,fbem_tri3,fbem_quad4)
-!                    element(se)%delta_sbie_mca(k)=0.42264973d0
-!                  ! Quadratic elements
-!                  case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-!                    element(se)%delta_sbie_mca(k)=0.22540333d0
-!                  ! Cubic elements
-!                  case (fbem_line4)
-!                    element(se)%delta_sbie_mca(k)=0.138863688d0
-!                end select
-!              end do
-!            end if
           !
           ! If the node belongs to a discontinuous element
           !
           else
-            ! The node has SBIE / HBIE (Dual BEM) formulation.
+            ! The node has SBIE / HBIE (Dual BEM) with nodal collocation formulation.
             node(sn)%sbie=fbem_sbie
             node(sn)%hbie=fbem_hbie
             node(sn)%dual=fbem_dual_boundary
@@ -347,70 +160,78 @@ subroutine assign_default_bem_formulation
   ! Loop through COUPLED BE BODY LOADS
   do i=1,n_be_bodyloads
     select case (be_bodyload(i)%coupling)
+      !
+      ! BEM-FEM beam tip coupling
+      !
       case (fbem_bl_coupling_beam_tip)
-        stop 'assign_default_bem_formulation:fbem_bl_coupling_beam_tip'
+        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'not implemented yet')
+      !
+      ! BEM-FEM shell edge coupling
+      !
       case (fbem_bl_coupling_shell_edge)
-        stop 'assign_default_bem_formulation:fbem_bl_coupling_shell_edge'
+        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'not implemented yet')
+      !
+      ! BEM-FEM beam line or shell surface coupling
+      !
       case (fbem_bl_coupling_beam_line,fbem_bl_coupling_shell_surface)
-        ! Loop through the nodes of the boundary
         do kn=1,part(be_bodyload(i)%part)%n_nodes
-          ! Selected node
           sn=part(be_bodyload(i)%part)%node(kn)
-          ! The node has SBIE formulation
+          !
+          ! SBIE with nodal collocation by default, except for nodes at the boundary of the element, which have SBIE with MCA with
+          ! a small delta.
+          !
           node(sn)%sbie=fbem_sbie
-          ! HBIE & DUAL N/A here
           node(sn)%hbie=0
           node(sn)%dual=0
           node(sn)%dual_is_common=.false.
-          ! If it is in the boundary of the boundary
           if (node(sn)%in_boundary) then
-            ! The node has SBIE MCA formulation
             node(sn)%sbie=fbem_sbie_mca
-            ! The displacement towards inside each element of the node for SBIE MCA formulation
-            ! Loop through the elements of the node
             do ke=1,node(sn)%n_elements
-              ! Selected element
               se=node(sn)%element(ke)
-              ! Index of the node in the selected element
               k=node(sn)%element_node_iid(ke)
-              ! It depends on the element type
-              select case (element(se)%type)
+              select case (fbem_element_order(element(se)%type))
                 ! Linear elements
-                case (fbem_line2,fbem_tri3,fbem_quad4)
-                  element(se)%delta_sbie_mca(k)=0.42264973d0
+                case (1)
+                  element(se)%delta_sbie_mca(k)=default_mca_linear_delta
                 ! Quadratic elements
-                case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                  element(se)%delta_sbie_mca(k)=0.22540333d0
+                case (2)
+                  element(se)%delta_sbie_mca(k)=default_mca_quadratic_delta
                 ! Cubic elements
-                case (fbem_line4)
-                  element(se)%delta_sbie_mca(k)=0.138863688d0
+                case (3)
+                  element(se)%delta_sbie_mca(k)=default_mca_cubic_delta
               end select
             end do
             !
             ! Since it is not possible (as far as we know) to perform singular integrals along 3D line body loads (occur when end
-            ! points coincides with a boundary element node), we consider a MCA collocation for those boundary element nodes.
+            ! points coincides with a boundary element node), we use a MCA collocation for those boundary element nodes.
             !
             if (be_bodyload(i)%coupling.eq.fbem_bl_coupling_beam_line) then
               do knj=1,node(sn)%n_nodes
                 snj=node(sn)%node(knj)
-                ! By selecting nodes with SBIE it is assumed a BE node
+                !
+                ! By selecting nodes with SBIE formulation it is assumed that nodal collocation was assigned to the node
+                ! and it is necessary to change it to MCA.
+                !
                 if (node(snj)%sbie.eq.fbem_sbie) then
                   node(snj)%sbie=fbem_sbie_mca
                   do ke=1,node(snj)%n_elements
                     se=node(snj)%element(ke)
                     k=node(snj)%element_node_iid(ke)
-                    select case (element(se)%type)
-                      case (fbem_line2,fbem_tri3,fbem_quad4)
-                        element(se)%delta_sbie_mca(k)=0.42264973d0
-                      case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                        element(se)%delta_sbie_mca(k)=0.22540333d0
-                      case (fbem_line4)
-                        element(se)%delta_sbie_mca(k)=0.138863688d0
+                    select case (fbem_element_order(element(se)%type))
+                      case (1)
+                        element(se)%delta_sbie_mca(k)=default_mca_linear_delta
+                      case (2)
+                        element(se)%delta_sbie_mca(k)=default_mca_quadratic_delta
+                      case (3)
+                        element(se)%delta_sbie_mca(k)=default_mca_cubic_delta
                     end select
                   end do
                 end if
               end do
             end if
+            !
+            ! Later it should be checked that node sn has a delta which produces collocation points inside the region
+            !
           end if
         end do
 

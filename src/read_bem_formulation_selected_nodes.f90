@@ -38,6 +38,10 @@ subroutine read_bem_formulation_selected_nodes(input_fileunit,section_name,keywo
   integer                               :: selected_n_nodes
   integer                               :: selected_node(selected_n_nodes)
   ! Local variables
+  real(kind=real64), parameter          :: default_mca_boundary_delta  = 0.05d0
+  real(kind=real64), parameter          :: default_mca_linear_delta    = 0.42264973d0
+  real(kind=real64), parameter          :: default_mca_quadratic_delta = 0.22540333d0
+  real(kind=real64), parameter          :: default_mca_cubic_delta     = 0.138863688d0
   logical                               :: found
   integer                               :: k
   integer                               :: sp, sb, ke, se, kn, sn
@@ -125,33 +129,17 @@ subroutine read_bem_formulation_selected_nodes(input_fileunit,section_name,keywo
                 ! All nodes with nodal collocation, except nodes at the boundary of the boundary, which have SBIE MCA.
                 !
                 case (2)
-                  ! The node has SBIE formulation
                   node(sn)%sbie=fbem_sbie
                   node(sn)%hbie=0
                   node(sn)%dual=0
                   node(sn)%dual_is_common=.false.
-                  ! If it is in the boundary of the boundary
                   if (node(sn)%in_boundary) then
-                    ! The node has SBIE MCA formulation
                     node(sn)%sbie=fbem_sbie_mca
-                    ! The displacement towards inside each element of the node for SBIE MCA formulation
-                    ! Loop through the elements of the node
                     do ke=1,node(sn)%n_elements
-                      ! Selected element
                       se=node(sn)%element(ke)
-                      ! Index of the node in the selected element
                       k=node(sn)%element_node_iid(ke)
-                      ! Depending on tmp_delta_sbie, use the automatic value
                       if (tmp_delta_sbie.le.0.0d0) then
-                        ! It depends on the element type
-                        select case (element(se)%type)
-                          ! Linear elements
-                          case (fbem_line2,fbem_tri3,fbem_quad4)
-                            element(se)%delta_sbie_mca(k)=0.42264973d0
-                          ! Quadratic elements
-                          case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                            element(se)%delta_sbie_mca(k)=0.22540333d0
-                        end select
+                        element(se)%delta_sbie_mca(k)=default_mca_boundary_delta
                       else
                         element(se)%delta_sbie_mca(k)=tmp_delta_sbie
                       end if
@@ -162,28 +150,26 @@ subroutine read_bem_formulation_selected_nodes(input_fileunit,section_name,keywo
                 ! All nodes with SBIE MCA collocation.
                 !
                 case (3)
-                  ! The node has SBIE MCA formulation
                   node(sn)%sbie=fbem_sbie_mca
                   node(sn)%hbie=0
                   node(sn)%dual=0
                   node(sn)%dual_is_common=.false.
-                  ! The displacement towards inside each element of the node for SBIE MCA formulation
-                  ! Loop through the elements of the node
                   do ke=1,node(sn)%n_elements
-                    ! Selected element
                     se=node(sn)%element(ke)
-                    ! Index of the node in the selected element
                     k=node(sn)%element_node_iid(ke)
-                    ! Depending on tmp_delta_sbie, use the automatic value
                     if (tmp_delta_sbie.le.0.0d0) then
-                      ! It depends on the element type
-                      select case (element(se)%type)
+                      select case (fbem_element_order(element(se)%type))
                         ! Linear elements
-                        case (fbem_line2,fbem_tri3,fbem_quad4)
-                          element(se)%delta_sbie_mca(k)=0.42264973d0
+                        case (1)
+                          element(se)%delta_sbie_mca(k)=default_mca_linear_delta
                         ! Quadratic elements
-                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                          element(se)%delta_sbie_mca(k)=0.22540333d0
+                        case (2)
+                          element(se)%delta_sbie_mca(k)=default_mca_quadratic_delta
+                        ! Cubic elements
+                        case (3)
+                          element(se)%delta_sbie_mca(k)=default_mca_cubic_delta
+                        case default
+                          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element order')
                       end select
                     else
                       element(se)%delta_sbie_mca(k)=tmp_delta_sbie
@@ -194,28 +180,26 @@ subroutine read_bem_formulation_selected_nodes(input_fileunit,section_name,keywo
                 ! All nodes with HBIE collocation.
                 !
                 case (4)
-                  ! The node has HBIE MCA formulation
                   node(sn)%sbie=0
                   node(sn)%hbie=fbem_hbie
                   node(sn)%dual=0
                   node(sn)%dual_is_common=.false.
-                  ! The displacement towards inside each element of the node for HBIE MCA formulation
-                  ! Loop through the elements of the node
                   do ke=1,node(sn)%n_elements
-                    ! Selected element
                     se=node(sn)%element(ke)
-                    ! Index of the node in the selected element
                     k=node(sn)%element_node_iid(ke)
-                    ! Depending on tmp_delta_hbie, use the automatic value
                     if (tmp_delta_hbie.le.0.0d0) then
-                      ! It depends on the element type
-                      select case (element(se)%type)
+                      select case (fbem_element_order(element(se)%type))
                         ! Linear elements
-                        case (fbem_line2,fbem_tri3,fbem_quad4)
-                          element(se)%delta_hbie(k)=0.42264973d0
+                        case (1)
+                          element(se)%delta_hbie(k)=default_mca_linear_delta
                         ! Quadratic elements
-                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                          element(se)%delta_hbie(k)=0.22540333d0
+                        case (2)
+                          element(se)%delta_hbie(k)=default_mca_quadratic_delta
+                        ! Cubic elements
+                        case (3)
+                          element(se)%delta_hbie(k)=default_mca_cubic_delta
+                        case default
+                          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element order')
                       end select
                     else
                       element(se)%delta_hbie(k)=tmp_delta_hbie
@@ -226,31 +210,30 @@ subroutine read_bem_formulation_selected_nodes(input_fileunit,section_name,keywo
                 ! All nodes with SBIE MCA + HBIE MCA (Burton & Miller).
                 !
                 case (5)
-                  ! Assign values
                   node(sn)%sbie=fbem_sbie_mca
                   node(sn)%hbie=fbem_hbie
                   node(sn)%dual=fbem_dual_burton_miller
                   node(sn)%dual_is_common=.true.
                   node(sn)%alpha=1.0d0
-                  ! The displacement towards inside each element of the node for HBIE MCA formulation
-                  ! Loop through the elements of the node
                   do ke=1,node(sn)%n_elements
-                    ! Selected element
                     se=node(sn)%element(ke)
-                    ! Index of the node in the selected element
                     k=node(sn)%element_node_iid(ke)
-                    ! Depending on tmp_delta_hbie, use the automatic value
                     if (tmp_delta_hbie.le.0.0d0) then
-                      ! It depends on the element type
-                      select case (element(se)%type)
+                      select case (fbem_element_order(element(se)%type))
                         ! Linear elements
-                        case (fbem_line2,fbem_tri3,fbem_quad4)
-                          element(se)%delta_sbie_mca(k)=0.42264973d0
-                          element(se)%delta_hbie(k)    =0.42264973d0
+                        case (1)
+                          element(se)%delta_sbie_mca(k)=default_mca_linear_delta
+                          element(se)%delta_hbie(k)    =default_mca_linear_delta
                         ! Quadratic elements
-                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                          element(se)%delta_sbie_mca(k)=0.22540333d0
-                          element(se)%delta_hbie(k)    =0.22540333d0
+                        case (2)
+                          element(se)%delta_sbie_mca(k)=default_mca_quadratic_delta
+                          element(se)%delta_hbie(k)    =default_mca_quadratic_delta
+                        ! Cubic elements
+                        case (3)
+                          element(se)%delta_sbie_mca(k)=default_mca_cubic_delta
+                          element(se)%delta_hbie(k)    =default_mca_cubic_delta
+                        case default
+                          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element order')
                       end select
                     else
                       element(se)%delta_sbie_mca(k)=tmp_delta_hbie
@@ -262,54 +245,49 @@ subroutine read_bem_formulation_selected_nodes(input_fileunit,section_name,keywo
                 ! All nodes with SBIE + HBIE MCA (Burton & Miller), except nodes at the boundary, which have MCA collocation.
                 !
                 case (6)
-                  ! Assign values
                   node(sn)%sbie=fbem_sbie
                   node(sn)%hbie=fbem_hbie
                   node(sn)%dual=fbem_dual_burton_miller
                   node(sn)%dual_is_common=.false.
-                  ! The displacement towards inside each element of the node for HBIE formulation
-                  ! Loop through the elements of the node
                   do ke=1,node(sn)%n_elements
-                    ! Selected element
                     se=node(sn)%element(ke)
-                    ! Index of the node in the selected element
                     k=node(sn)%element_node_iid(ke)
-                    ! Depending on tmp_delta_hbie, use the automatic value
                     if (tmp_delta_hbie.le.0.0d0) then
-                      ! It depends on the element type
-                      select case (element(se)%type)
+                      select case (fbem_element_order(element(se)%type))
                         ! Linear elements
-                        case (fbem_line2,fbem_tri3,fbem_quad4)
-                          element(se)%delta_hbie(k)=0.42264973d0
+                        case (1)
+                          element(se)%delta_hbie(k)=default_mca_linear_delta
                         ! Quadratic elements
-                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                          element(se)%delta_hbie(k)=0.22540333d0
+                        case (2)
+                          element(se)%delta_hbie(k)=default_mca_quadratic_delta
+                        ! Cubic elements
+                        case (3)
+                          element(se)%delta_hbie(k)=default_mca_cubic_delta
+                        case default
+                          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element order')
                       end select
                     else
                       element(se)%delta_hbie(k)=tmp_delta_hbie
                     end if
                   end do
-                  ! If it is in the boundary of the boundary
                   if (node(sn)%in_boundary) then
-                    ! Instead of having SBIE formulation, the node has SBIE MCA formulation
                     node(sn)%sbie=fbem_sbie_mca
-                    ! The displacement towards inside each element of the node for SBIE MCA formulation
-                    ! Loop through the elements of the node
                     do ke=1,node(sn)%n_elements
-                      ! Selected element
                       se=node(sn)%element(ke)
-                      ! Index of the node in the selected element
                       k=node(sn)%element_node_iid(ke)
-                      ! Depending on tmp_delta_sbie, use the automatic value
                       if (tmp_delta_sbie.le.0.0d0) then
-                        ! It depends on the element type
-                        select case (element(se)%type)
+                        select case (fbem_element_order(element(se)%type))
                           ! Linear elements
-                          case (fbem_line2,fbem_tri3,fbem_quad4)
-                            element(se)%delta_sbie_mca(k)=0.42264973d0
+                          case (1)
+                            element(se)%delta_sbie_mca(k)=default_mca_linear_delta
                           ! Quadratic elements
-                          case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                            element(se)%delta_sbie_mca(k)=0.22540333d0
+                          case (2)
+                            element(se)%delta_sbie_mca(k)=default_mca_quadratic_delta
+                          ! Cubic elements
+                          case (3)
+                            element(se)%delta_sbie_mca(k)=default_mca_cubic_delta
+                          case default
+                            call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element order')
                         end select
                       else
                         element(se)%delta_sbie_mca(k)=tmp_delta_sbie
@@ -393,30 +371,29 @@ subroutine read_bem_formulation_selected_nodes(input_fileunit,section_name,keywo
                 ! The node has SBIE MCA / HBIE (Dual BEM) formulation. SBIE and HBIE have the same collocation point.
                 !
                 case (1)
-                  ! Assign values
                   node(sn)%sbie=fbem_sbie_mca
                   node(sn)%hbie=fbem_hbie
                   node(sn)%dual=fbem_dual_boundary
                   node(sn)%dual_is_common=.true.
-                  ! The displacement towards inside each element of the node for HBIE formulation
-                  ! Loop through the elements of the node
                   do ke=1,node(sn)%n_elements
-                    ! Selected element
                     se=node(sn)%element(ke)
-                    ! Index of the node in the selected element
                     k=node(sn)%element_node_iid(ke)
-                    ! Depending on tmp_delta_hbie, use the automatic value
                     if (tmp_delta_hbie.le.0.0d0) then
-                      ! It depends on the element type
-                      select case (element(se)%type)
+                      select case (fbem_element_order(element(se)%type))
                         ! Linear elements
-                        case (fbem_line2,fbem_tri3,fbem_quad4)
-                          element(se)%delta_sbie_mca(k)=0.42264973d0
-                          element(se)%delta_hbie(k)    =0.42264973d0
+                        case (1)
+                          element(se)%delta_sbie_mca(k)=default_mca_linear_delta
+                          element(se)%delta_hbie(k)    =default_mca_linear_delta
                         ! Quadratic elements
-                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                          element(se)%delta_sbie_mca(k)=0.22540333d0
-                          element(se)%delta_hbie(k)    =0.22540333d0
+                        case (2)
+                          element(se)%delta_sbie_mca(k)=default_mca_quadratic_delta
+                          element(se)%delta_hbie(k)    =default_mca_quadratic_delta
+                        ! Cubic elements
+                        case (3)
+                          element(se)%delta_sbie_mca(k)=default_mca_cubic_delta
+                          element(se)%delta_hbie(k)    =default_mca_cubic_delta
+                        case default
+                          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element order')
                       end select
                     else
                       element(se)%delta_sbie_mca(k)=tmp_delta_hbie
@@ -429,55 +406,51 @@ subroutine read_bem_formulation_selected_nodes(input_fileunit,section_name,keywo
                 ! boundaries of the boundary.
                 !
                 case (2)
-                  ! Assign values
                   node(sn)%sbie=fbem_sbie
                   node(sn)%hbie=fbem_hbie
                   node(sn)%dual=fbem_dual_boundary
                   node(sn)%dual_is_common=.false.
-                  ! The displacement towards inside each element of the node for HBIE formulation
-                  ! Loop through the elements of the node
                   do ke=1,node(sn)%n_elements
-                    ! Selected element
                     se=node(sn)%element(ke)
-                    ! Index of the node in the selected element
                     k=node(sn)%element_node_iid(ke)
-                    ! Depending on tmp_delta_hbie, use the automatic value
                     if (tmp_delta_hbie.le.0.0d0) then
-                      ! It depends on the element type
-                      select case (element(se)%type)
+                      select case (fbem_element_order(element(se)%type))
                         ! Linear elements
-                        case (fbem_line2,fbem_tri3,fbem_quad4)
-                          element(se)%delta_hbie(k)=0.42264973d0
+                        case (1)
+                          element(se)%delta_hbie(k)=default_mca_linear_delta
                         ! Quadratic elements
-                        case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                          element(se)%delta_hbie(k)=0.22540333d0
+                        case (2)
+                          element(se)%delta_hbie(k)=default_mca_quadratic_delta
+                        ! Cubic elements
+                        case (3)
+                          element(se)%delta_hbie(k)=default_mca_cubic_delta
+                        case default
+                          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element order')
                       end select
                     else
                       element(se)%delta_hbie(k)=tmp_delta_hbie
                     end if
                   end do
-                  ! If it is in the boundary of the boundary
                   if (node(sn)%in_boundary) then
-                    ! Instead of having SBIE formulation, the node has SBIE MCA formulation
                     node(sn)%sbie=fbem_sbie_mca
-                    ! The displacement towards inside each element of the node for SBIE MCA formulation
-                    ! Loop through the elements of the node
                     do ke=1,node(sn)%n_elements
-                      ! Selected element
                       se=node(sn)%element(ke)
-                      ! Index of the node in the selected element
                       k=node(sn)%element_node_iid(ke)
-                      ! Depending on tmp_delta_sbie, use the automatic value
                       if (tmp_delta_sbie.le.0.0d0) then
-                        ! It depends on the element type
-                        select case (element(se)%type)
+                        select case (fbem_element_order(element(se)%type))
                           ! Linear elements
-                          case (fbem_line2,fbem_tri3,fbem_quad4)
-                            element(se)%delta_sbie_mca(k)=0.42264973d0
+                          case (1)
+                            element(se)%delta_sbie_mca(k)=default_mca_linear_delta
                           ! Quadratic elements
-                          case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                            element(se)%delta_sbie_mca(k)=0.22540333d0
+                          case (2)
+                            element(se)%delta_sbie_mca(k)=default_mca_quadratic_delta
+                          ! Cubic elements
+                          case (3)
+                            element(se)%delta_sbie_mca(k)=default_mca_cubic_delta
+                          case default
+                            call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element order')
                         end select
+
                       else
                         element(se)%delta_sbie_mca(k)=tmp_delta_sbie
                       end if
@@ -539,28 +512,26 @@ subroutine read_bem_formulation_selected_nodes(input_fileunit,section_name,keywo
           ! All nodes with SBIE MCA collocation.
           !
           case (2)
-            ! The node has SBIE MCA formulation
             node(sn)%sbie=fbem_sbie_mca
             node(sn)%hbie=0
             node(sn)%dual=0
             node(sn)%dual_is_common=.false.
-            ! The displacement towards inside each element of the node for SBIE MCA formulation
-            ! Loop through the elements of the node
             do ke=1,node(sn)%n_elements
-              ! Selected element
               se=node(sn)%element(ke)
-              ! Index of the node in the selected element
               k=node(sn)%element_node_iid(ke)
-              ! Depending on tmp_delta_sbie, use the automatic value
               if (tmp_delta_sbie.le.0.0d0) then
-                ! It depends on the element type
-                select case (element(se)%type)
-                  case (fbem_line2,fbem_tri3,fbem_quad4)
-                    element(se)%delta_sbie_mca(k)=0.42264973d0
-                  case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                    element(se)%delta_sbie_mca(k)=0.22540333d0
-                  case (fbem_line4)
-                    element(se)%delta_sbie_mca(k)=0.138863688d0
+                select case (fbem_element_order(element(se)%type))
+                  ! Linear elements
+                  case (1)
+                    element(se)%delta_sbie_mca(k)=default_mca_linear_delta
+                  ! Quadratic elements
+                  case (2)
+                    element(se)%delta_sbie_mca(k)=default_mca_quadratic_delta
+                  ! Cubic elements
+                  case (3)
+                    element(se)%delta_sbie_mca(k)=default_mca_cubic_delta
+                  case default
+                    call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element order')
                 end select
               else
                 element(se)%delta_sbie_mca(k)=tmp_delta_sbie
