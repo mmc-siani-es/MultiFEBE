@@ -967,7 +967,7 @@ In a $n$-dimensional problem, a region (or subdomain) $\Omega$ is a $n$-dimensio
 The interaction (coupling) between BE regions is done through their shared boundaries, which must have opposite orientation for each region, see Figure \ref{fig:ordinary_boundary_interface}. The interaction between FE regions is done through their shared nodes as usual. The interaction between BE boundaries and FE regions is done through the BE boundaries and the boundary of the FE elements that shares the same position. The interaction between BE and FE elements is automatically detected.
 
 
-The format of this section is explained in the following. The first line indicates the number of regions. Then, for each region there must be a block of data consisting of several lines of data. The first one is the region identifier and the region class (discretization method: ``fe'' or ``be''). If the region is a BE region, then the second line indicates the number of boundaries and a list of boundaries (with their orientation signs). If the region is a FE reigon, then the second line indicates the number of FE subregions and a list of fe subregions. The third line defines the material. Then, only if the region is a BE region, the fourth line defines the number and a list of BE body loads. Also, only if the region is a BE region and the analysis is time harmonic, the fifth line defines the number and a list of incident fields. The general format of the section is:
+The format of this section is explained in the following. The first line indicates the number of regions. Then, for each region there must be a block of data consisting of several lines of data. The first one is the region identifier and the region class (discretization method: ``fe'' or ``be''). If the region is a BE region, then the second line indicates the number of boundaries and a list of boundaries (with their orientation signs). If the region is a FE region, then the second line indicates the number of FE subregions and a list of fe subregions. The third line defines the material. Then, only if the region is a BE region, the fourth line defines the number and a list of BE body loads. Also, only if the region is a BE region and the analysis is time harmonic, the fifth line defines the number and a list of incident fields. The general format of the section is:
 \begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [regions]}]
 [regions]
 <n = number of regions>
@@ -3257,6 +3257,11 @@ $ cd build
 \begin{Verbatim}[frame=single, fontsize=\small]
 $ cmake -G "Unix Makefiles" ..
 \end{Verbatim}
+or
+\begin{Verbatim}[frame=single, fontsize=\small]
+$ cmake -D CMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" ..
+\end{Verbatim}
+for compilation for debugging.
     During the process, if any tool or dependency is missing, then CMake is going to notify you.
     \item Once CMake correctly finishes, you can now execute GNU Make:
 \begin{Verbatim}[frame=single, fontsize=\small]

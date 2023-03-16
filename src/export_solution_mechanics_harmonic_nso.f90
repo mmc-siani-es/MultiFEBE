@@ -831,7 +831,7 @@ subroutine export_solution_mechanics_harmonic_nso(kf,output_fileunit)
                 se=part(sp)%element(ke)
                 do kn=1,element(se)%n_nodes
                   sn=element(se)%node(kn)
-                  if (node_used(sn).eqv.(.false.).and.(node(sn)%export)) then
+                  if ((node_used(sn).eqv.(.false.)).and.(node(sn)%export)) then
                     node_used(sn)=.true.
                     ! Write columns 1-11 (2D) or 1-12 (3D)
                     write(output_fileunit,fmt1,advance='no') kf, omega, &
