@@ -1472,7 +1472,7 @@ boundary 6: sbie_boundary_mca 0.1
 \midrule
 \multicolumn{3}{c}{\textit{Ordinary boundaries}} \\
 \midrule
-\texttt{sbie} & none & SBIE with nodal collocation strategy for all nodes of the boundary. This is unsafe since at doubled nodes, depending on the boundary conditions, it can lead to a singular linear system of equations. \\
+\texttt{sbie} & none & SBIE with nodal collocation strategy for all nodes of the boundary. This is unsafe since at doubled nodes, depending on the boundary conditions, it can lead to a singular linear system of equations. This option can not be used in truncated boundaries, such as those for surfaces of unbounded regions. \\
 \texttt{sbie\_boundary\_mca} & $\delta$ & \textbf{This is the default formulation for ordinary boundaries.} SBIE with nodal collocation strategy for all nodes of the boundary except for the nodes at the boundary of the boundary, where MCA is used. The default value is $\delta=0.05$.  \\
 \texttt{sbie\_mca} & $\delta$ & SBIE with MCA for all nodes of the boundary. The default value is indicated by Note 1. \\
 \texttt{hbie} & $\delta$ & HBIE with MCA for all nodes. For using default values (see Note 1), the user must write a value $\delta\leq0$. Other values  \\
