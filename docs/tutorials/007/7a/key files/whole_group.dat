@@ -1,0 +1,87 @@
+[problem]
+n = 3D
+type = mechanics
+analysis = harmonic
+
+[frequencies]
+rad/s
+lin
+20
+0.005976
+0.5976
+
+[export]
+export_nso = T
+export_tot = T
+complex_notation = cartesian
+
+[materials]
+2
+1 elastic_solid rho 1. E 1. nu 0.4 xi 0.05
+2 elastic_solid rho 0.428 E 1000. nu 0.25 xi 0.01
+
+[settings]
+mesh_file_mode = 2 "whole_group.msh"
+
+[boundaries]
+1
+1 9 ordinary
+
+[be body loads]
+4
+1 1
+2 3
+3 5
+4 7
+
+[fe subregions]
+4
+1 2 0 0
+2 4 0 0
+3 6 0 0
+4 8 0 0
+
+[cross sections]
+1
+strbeam_eb 4 1 2 3 4 circle 1. 0. 1. 0.
+
+[regions]
+2
+1 be
+1 1
+material 1
+4 1 2 3 4
+0
+
+2 fe
+4 1 2 3 4
+material 2
+
+[conditions over nodes]
+node 3: 0 (1.,0.)
+        0 (0.,0.)
+        0 (0.,0.)
+        0 (0.,0.)
+        0 (0.,0.)
+        0 (0.,0.)
+
+node 7: 0 (1.,0.)
+        0 (0.,0.)
+        0 (0.,0.)
+        0 (0.,0.)
+        0 (0.,0.)
+        0 (0.,0.)
+
+node 11: 0 (1.,0.)
+         0 (0.,0.)
+         0 (0.,0.)
+         0 (0.,0.)
+         0 (0.,0.)
+         0 (0.,0.)
+
+node 15: 0 (1.,0.)
+         0 (0.,0.)
+         0 (0.,0.)
+         0 (0.,0.)
+         0 (0.,0.)
+         0 (0.,0.)
