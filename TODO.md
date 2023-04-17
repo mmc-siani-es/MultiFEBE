@@ -3,7 +3,8 @@
 ### Todo
 
 - New output files with results split by type of variable (displacements, tractions, nodal forces, etc...), and by physical entity, be boundary, be bodyload, be subregion, etc...
-- Since discontinuous boundayr elements are partially implemented, remove any of the functionalities for these
+- Consider text output files in csv format.
+- Since discontinuous boundary elements are partially implemented, remove any of the functionalities for these
 - Implement proper point loads for acoustics and elastodynamics in BEM regions
 - Change input file format for boundary conditions to a more readable one
 - Implement read/write to GiD 

@@ -1,5 +1,5 @@
 L = 1;  // Square side length
-es = 0.07; // Element size
+es = 0.15; // Element size
 
 // Front Face
 Point (1) = {0, 0, L, es};

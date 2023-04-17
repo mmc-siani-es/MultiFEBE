@@ -84,34 +84,33 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
   if ((kf.eq.1).and.export_overwrite) then
     ! Info about the program that generated the file and its general description
     write(output_fileunit,'(a)'  ) '# Program      : multifebe'
-    write(output_fileunit,'(a)'  ) '# Version      : 0.6'
+    write(output_fileunit,'(a,a5)')'# Version      : ', multifebe_version
     write(output_fileunit,'(a)'  ) '# File_format  : tot'
-    write(output_fileunit,'(a)'  ) '# Specification: 1'
+    write(output_fileunit,'(a,i1)')'# Problem_dim  : ', problem%n
     write(output_fileunit,'(a,a)') '# Input_file   : ', trim(input_filename)
     write(output_fileunit,'(a,a)') '# Description  : ', trim(problem%description)
-    write(tmp_string,*) timestamp_date_start(1:4),'-',timestamp_date_start(5:6),'-',timestamp_date_start(7:8),' ',&
-                        timestamp_time_start(1:2),':',timestamp_time_start(3:4),':',timestamp_time_start(5:10)
-    call fbem_trim2b(tmp_string)
-    write(output_fileunit,'(a,a)') '# Timestamp    : ', trim(tmp_string)
+    write(output_fileunit,'(a)',advance='no') '# Timestamp    : '
+    call fbem_timestamp(output_fileunit,timestamp_date_start,timestamp_time_start,1)
     write(output_fileunit,*)
     ! Column description
     write(output_fileunit,'(a)'  ) '# Columns  Description'
-    write(output_fileunit,'(a)'  ) '# 1-2      Frequency index and value.'
-    write(output_fileunit,'(a)'  ) '# 3-5      Region id, class and type.'
-    write(output_fileunit,'(a)'  ) '# 6-8      Boundary id, class and face.'
+    write(output_fileunit,'(a)'  ) '# C1-C2    Frequency index and value.'
+    write(output_fileunit,'(a)'  ) '# C3-C5    Region id, class and type.'
+    write(output_fileunit,'(a)'  ) '# C6-C8    Boundary id, class and face.'
+    write(output_fileunit,'(a)'  ) '# C6-C8    BE body load id, 0 and 0.'
     select case (problem%n)
     case (2)
-    write(output_fileunit,'(a)'  ) '# 9-10     Reference point'
-    write(output_fileunit,'(a)'  ) '# 11-14    Resultant displacements along x1 and x2 (complex)'
-    write(output_fileunit,'(a)'  ) '# 15-16    Resultant rotation in x3 direction with respect to the reference point (complex)'
-    write(output_fileunit,'(a)'  ) '# 17-20    Resultant forces along x1 and x2 (complex)'
-    write(output_fileunit,'(a)'  ) '# 21-22    Resultant moment in x3 direction with respect to the reference point (complex)'
+    write(output_fileunit,'(a)'  ) '# C9-C10   Reference point'
+    write(output_fileunit,'(a)'  ) '# C11-C14  Resultant displacements along x1 and x2 (complex)'
+    write(output_fileunit,'(a)'  ) '# C15-C16  Resultant rotation in x3 direction with respect to the reference point (complex)'
+    write(output_fileunit,'(a)'  ) '# C17-C20  Resultant forces along x1 and x2 (complex)'
+    write(output_fileunit,'(a)'  ) '# C21-C22  Resultant moment in x3 direction with respect to the reference point (complex)'
     case (3)
-    write(output_fileunit,'(a)'  ) '# 9-11     Reference point'
-    write(output_fileunit,'(a)'  ) '# 12-17    Resultant displacements along x1, x2 and x3 (complex)'
-    write(output_fileunit,'(a)'  ) '# 18-23    Resultant rotations in x1, x2 and x3 directions with respect to the reference point (complex)'
-    write(output_fileunit,'(a)'  ) '# 24-29    Resultant forces along x1, x2 and x3 (complex)'
-    write(output_fileunit,'(a)'  ) '# 30-35    Resultant moments in x1, x2 and x3 directions with respect to the reference point (complex)'
+    write(output_fileunit,'(a)'  ) '# C9-C11   Reference point'
+    write(output_fileunit,'(a)'  ) '# C12-C17  Resultant displacements along x1, x2 and x3 (complex)'
+    write(output_fileunit,'(a)'  ) '# C18-C23  Resultant rotations in x1, x2 and x3 directions with respect to the reference point (complex)'
+    write(output_fileunit,'(a)'  ) '# C24-C29  Resultant forces along x1, x2 and x3 (complex)'
+    write(output_fileunit,'(a)'  ) '# C30-C35  Resultant moments in x1, x2 and x3 directions with respect to the reference point (complex)'
     end select
     write(output_fileunit,'(a)') '#'
     select case (complex_notation)
@@ -135,10 +134,10 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
     ! Comment character
     write(output_fileunit,'(a)',advance='no') '#'
     ! First column
-    do k=1,ncint-2
+    do k=1,ncint-3
       write(output_fileunit,'(a)',advance='no') '_'
     end do
-    write(output_fileunit,'(a)',advance='no') '1'
+    write(output_fileunit,'(a2)',advance='no') 'C1'
     ! Rest of the columns
     select case (problem%n)
       case (2)
@@ -154,12 +153,12 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
         nc=ncreal
       end if
       ! Write
-      do k=1,nc-fbem_nchar_int(kc)
+      do k=1,nc-fbem_nchar_int(kc)-1
         write(output_fileunit,'(a)',advance='no') '_'
       end do
-      write(fmt1,*) '(i',fbem_nchar_int(kc),')'
+      write(fmt1,*) '(a1,i',fbem_nchar_int(kc),')'
       call fbem_trimall(fmt1)
-      write(output_fileunit,fmt1,advance='no') kc
+      write(output_fileunit,fmt1,advance='no') 'C',kc
     end do
     write(output_fileunit,*)
   end if

@@ -108,35 +108,32 @@ subroutine export_solution_mechanics_harmonic_ier(kf,output_fileunit)
   ! ------------------
 
   if ((kf.eq.1).and.export_overwrite) then
-    ! Info about the program that generated the file and its general description
     write(output_fileunit,'(a)'  ) '# Program      : multifebe'
-    write(output_fileunit,'(a)'  ) '# Version      : 0.6'
+    write(output_fileunit,'(a,a5)')'# Version      : ', multifebe_version
     write(output_fileunit,'(a)'  ) '# File_format  : ier'
-    write(output_fileunit,'(a)'  ) '# Specification: 1'
+    write(output_fileunit,'(a,i1)')'# Problem_dim  : ', problem%n
     write(output_fileunit,'(a,a)') '# Input_file   : ', trim(input_filename)
     write(output_fileunit,'(a,a)') '# Description  : ', trim(problem%description)
-    write(tmp_string,*) timestamp_date_start(1:4),'-',timestamp_date_start(5:6),'-',timestamp_date_start(7:8),' ',&
-                        timestamp_time_start(1:2),':',timestamp_time_start(3:4),':',timestamp_time_start(5:10)
-    call fbem_trim2b(tmp_string)
-    write(output_fileunit,'(a,a)') '# Timestamp    : ', trim(tmp_string)
+    write(output_fileunit,'(a)',advance='no') '# Timestamp    : '
+    call fbem_timestamp(output_fileunit,timestamp_date_start,timestamp_time_start,1)
     write(output_fileunit,*)
     ! Column description
     write(output_fileunit,'(a)'  ) '# Columns  Description'
-    write(output_fileunit,'(a)'  ) '# 1-2      Frequency index and value.'
-    write(output_fileunit,'(a)'  ) '# 3        Part id'
+    write(output_fileunit,'(a)'  ) '# C1-C2    Frequency index and value.'
+    write(output_fileunit,'(a)'  ) '# C3       Part id'
     select case (problem%n)
     case (2)
-    write(output_fileunit,'(a)'  ) '# 4-5      Centroid'
-    write(output_fileunit,'(a)'  ) '# 6-9      Resultant displacements along x1 and x2 (complex)'
-    write(output_fileunit,'(a)'  ) '# 10-11    Resultant rotation in x3 direction with respect to the centroid (complex)'
-    write(output_fileunit,'(a)'  ) '# 12-15    Resultant forces along x1 and x2 (complex)'
-    write(output_fileunit,'(a)'  ) '# 16-17    Resultant moment in x3 direction with respect to the centroid (complex)'
+    write(output_fileunit,'(a)'  ) '# C4-C5    Centroid'
+    write(output_fileunit,'(a)'  ) '# C6-C9    Resultant displacements along x1 and x2 (complex)'
+    write(output_fileunit,'(a)'  ) '# C10-C11  Resultant rotation in x3 direction with respect to the centroid (complex)'
+    write(output_fileunit,'(a)'  ) '# C12-C15  Resultant forces along x1 and x2 (complex)'
+    write(output_fileunit,'(a)'  ) '# C16-C17  Resultant moment in x3 direction with respect to the centroid (complex)'
     case (3)
-    write(output_fileunit,'(a)'  ) '# 4-6      Centroid'
-    write(output_fileunit,'(a)'  ) '# 7-12     Resultant displacements along x1, x2 and x3 (complex)'
-    write(output_fileunit,'(a)'  ) '# 13-18    Resultant rotations in x1, x2 and x3 directions with respect to the centroid (complex)'
-    write(output_fileunit,'(a)'  ) '# 19-24    Resultant forces along x1, x2 and x3 (complex)'
-    write(output_fileunit,'(a)'  ) '# 25-30    Resultant moments in x1, x2 and x3 directions with respect to the centroid (complex)'
+    write(output_fileunit,'(a)'  ) '# C4-C6    Centroid'
+    write(output_fileunit,'(a)'  ) '# C7-C12   Resultant displacements along x1, x2 and x3 (complex)'
+    write(output_fileunit,'(a)'  ) '# C13-C18  Resultant rotations in x1, x2 and x3 directions with respect to the centroid (complex)'
+    write(output_fileunit,'(a)'  ) '# C19-C24  Resultant forces along x1, x2 and x3 (complex)'
+    write(output_fileunit,'(a)'  ) '# C25-C30  Resultant moments in x1, x2 and x3 directions with respect to the centroid (complex)'
     end select
     write(output_fileunit,'(a)') '#'
     select case (complex_notation)
@@ -160,10 +157,10 @@ subroutine export_solution_mechanics_harmonic_ier(kf,output_fileunit)
     ! Comment character
     write(output_fileunit,'(a)',advance='no') '#'
     ! First column
-    do k=1,ncint-2
+    do k=1,ncint-3
       write(output_fileunit,'(a)',advance='no') '_'
     end do
-    write(output_fileunit,'(a)',advance='no') '1'
+    write(output_fileunit,'(a2)',advance='no') 'C1'
     ! Rest of the columns
     select case (problem%n)
       case (2)
@@ -179,12 +176,12 @@ subroutine export_solution_mechanics_harmonic_ier(kf,output_fileunit)
         nc=ncreal
       end if
       ! Write
-      do k=1,nc-fbem_nchar_int(kc)
+      do k=1,nc-fbem_nchar_int(kc)-1
         write(output_fileunit,'(a)',advance='no') '_'
       end do
-      write(fmt1,*) '(i',fbem_nchar_int(kc),')'
+      write(fmt1,*) '(a1,i',fbem_nchar_int(kc),')'
       call fbem_trimall(fmt1)
-      write(output_fileunit,fmt1,advance='no') kc
+      write(output_fileunit,fmt1,advance='no') 'C',kc
     end do
     write(output_fileunit,*)
   end if

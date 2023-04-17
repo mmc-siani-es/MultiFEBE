@@ -58,7 +58,7 @@ subroutine read_export(input_fileunit)
 
   ! Integer export
   ! Automatic integer width
-  write(fmt_integer,*) 'i', fbem_nchar_int(max(n_frequencies,region_eid_max,boundary_eid_max,element_eid_max,node_eid_max,internalpoint_eid_max))+1
+  write(fmt_integer,*) 'i', fbem_nchar_int(max(2,n_frequencies,region_eid_max,boundary_eid_max,element_eid_max,node_eid_max,internalpoint_eid_max))+1
   call fbem_trimall(fmt_integer)
 
   ! Real export

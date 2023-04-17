@@ -41,6 +41,7 @@ module fbem_string_handling
   integer, public :: verbose_level=1
 
   ! String routines
+  public :: fbem_timestamp
   public :: fbem_timestamp_message
   public :: fbem_timestamp_w_message
   public :: fbem_warning_message
@@ -391,6 +392,30 @@ contains
     call fbem_trimall(fmtstr)
     write (selected_unit,fmtstr) trim(message)
   end subroutine fbem_timestamp_w_message
+
+  !! Print a given timestamp
+  subroutine fbem_timestamp(selected_unit,timestamp_date,timestamp_time,opt)
+    implicit none
+    ! I/O
+    integer           :: selected_unit  !! Unit used to print the message
+    character(len=8)  :: timestamp_date
+    character(len=10) :: timestamp_time
+    integer           :: opt            !! Printing options: 0 (no advance), 1 (advance)
+    ! Local
+    call date_and_time(timestamp_date,timestamp_time)
+    select case (opt)
+      case (0)
+        write(selected_unit,'(a4,a1,a2,a1,a2,a1,a2,a1,a2,a1,a6)',advance='no') &
+        timestamp_date(1:4),'-',timestamp_date(5:6),'-',timestamp_date(7:8),';',&
+        timestamp_time(1:2),':',timestamp_time(3:4),':',timestamp_time(5:10)
+      case (1)
+        write(selected_unit,'(a4,a1,a2,a1,a2,a1,a2,a1,a2,a1,a6)') &
+        timestamp_date(1:4),'-',timestamp_date(5:6),'-',timestamp_date(7:8),';',&
+        timestamp_time(1:2),':',timestamp_time(3:4),':',timestamp_time(5:10)
+      case default
+        call fbem_error_message(error_unit,0,'fbem_timestamp',opt,'opt value not valid')
+    end select
+  end subroutine fbem_timestamp
 
   !! Count the number of words of a string by taking into account that characters between (") are considered a word
   function fbem_count_words(str)
