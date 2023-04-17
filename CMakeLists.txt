@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(multifebe VERSION 2.0.1) # The version number must be changed here for every new change
-                                 # Note that it must be changed manually too in src/version.f90
+                                 # Note that it must be changed manually too in src/problem_variables.f90
                                  # This is something that could be automated in the future
 
 enable_language(Fortran)
