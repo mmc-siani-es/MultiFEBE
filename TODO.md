@@ -1,7 +1,7 @@
 # MultiFEBE
 
 ### Todo
-
+- Allow collocation at the free-surface of half-space green functions. It only lacks this case in the free-term calculation.
 - New output files with results split by type of variable (displacements, tractions, nodal forces, etc...), and by physical entity, be boundary, be bodyload, be subregion, etc...
 - Consider text output files in csv format.
 - Since discontinuous boundary elements are partially implemented, remove any of the functionalities for these
