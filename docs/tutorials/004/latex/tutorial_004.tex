@@ -19,12 +19,7 @@
 
 \maketitle
 
-\begin{figure}[h]
-	\centering
-	\includegraphics{beam.eps}
-	\caption{Problem layout.}
-	\label{fig:beam}
-\end{figure}
+\tableofcontents 
 
 \section{Problem description}
 
@@ -54,12 +49,19 @@ The problem is solved for $L=10$ $\mathrm{m}$, $E=200\cdot 10^9$ $\mathrm{N/m^2}
 	\end{array}
 \end{equation}
 
+\begin{figure}[h]
+	\centering
+	\includegraphics{beam.eps}
+	\caption{Problem layout.}
+	\label{fig:beam}
+\end{figure}
+
 \section{Pre-processing} 
 Pre-processing in MultiFEBE consists of defining the geometry and mesh of the problem. There are three ways to do such definition: directly from the input file (mode = 0), from another file in the native format (mode = 1) or from another file in the Gmsh MSH file format version 2.2 (mode = 2). 
 
 In the current example the problem definition will be read from the input file. 
 
-\section{Solving}
+\subsection{Input data file}
 Solving in MultiFEBE consists of running the software by specifying several options in the following sections\footnote{See reference manual.}: [problem], [settings], [materials], [regions], [conditions over nodes], etc.
 
 The first part to configurate is the problem definition in the section [problem]. This example is a 3D static mechanical problem.
@@ -129,7 +131,7 @@ In the section [cross sections], it is necessary to specify the number of cross 
 strbeam_eb 1 1 rectangle 1. 1. 0. 1. 0.
 \end{Verbatim}
 
-The format of the [regions] section consists of a first line indicating the number of regions (1). Furthermore, for each region there must be a block of data consisting of several lines of data. The first one is the region identifier and the region class (discretization method) (1 fe). As the region is a FE region, then the second line indicates the number of subregions (1) and its identifier (1). The third line defines the material (material 1). 
+The format of the section [regions] consists of a first line indicating the number of regions (1). Furthermore, for each region there must be a block of data consisting of several lines of data. The first one is the region identifier and the region class (discretization method) (1 fe). As the region is a FE region, then the second line indicates the number of subregions (1) and their identifiers (1). The third line defines the material (material 1). 
 
 \begin{Verbatim}	
 [regions]
@@ -139,7 +141,7 @@ The format of the [regions] section consists of a first line indicating the numb
 material 1
 \end{Verbatim}
 
-In the section [conditions over nodes] all boundary conditions over nodes will be specified. As a 3D model, there are 6 lines for every boundary condition. Every line has two digits, where the first one indicates the type of condition (0 for displacement and 1 for force) and the second one the value. In case of displacement, firstly the displacements $u_x, u_y, u_z$ and then the rotations $\theta_x, \theta_y, \theta_z$. In case of force, firstly the forces $F_x, F_y, F_z$ and then the moments $M_x, M_y, M_z$. 
+In the section [conditions over nodes], all boundary conditions over nodes will be specified. As a 3D model, there are 6 lines for every boundary condition. Every line has two digits, where the first one indicates the type of condition (0 for displacement and 1 for force) and the second one the value. In case of displacement, firstly the displacements $u_x, u_y, u_z$ and then the rotations $\theta_x, \theta_y, \theta_z$. In case of force, firstly the forces $F_x, F_y, F_z$ and then the moments $M_x, M_y, M_z$. 
 
 \begin{Verbatim}	
 [conditions over nodes]
@@ -219,7 +221,7 @@ node 2: 1 0
         1 0
 \end{Verbatim}
 
-\section{Post-processing}
+\section{Results and discussion}
 
 The results for the current example are in Table \ref{tab:beam_results}.
 
