@@ -11,6 +11,7 @@
 \usepackage{adjustbox}
 \usepackage{verbatim}
 \usepackage{subcaption}
+\usepackage{placeins}
 
 \title{MultiFEBE \\ Tutorial 6: static analysis of a floating pile with boundary elements and finite elements}
 \author{\'A.G. Vega-Artiles}
@@ -19,6 +20,8 @@
 \begin{document}
 
 \maketitle
+
+\tableofcontents 
 
 \section{Problem description}
 
@@ -37,15 +40,14 @@ A floating pile is a foundation with a slender cylindrical shape which is buried
 Pre-processing in MultiFEBE consists of defining the geometry and mesh of the problem. There are three ways to do such definition: directly from the input file (mode = 0), from another file in the native format (mode = 1) or from another file in the Gmsh MSH file format version 2.2 (mode = 2). However, it is preferable to use a *.msh file for relatively large geometries, therefore, this is the syntax explained in the following subsections.
    
 \subsection{Mesh generation with Gmsh}
-Gmsh \cite{gmsh, gmshweb} is a finite element mesh generator with its own language. The software allows to create the geometry in a “bottom-up” manner, going from the most basic elements (points) to the highest order elements (volumes) or in a “Constructive Solid Geometry” manner (boolean operations) or with a combination of methodologies. Gmsh also allows to define  the so-called “physical groups” which are unmodifiable entities that gather elementary entities as sole entities, where every entity must have a unique tag. On the other hand, the file containing all this geometric definition is the file *.geo whereas the mesh definition is in the file *.msh. 
+Gmsh \cite{gmsh, gmshweb} is a finite element mesh generator with its own language. The software allows to create the geometry in a “bottom-up” manner, going from the most basic elements (points) to the highest order elements (volumes) or in a “Constructive Solid Geometry” manner (boolean operations) or with a combination of methodologies. Gmsh also allows to define  the so-called “physical groups” which are unmodifiable entities that gather elementary entities as sole entities, where every entity must have a unique tag. On the other hand, the file containing all this geometric definition is the *.geo file whereas the mesh definition is in the *.msh file. 
 
-\subsubsection{File *.geo}
+\subsubsection{GEO file}
 The Gmsh language allows to define parameters to use later in the script and comments as every other programming language. 
 
-In this example two parameters are defined: the pile length (Lpile) and the mesh element size (ms\_pile). Every point in the geometry can be specified by its coordinates (x y z) and the mesh element size to use there with the function "Point". Every straight line of the model is created with the function "Line" and its initial and final points. Then, with the function "Physical Line" every line is converted into a single entity or physical entity with its own name. The function "Transfinite Line" explicitly defines the location of the nodes on the line by following the expression specified and the function "Ceil" rounds up values to the nearest integer. Furthermore, it is worth noting that “if an expression defines a new entity, it is enclosed between parentheses but if an expression refers to a previously defined entity, it is enclosed between braces.” \cite{gmshweb}
+In this example two parameters are defined: the pile length (Lpile) and the mesh element size (ms\_pile). Every point in the geometry can be specified by its coordinates (x y z) and the mesh element size to use there with the function ``Point". Every straight line of the model is created with the function ``Line" and its initial and final points. Then, with the function ``Physical Line" every line is converted into a single entity or physical entity with its own name. The function ``Transfinite Line" explicitly defines the location of the nodes on the line by following the expression specified and the function ``Ceil" rounds up values to the nearest integer. Furthermore, it is worth noting that “if an expression defines a new entity, it is enclosed between parentheses but if an expression refers to a previously defined entity, it is enclosed between braces.” \cite{gmshweb}
 
-Finally, the mesh generation, the element order and the *.msh file saving can also be specified
-with the expressions Mesh + mesh dimension, SetOrder + element order and Save + ”name.msh”,
+Finally, the mesh generation, the element order and the *.msh file saving can also be specified with the expressions ``Mesh + mesh dimension", ``SetOrder + element order" and ``Save + name.msh”,
 respectively.
 
 The resulting *.geo file applied to the problem is the following:
@@ -73,21 +75,21 @@ SetOrder 2;
 Save "mesh.msh";
 \end{Verbatim}
 
-\subsubsection{File *.msh}
+\subsubsection{MSH file}
 
 The *.msh file begins with a mandatory section about information of the file (MeshFormat) and following by the other sections. Here, three sections are used: the physical group names (PhysicalName), the nodes (Nodes) and the elements (Elements).
 
-In the section "PhysicalName", all the physical entities of the model are defined. The first line indicates the number of physical entities. Then, one line per physical entity indicating the physical dimension, the tag and the name.  
+In the section ``PhysicalName", all the physical entities of the model are defined. The first line indicates the number of physical entities. Then, one line per physical entity indicating the physical dimension, the tag and the name.  
 
-In the section "Nodes", all the nodes of the model are defined. The first line indicates the number of nodes. Then, one line per node indicating the node identifier and its coordinates (x y z).
+In the section ``Nodes", all the nodes of the model are defined. The first line indicates the number of nodes. Then, one line per node indicating the node identifier and its coordinates (x y z).
 
-In the section "Elements", all the elements of the model are defined. The first line indicates the number of elements. Then, one line per element indicating:
+In the section ``Elements", all the elements of the model are defined. The first line indicates the number of elements. Then, one line per element indicating:
 
 \begin{itemize}
 	\item Element identifier.
 	\item Type of element.
 	\item Number of auxiliary tags.
-	\item List of tags, where the two first auxiliary tag are mandatory, and corresponds to the identifier of the physical entity to which the element belongs and the second one is the identifier of the elementary model entity to which the element belongs. The rest of the tags are optional.
+	\item List of tags, where the two first auxiliary tags are mandatory, and the first one corresponds to the identifier of the physical entity to which the element belongs and the second one is the identifier of the elementary model entity to which the element belongs. The rest of the tags are optional.
 	\item A list of identifiers corresponding to the nodes of the element.
 \end{itemize}
 
@@ -104,7 +106,7 @@ For example, in this case, an element with the identifiers 1 8 2 1 1 1 5 7 corre
 
 Finally, the *.msh file can be obtain in \textit{File $\to$ Export}.
 
-The resultant *.msh file applied to the problem is the following:
+The resulting *.msh file applied to the problem is the following:
 
 \begin{Verbatim}
 $MeshFormat
@@ -218,7 +220,7 @@ type = mechanics
 analysis = static
 \end{Verbatim}
 
-In the section [export], several export settings are defined. In this example, the nodal solutions  and the \textbf{element} solutions will be exported by writing the option T with the corresponding expression, \textit{export\_nso} and \textit{export\_tot}, respectively.
+In the section [export], several export settings are defined. In this example, the nodal solutions and the stress resultant solutions will be exported by writing the option T with the corresponding expression, ``export\_nso" and ``export\_tot", respectively.
 
 \begin{Verbatim}
 [export]
@@ -226,14 +228,14 @@ export_nso = T
 export_tot = T
 \end{Verbatim}
 
-Next step is to configurate the mesh. In this case, a mesh from \textit{Gmsh} will be used so that it is necessary to write the option number 2 and the document name obtained from it in the section [settings]. However, if the mesh were going to be read from the input file, it would require to write the sections [nodes], [elements] and [parts] instead.
+Next step is to configurate the mesh. In this case, a mesh from Gmsh will be used so that it is necessary to write the option number 2 and the document name obtained from it in the section [settings]. However, if the mesh were going to be read from the input file, it would require to write the sections [nodes], [elements] and [parts] instead.
 
 \begin{Verbatim}	
 [settings]
 mesh_file_mode = 2 "mesh.msh"
 \end{Verbatim}
 
-As the problem has two materials, the section [materials] will need three lines: a first line for the number of materials in the model and a line per material with their properties such as tag, type, E and $\nu$.
+As the problem has two materials, the section [materials] will need three lines: a first line for the number of materials in the model and a line per material with its properties such as tag, type, E and $\nu$.
 
 \begin{Verbatim}
 [materials]
@@ -266,7 +268,7 @@ In the section [cross sections], it is necessary to specify the number of cross 
 strbeam_t 1 1 circle 1. 1. 0. 0.
 \end{Verbatim}
 
-The format of the [regions] section consists of a first line indicating the number of regions (2). Furthermore, for each region there must be a block of data consisting of several lines. 
+The format of the section [regions] consists of a first line indicating the number of regions (2). Furthermore, for each region there must be a block of data consisting of several lines. 
 
 The first region is a BE half-space, so the region identifier and the region class (discretization method) are \emph{1 be}. Then, as a half-space the following data specify:
 
@@ -276,9 +278,9 @@ The first region is a BE half-space, so the region identifier and the region cla
 	\item 1: Boundary condition of the free surface. Free traction in this case. 
 \end{itemize}
 
-The second line indicates the number of boundaries and a list of boundaries (0), the third line defines the material (material 1) and the fourth line defines the number and a list of BE body loads (1 1).
+The second line indicates the number of boundaries and a list of boundaries (0), the third line defines the material (material 1) and the fourth line defines the number and list of BE body loads (1 1).
 
-The second region is a FE region, so the first line shows the region identifier and the region class (discretization method) (2 fe). Then, the second line indicates the number of subregions (1) and its identifier (1) and the third line the material (material 2). 
+The second region is a FE region, so the first line shows the region identifier and the region class (discretization method) (2 fe). Then, the second line indicates the number of subregions (1) and their identifiers (1) and the third line the material (material 2). 
 
 \begin{Verbatim}	
 [regions]
@@ -294,7 +296,7 @@ material 1
 material 2
 \end{Verbatim}
 
-In the section [conditions over nodes] all boundary conditions over nodes will be specified. As a 3D model, there are 6 lines for every boundary condition. Every line has two digits, where the first one indicates the type of condition (0 for displacement and 1 for force) and the second one the value. In case of displacement, firstly the displacements $u_x, u_y, u_z$ are configured and then the rotations $\theta_x, \theta_y, \theta_z$. In case of force, firstly the forces $F_x, F_y, F_z$ and then the moments $M_x, M_y, M_z$. 
+In the section [conditions over nodes], all boundary conditions over nodes will be specified. As a 3D model, there are 6 lines for every boundary condition. Every line has two digits, where the first one indicates the type of condition (0 for displacement and 1 for force) and the second one the value. In case of displacement, firstly the displacements $u_x, u_y, u_z$ are configured and then the rotations $\theta_x, \theta_y, \theta_z$. In case of force, firstly the forces $F_x, F_y, F_z$ and then the moments $M_x, M_y, M_z$. 
 
 \begin{Verbatim}	
 [conditions over nodes]
@@ -359,10 +361,9 @@ node 3: 1 1.
         1 0.
 \end{Verbatim}
 
-\section{Post-processing}
+\section{Results and discussion}
 
-Figure \ref{fig:results} shows the dimensionless pressure along a floating pile for several cases. The results \cite{poulos} are shown together with the obtained results from the present model. The cases
-differ in pile slenderness $L=D$ ($ L $ is the pile length and $ D $ is the pile diameter), pile head constraints (free-head or fixed-head where rotation is constrained), loading type (horizontal force $ F_x $ or moment $ M_y $), and pile flexibility factor $ K_R = E_pI_p=(E_sL^4) $. It is observed a very good agreement except around the pile tip and head, where small discrepancies appear presumably due to the simplification introduced by a one-dimensional modelling of the pile-soil interaction.
+Figure \ref{fig:results} shows the dimensionless pressure along a floating pile for several cases. The results from \cite{poulos} are shown together with the obtained results from the present model. The cases differ in pile slenderness $L=D$ ($ L $ is the pile length and $ D $ is the pile diameter), pile head constraints (free-head or fixed-head where rotation is constrained), loading type (horizontal force $ F_x $ or moment $ M_y $), and pile flexibility factor $ K_R = E_pI_p=(E_sL^4) $. It is observed a very good agreement except around the pile tip and head, where small discrepancies appear presumably due to the simplification introduced by a one-dimensional modelling of the pile-soil interaction.
 
 \begin{figure}[tbh!]
 	\centering
@@ -394,13 +395,15 @@ differ in pile slenderness $L=D$ ($ L $ is the pile length and $ D $ is the pile
 	\label{fig:results}
 \end{figure}
 
+\FloatBarrier
+
 \begin{thebibliography}{99}
 	
-	\bibitem{poulos} H.G. Poulos and E.H. Davis. Elastic solutions for soil and rock mechanics. Centre	for Geotechnical Research, (1991).
+	\bibitem{poulos} H. G. Poulos and E. H. Davis. ``Elastic solutions for soil and rock mechanics." \textit{Centre for Geotechnical Research}, (1991).
 
-	\bibitem{gmsh} C. Geuzaine and J.-F. Remacle, "Gmsh: a three-dimensional finite element mesh generator with built-in pre- and post-processing facilities." \emph{Int. J. Numer. Methods Eng.}, Volume 79, Issue 11, pages 1309--1331, (2009)
+	\bibitem{gmsh} C. Geuzaine and J.-F. Remacle, ``Gmsh: a three-dimensional finite element mesh generator with built-in pre- and post-processing facilities." \textit{International Journal for Numerical Methods in Engineering}, Volume 79, Issue 11, pages 1309--1331, (2009).
 	
-	\bibitem{gmshweb} C. Geuzaine and J.-F. Remacle, "Gmsh." \url{http://gmsh.info/}
+	\bibitem{gmshweb} C. Geuzaine and J.-F. Remacle, ``Gmsh." \url{http://gmsh.info/}
 
 \end{thebibliography}
 
