@@ -10,6 +10,7 @@
 \usepackage{lscape}
 \usepackage{adjustbox}
 \usepackage{verbatim}
+\usepackage{placeins}
 
 \title{MultiFEBE \\ Tutorial 3: harmonic analysis of an elastic cube with boundary elements}
 \author{\'A.G. Vega-Artiles}
@@ -19,16 +20,11 @@
 
 \maketitle
 
-\begin{figure}[h]
-	\centering
-	\includegraphics{cube.eps}
-	\caption{Problem layout.}
-	\label{fig:cube}
-\end{figure}
+\tableofcontents 
 
 \section{Problem description}
 
-In this third tutorial, a harmonic analysis of an elastic cube is performed using the Boundary Element Method (BEM), i.e. boundary elements. Figure \ref{fig:cube} shows the geometry. Required material and geometric properties are the Young's modulus $E$, the Poisson's ratio  $\nu$, the density $\rho$, shear modulus $\mu$, damping coefficient $\xi$, the cube side length $L$ and the harmonic load $P$. Load $P$ can be regarded as a P-wave. Self-weight is not considered. 
+In this third tutorial, a harmonic analysis of an elastic cube is performed using the Boundary Element Method (BEM), i.e. boundary elements. Figure \ref{fig:cube} shows the geometry. Required material and geometric properties are the Young's modulus $E$, the Poisson's ratio  $\nu$, the density $\rho$, shear modulus $\mu$, hysteretic damping $\xi$, the cube side length $L$ and the harmonic load $P$. Load $P$ can be regarded as a P-wave. Self-weight is not considered. 
 
 The analytical solution to this problem can be obtained by means of the following equations:
 
@@ -58,26 +54,33 @@ The problem is solved for $L=1$ $\mathrm{m}$, $E=1$ $\mathrm{N/m^2}$, $\nu=0.25$
 	\end{array}
 \end{equation}
 
+\begin{figure}[h]
+	\centering
+	\includegraphics{cube.eps}
+	\caption{Problem layout.}
+	\label{fig:cube}
+\end{figure}
+
 \section{Pre-processing} 
 Pre-processing in MultiFEBE consists of defining the geometry and mesh of the problem. There are three ways to do such definition: directly from the input file (mode = 0), from another file in the native format (mode = 1) or from another file in the Gmsh MSH file format version 2.2 (mode = 2), where syntax will be explained in the following subsections. Furthermore, as the problem will be solved using only the BEM formulation, the approaches explained in the previous section will be applied.      
 
 \subsection{Gmsh format}
-Gmsh \cite{gmsh, gmshweb} is a finite element mesh generator with its own language. The software allows to create the geometry in a “bottom-up” manner, going from the most basic elements (points) to the highest order elements (volumes) or in a “Constructive Solid Geometry” manner (boolean operations) or with a combination of methodologies. Gmsh also allows to define  the so-called “physical groups” which are unmodifiable entities that gather elementary entities as sole entities, where every entity must have a unique tag. On the other hand, the file containing all this geometric definition is the file *.geo whereas the mesh definition is in the file *.msh. 
+Gmsh \cite{gmsh, gmshweb} is a finite element mesh generator with its own language. The software allows to create the geometry in a “bottom-up” manner, going from the most basic elements (points) to the highest order elements (volumes) or in a “Constructive Solid Geometry” manner (boolean operations) or with a combination of methodologies. Gmsh also allows to define  the so-called “physical groups” which are unmodifiable entities that gather elementary entities as sole entities, where every entity must have a unique tag. On the other hand, the file containing all this geometric definition is the *.geo file whereas the mesh definition is in the *.msh file. 
 
-\subsubsection{File *.geo}
+\subsubsection{GEO file}
 The *.geo file for this problem is the same as the one used in \emph{Tutorial 2}, but setting the element size (es) as 0.07, smaller than $\lambda/4$, and the element order as 2.
 
-\subsubsection{File *.msh}
+\subsubsection{MSH file}
 The *.msh file for this problem is the same as the one used in \emph{Tutorial 2}, but with more nodes and elements due to the fact that the es was set as 0.07.
 
 \begin{figure}[h]
 	\centering
 	\includegraphics[scale = 0.3]{mesh.png}
-	\caption{File *.msh. Mesh.}
+	\caption{Mesh from the *.msh file.}
 	\label{fig:mesh}
 \end{figure}
 
-\section{Solving}
+\subsection{Input data file}
 Solving in MultiFEBE consists of running the software by specifying several options in the following sections\footnote{See reference manual.}: [problem], [settings], [materials], [boundaries], [regions] and [conditions over the boundaries].
 
 The first part to configurate is the problem definition in the section [problem]. This example is a 3D harmonic mechanical problem.  
@@ -100,7 +103,7 @@ lin
 15.
 \end{Verbatim}
 
-Next step is to configurate the mesh. In this case, a mesh from \textit{Gmsh} will be used so that it is necessary to write the option number 2 and the document name obtained from it in the section [settings]. However, if the mesh were going to be read from the input file, it would require to write the sections [nodes], [elements] and [parts] instead.
+Next step is to configurate the mesh. In this case, a mesh from Gmsh will be used so that it is necessary to write the option number 2 and the document name obtained from it in the section [settings]. However, if the mesh were going to be read from the input file, it would require to write the sections [nodes], [elements] and [parts] instead.
 
 \begin{Verbatim}	
 [settings]
@@ -115,8 +118,7 @@ As the problem has just one material, the section [materials] will need two line
 1 elastic_solid rho 1. mu 1. nu 0.2 xi 0.02
 \end{Verbatim}
 
-In the section [boundaries] it is necessary to specify the number of boundaries in the first line and a line per boundary by indicating the boundary identifier,
-the identifier of the part that discretize it, and finally the boundary class. In this example there are 6 boundaries: boundary 1 is the part 1 of the mesh, boundary 2 the part 2, boundary 3 the part 3, boundary 4 the part 4, boundary 5 the part 5 and boundary 6 the part 6 and all of them are ordinary boundaries.
+In the section [boundaries], it is necessary to specify the number of boundaries in the first line and a line per boundary by indicating the boundary identifier, the identifier of the part that discretizes it, and finally the boundary class. In this example there are 6 boundaries: boundary 1 is the part 1 of the mesh, boundary 2 the part 2, boundary 3 the part 3, boundary 4 the part 4, boundary 5 the part 5 and boundary 6 the part 6 and all of them are ordinary boundaries.
 
 \begin{Verbatim}	
 [boundaries]
@@ -129,7 +131,7 @@ the identifier of the part that discretize it, and finally the boundary class. I
 6 6 ordinary
 \end{Verbatim}
 
-The format of the [regions] section consists of a first line indicating the number of regions (1). Furthermore, for each region there must be a block of data consisting of several lines of data. The first one is the region identifier and the region class (discretization method) (1 be). As the region is a BE region, then the second line indicates the number of boundaries and a list of boundaries (6 1 2 3 4 5 6). The third line defines the material (material 1). Then, for a BE region, the fourth line defines the number and a list of BE body loads (0) and the fifth line the number and a list of incident fields (0).
+The format of the section [regions] consists of a first line indicating the number of regions (1). Furthermore, for each region there must be a block of data consisting of several lines of data. The first one is the region identifier and the region class (discretization method) (1 be). As the region is a BE region, then the second line indicates the number and list of boundaries (6 1 2 3 4 5 6). The third line defines the material (material 1). Then, for a BE region, the fourth line defines the number and list of BE body loads (0) and the fifth line the number and list of incident fields (0).
 
 \begin{Verbatim}	
 [regions]
@@ -142,7 +144,7 @@ material 1
 0
 \end{Verbatim}
 
-In the section [conditions over be boundaries] all boundaries will be specify in global coordinates because they are planar and their normal vectors are parallel to one of the global axes. As a 3D problem, there are three lines for every boundary: a first line for the "x" direction, the second one for the "y" direction and the third one for the "z", where the first number of every line indicates the type of condition (here 0 for displacement and 1 for traction) and the second one its value in complex number because it is a harmonic analysis.
+In the section [conditions over be boundaries], all boundaries will be specify in global coordinates because they are planar and their normal vectors are parallel to one of the global axes. As a 3D problem, there are three lines for every boundary: a first line for the x direction, the second one for the y direction and the third one for the z, where the first number of every line indicates the type of condition (here 0 for displacement and 1 for traction) and the second one its value in complex number because it is a harmonic analysis.
 
 \begin{Verbatim}	
 
@@ -238,10 +240,10 @@ boundary 6: 1 (0.,0.)
             1 (0.,0.)
 \end{Verbatim}
 
-\section{Post-processing}
+\section{Results and discussion}
 
 \subsection{Nodal solutions file (*.nso)}
-The results of a node from the face $x_1=L$ for $es=1$ and $es=0.07$ was taken and plot together with the analytical solution to observe the frequency response in Figure \ref{fig:cube_results} and  Figure \ref{fig:cube_results2}.
+The results of a node from the face $x_1=L$ for $es=1$ and $es=0.07$ was taken and plotted together with the analytical solution to observe the frequency response in Figure \ref{fig:cube_results} and Figure \ref{fig:cube_results2}.
 
 It can be seen that the numerical solution for $es=0.07$ is in perfect agreement with the analytical solution but there are discrepancies for $es=1$.
 
@@ -266,29 +268,31 @@ The file for the current example is the following:
 \begin{figure}[h]
 	\centering
 	\includegraphics[scale = 0.5]{u_w1.png}
-	\caption{File*.pos. Nodal displacement results for $\omega_1$ with a displacement factor of 0.15.}
+	\caption{Nodal displacement results for $\omega_1$ with a displacement factor of 0.15 from the *.pos file.}
 	\label{fig:u_w1}
 \end{figure}
 
 \begin{figure}[h!]
 	\centering
 	\includegraphics[scale = 0.5]{u_w3.png}
-	\caption{File*.pos. Nodal displacement results for $\omega_3$.}
+	\caption{Nodal displacement results for $\omega_3$ from the *.pos file.}
 	\label{fig:u_w3}
 \end{figure}
 
 \begin{figure}[h!]
 	\centering
 	\includegraphics[scale = 0.5]{u_w5.png}
-	\caption{File*.pos. Nodal displacement results for $\omega_5$.}
+	\caption{Nodal displacement results for $\omega_5$ from the *.pos file.}
 	\label{fig:u_w5}
 \end{figure}
 
+\FloatBarrier
+
 \begin{thebibliography}{99}
 	
-	\bibitem{gmsh} C. Geuzaine and J.-F. Remacle, "Gmsh: a three-dimensional finite element mesh generator with built-in pre- and post-processing facilities." \emph{Int. J. Numer. Methods Eng.}, Volume 79, Issue 11, pages 1309--1331, (2009)
+	\bibitem{gmsh} C. Geuzaine and J.-F. Remacle, ``Gmsh: a three-dimensional finite element mesh generator with built-in pre- and post-processing facilities." \textit{International Journal for Numerical Methods in Engineering}, Volume 79, Issue 11, pages 1309--1331, (2009).
 	
-	\bibitem{gmshweb}  C. Geuzaine and J.-F. Remacle, "Gmsh." \url{http://gmsh.info/}
+	\bibitem{gmshweb}  C. Geuzaine and J.-F. Remacle, ``Gmsh." \url{http://gmsh.info/}
 	
 \end{thebibliography}
 
