@@ -27,7 +27,7 @@
 
 \section{Problem description}
 
-In this part b of the seventh tutorial, the seismic response of a single battered pile is obtained. For this purpose, the geometry, mesh and properties from the tutorial 7a for the single battered pile with $\theta=0\degree$ are used. Then, the model was subjected to vertically incident P and SH waves in order to calculate the transfer functions as $I_u=u_g/u_{g_0}$.
+In this part b of the seventh tutorial, the seismic response of a single battered pile is obtained. For this purpose, the geometry, mesh and properties from the \textit{Tutorial 7a} for the single battered pile with $\theta=0\degree$ are used. Then, the model was subjected to vertically incident P and SH waves in order to calculate the transfer functions as $I_u=u_g/u_{g_0}$.
 
 \subsection{Input data file}
 Solving in MultiFEBE consists of running the software by specifying several options in the following sections\footnote{See reference manual.}: [problem], [settings], [materials], [regions], [conditions over nodes], etc.
@@ -52,7 +52,7 @@ lin
 0.5976
 \end{Verbatim}
 
-In the section [export], several export and notation settings are defined. In this example, the nodal solutions and the stress resultant solutions will be exported by writing the option F or T with the corresponding expression, \textit{export\_nso} and \textit{export\_tot}, respectively. Furthermore, the complex notation is set as cartesian and the results for specific nodes are taking by specifying the number of nodes (1) and the identifiers of the nodes (3). 
+In the section [export], several export and notation settings are defined. In this example, the nodal solutions and the stress resultant solutions will be exported by writing the option F or T with the corresponding expression, ``export\_nso" and ``export\_tot", respectively. Furthermore, the complex notation is set as cartesian and the results for specific nodes are taking by specifying the number of nodes (1) and the identifiers of the nodes (3). 
 
 \begin{Verbatim}
 [export]
@@ -62,7 +62,7 @@ complex_notation = cartesian
 nso_nodes = 1 3
 \end{Verbatim}
 
-As the problem has two materials, the section [materials] will need three lines: a first line for the number of materials in the model and a line per material with their properties such as tag, type, $\rho$, E, $\nu$ and $ \xi $.
+As the problem has two materials, the section [materials] will need three lines: a first line for the number of materials in the model and a line per material with its properties such as tag, type, $\rho$, E, $\nu$ and $ \xi $.
 
 \begin{Verbatim}
 [materials]
@@ -71,7 +71,7 @@ As the problem has two materials, the section [materials] will need three lines:
 2 elastic_solid rho 0.428 E 1000. nu 0.25 xi 0.01
 \end{Verbatim}
 
-Next step is to configurate the mesh. In this case, a mesh from \textit{Gmsh} will be used so that it is necessary to write the option number 2 and the document name obtained from it in the section [settings]. However, if the mesh were going to be read from the input file, it would require to write the sections [nodes], [elements] and [parts] instead.
+Next step is to configurate the mesh. In this case, a mesh from Gmsh will be used so that it is necessary to write the option number 2 and the document name obtained from it in the section [settings]. However, if the mesh were going to be read from the input file, it would require to write the sections [nodes], [elements] and [parts] instead.
 
 \begin{Verbatim}	
 [settings]
@@ -110,19 +110,11 @@ In the section [cross sections], it is necessary to specify the number of cross 
 strbeam_eb 1 1 circle 1. 0. 1. 0.
 \end{Verbatim}
 
-The format of the [regions] section consists of a first line indicating the number of regions (2). Furthermore, for each region there must be a block of data consisting of several lines. 
+The format of the section [regions] consists of a first line indicating the number of regions (2). Furthermore, for each region there must be a block of data consisting of several lines. 
 
-The first region is a BE half-space, so the region identifier and the region class (discretization method) are \emph{1 be}. Then, as a half-space the following data specify:
+The first region is a BE region, so the first line shows the region identifier and the region class (discretization method) (1 be). The second line indicates the number and list of boundaries (1 1), the third line defines the material (material 1), the fourth line defines the number and list of BE body loads (1 1) and the fifth line the number and list of incident fields (1 1).
 
-\begin{itemize}
-	\item -3: The normal vector to the surface is in -z direction.
-	\item 0.: Coordinate of the free surface.
-	\item 1: Boundary condition of the free surface. Free traction in this case. 
-\end{itemize}
-
-The second line indicates the number of boundaries and a list of boundaries (0), the third line defines the material (material 1), the fourth line defines the number and a list of BE body loads (1 1) and the fifth line the number and a list of incident waves (1 1).
-
-The second region is a FE region, so the first line shows the region identifier and the region class (discretization method) (2 fe). Then, the second line indicates the number of subregions (1) and its identifier (1) and the third line the material (material 2). 
+The second region is a FE region, so the first line shows the region identifier and the region class (discretization method) (2 fe). Then, the second line indicates the number of subregions (1) and their identifiers (1) and the third line the material (material 2). 
 
 \begin{Verbatim}	
 [regions]
@@ -139,7 +131,7 @@ material 1
 material 2
 \end{Verbatim}
 
-In the section [incident waves], the incoming waves are defined. The general format has a first line for the number of waves (1), a second line for the wave identifier (1), a third line for the wave class (plane), a fourth line for the space (half-space with $np = 3$, $xp = 0$, $bc = 1$), a fifth line for the variable (0 for displacement), the amplitude (1.,0.), the reference point ($ x0(1) = 0 $, $ x0(2) = 0 $, $ x0(3) = 0 $)  and the angles ($ varphi = 0 $, $ theta = 0 $), a sixth line for symmetry options ($ xs(1) = 0 $, $ xs(2) = 0 $, $ xs(3) = 0 $, $ symconf(1) = 0 $, $ symconf(2) = 0 $, $ symconf(3) = 0 $) and a seventh line for the region type (viscoelastic) and the wave type (p).
+In the section [incident waves], the incoming waves are defined. The general format has a first line for the number of waves (1), a second line for the wave identifier (1), a third line for the wave class (plane), a fourth line for the space (half-space with $np = 3$, $xp = 0$, $bc = 1$), a fifth line for the variable (0 for displacement), the amplitude (1.,0.), the reference point ($ x0(1) = 0 $, $ x0(2) = 0 $, $ x0(3) = 0 $) and the angles ($ varphi = 0 $, $ theta = 0 $), a sixth line for symmetry options ($ xs(1) = 0 $, $ xs(2) = 0 $, $ xs(3) = 0 $, $ symconf(1) = 0 $, $ symconf(2) = 0 $, $ symconf(3) = 0 $) and a seventh line for the region type (viscoelastic) and the wave type (p).
 
 \begin{Verbatim}	
 [incident waves]
@@ -219,7 +211,7 @@ half-space 3 0 1
 viscoelastic p
 \end{Verbatim}
 
-\subsection{Results and discussion}
+\section{Results and discussion}
 
 Figures \ref{fig:p-wave} and \ref{fig:sh-wave} show the transfer functions for a single battered pile. 
 
