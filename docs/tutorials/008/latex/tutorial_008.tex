@@ -69,7 +69,11 @@ The Gmsh language allows to define parameters to use later in the script and com
 
 In this example several parameters are defined: diameter (D), length (L), the mesh element size for the suction caisson and the free surface near it (ms\_near), the mesh element size far from the suction caisson (ms\_far) and the radius of the free surface (R\_truncation). 
 
+<<<<<<< HEAD
 Every point in the geometry can be specified by its coordinates (x y z) and mesh element size with the function ``Point". Every straight line of the model is created with the function ``Line" and its initial and final points. Then, with the function ``Physical Line" every line is converted into a single entity or physical entity with its own name. Furthermore, the function ``Transfinite Line" explicitly defines the location of the nodes on the line by following the expression specified and the function ``Round" rounds values to the nearest integer. Every ruled surface is created with the function ``Ruled Surface" by setting its perimeter with the function ``Line Loop" and the lines used to close the surface. The function ``Transfinite surface" meshes surfaces with the 2D transfinite algorithm and ``Recombine Surface" transforms meshes into mixed triangular/quadrangular meshes. Moreover, with the function ``Physical Surface" every surface is converted into a single entity or physical entity with its own name.  
+=======
+Every point in the geometry can be specified by its coordinates (x y z) and mesh element size with the function "Point". Every straight line of the model is created with the function "Line" and its initial and final points. Then, with the function "Physical Line" every line is converted into a single entity or physical entity with its own name. Furthermore, the function "Transfinite Line" explicitly defines the location of the nodes on the line by following the expression specified and the function "Round" rounds values to the nearest integer. Every ruled surface is created with the function "Ruled Surface" by setting its perimeter with the function "Line Loop" and the lines used to close the surface. The function "Transfinite surface" meshes surfaces with the 2D transfinite algorithm and "Recombine Surface" transforms meshes into mixed triangular/quadrangular meshes. Moreover, with the function "Physical Surface" every surface is converted into a single entity or physical entity with its own name.  
+>>>>>>> main
 
 It is worth noting that “if an expression defines a new entity, it is enclosed between parentheses but if an expression refers to a previously defined entity, it is enclosed between braces.” \cite{gmshweb}
 
@@ -179,17 +183,29 @@ Save "mesh.msh";
 
 The *.msh file begins with a mandatory section about information of the file (MeshFormat) and following by the other sections. Here, three sections are used: the physical group names (PhysicalName), the nodes (Nodes) and the elements (Elements).
 
+<<<<<<< HEAD
 In the section ``PhysicalName", all the physical entities of the model are defined. The first line indicates the number of physical entities. Then, one line per physical entity indicating the physical dimension, the tag and the name.  
 
 In the section ``Nodes", all the nodes of the model are defined. The first line indicates the number of nodes. Then, one line per node indicating the identifier of the node and its coordinates (x y z).
 
 In the section ``Elements", all the elements of the model are defined. The first line indicates the number of elements. Then, one line per element indicating:
+=======
+In the section "PhysicalName", all the physical entities of the model are defined. The first line indicates the number of physical entities. Then, one line per physical entity indicating the physical dimension, the tag and the name.  
+
+In the section "Nodes", all the nodes of the model are defined. The first line indicates the number of nodes. Then, one line per node indicating the identifier of the node and its coordinates (x y z).
+
+In the section "Elements", all the elements of the model are defined. The first line indicates the number of elements. Then, one line per element indicating:
+>>>>>>> main
 
 \begin{itemize}
 	\item Element identifier.
 	\item Type of element.
 	\item Number of auxiliary tags.
+<<<<<<< HEAD
 	\item List of tags, where the two first auxiliary tags are mandatory, and the first one corresponds to the identifier of the physical entity to which the element belongs and the second one is the identifier of the elementary model entity to which the element belongs. The rest of the tags are optional.
+=======
+	\item List of tags, where the two first auxiliary tags are mandatory, and corresponds to the identifier of the physical entity to which the element belongs and the second one is the identifier of the elementary model entity to which the element belongs. The rest of the tags are optional.
+>>>>>>> main
 	\item A list of identifiers corresponding to the nodes of the element.
 \end{itemize}
 
@@ -234,7 +250,11 @@ lin
 63.246
 \end{Verbatim}
 
+<<<<<<< HEAD
 In the section [export], several export and notation settings are defined. In this example, the nodal solutions and the stress resultant solutions will be exported by writing the option F or T with the corresponding expression, ``export\_nso" and ``export\_tot", respectively. Furthermore, the complex notation is set as cartesian. 
+=======
+In the section [export], several export and notation settings are defined. In this example, the nodal solutions and the stress resultant solutions will be exported by writing the option F or T with the corresponding expression, "export\_nso" and "export\_tot", respectively. Furthermore, the complex notation is set as cartesian. 
+>>>>>>> main
 
 \begin{Verbatim}
 [export]
@@ -294,7 +314,11 @@ shell 1 1 0.05
 
 The format of the section [regions] consists of a first line indicating the number of regions (2). Furthermore, for each region there must be a block of data consisting of several lines. 
 
+<<<<<<< HEAD
 The first region is a BE region, so the first line shows the region identifier and the region class (discretization method) (1 be). The second line indicates the number and list of boundaries (2 1 2), the third line defines the material (material 1), the fourth line defines the number and list of BE body loads (1 1) and the fifth line the number and list of incident fields (0).
+=======
+The first region is a BE region, so the first line shows the region identifier and the region class (discretization method) (1 be). The second line indicates the number of boundaries and a list of boundaries (2 1 2), the third line defines the material (material 1), the fourth line defines the number and a list of BE body loads (1 1) and the fifth line the number and a list of incident fields (0).
+>>>>>>> main
 
 The second region is a FE region, so the first line shows the region identifier and the region class (discretization method) (2 fe). Then, the second line indicates the number of subregions (1) and their identifiers (1) and the third line the material (material 2). 
 
@@ -486,7 +510,11 @@ The different conditions used for the calculation of all the impedances are show
 
 Figure \ref{fig:results} shows the horizontal, vertical and rocking impedances for a suction caisson. The results from \cite{liingaard} are shown together with the results from the present approach. It is observed a very good agreement with respect to Liingaard \textit{et al.}. 
 
+<<<<<<< HEAD
 These results were obtained from the *.tot files by summing up the contributions of the ``bucket-lid" and the ``soil-skirt" for the target resultant forces or moments. For more details about the postprocessing see file ``tutorial\_008.m".
+=======
+These results were obtained from the *.tot files by summing up the contributions of the "bucket-lid" and the "soil-skirt" for the target resultant forces or moments. For more details about the postprocessing see file "tutorial\_008.m".
+>>>>>>> main
 
 \begin{figure}[tbh!]
 	\centering
@@ -528,11 +556,19 @@ These results were obtained from the *.tot files by summing up the contributions
 
 \begin{thebibliography}{99}
 	
+<<<<<<< HEAD
 	\bibitem{gmsh} C. Geuzaine and J.-F. Remacle, ``Gmsh: a three-dimensional finite element mesh generator with built-in pre- and post-processing facilities." \textit{International Journal for Numerical Methods in Engineering}, Volume 79, Issue 11, pages 1309--1331, (2009).
 	
 	\bibitem{gmshweb} C. Geuzaine and J.-F. Remacle, ``Gmsh." \url{http://gmsh.info/}
 	
 	\bibitem{liingaard} M. Liingaard, L. Andersen and L.B. Ibsen, ``Impedance of flexible suction caissons." \textit{Earthquake Engineering and Structural Dynamics}, Volume 36, pages 2249--2271, (2007).
+=======
+	\bibitem{gmsh} C. Geuzaine and J.-F. Remacle, "Gmsh: a three-dimensional finite element mesh generator with built-in pre- and post-processing facilities." \textit{International Journal for Numerical Methods in Engineering}, Volume 79, Issue 11, pages 1309--1331, (2009).
+	
+	\bibitem{gmshweb} C. Geuzaine and J.-F. Remacle, "Gmsh." \url{http://gmsh.info/}
+	
+	\bibitem{liingaard} M. Liingaard, L. Andersen and L.B. Ibsen, "Impedance of flexible suction caissons." \textit{Earthquake Engineering and Structural Dynamics}, Volume 36, pages 2249--2271, (2007).
+>>>>>>> main
 
 \end{thebibliography}
 

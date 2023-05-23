@@ -19,12 +19,7 @@
 
 \maketitle
 
-\begin{figure}[h]
-\centering
-\includegraphics{square.eps}
-\caption{Problem layout.}
-\label{fig:layout}
-\end{figure}
+\tableofcontents 
 
 \section{Problem description}
 
@@ -48,6 +43,13 @@ The problem is solved for $L=1$ $\mathrm{m}$, $E=1$ $\mathrm{N/m^2}$, $\nu=0.25$
 	$\sigma_{22} = 0.\overline{3}$ $\mathrm{N/m^2}$;
 	$\sigma_{12} = 0$.
 
+\begin{figure}[h]
+	\centering
+	\includegraphics{square.eps}
+	\caption{Problem layout.}
+	\label{fig:layout}
+\end{figure}
+
 \section{Preamble about the BEM and MultiFEBE}
 
 The meshing phisolosophy is somewhat different between Boundary Element Method and the Finite Element Method (FEM). The more obvious and important difference is the fact that only the discretization of the boundary of each region\footnote{We use the term ``region'' as a synonym of ``sub-domain'', i.e. the whole problem domain is divided into one or more ``regions''.} is required, except if body loads or other special internal features are present in the problem. That is: one-dimensional (line) elements are required in two-dimensional models, and two-dimensional (surface) elements are required in three-dimensional models. Another important difference is the presence of the traction vector components as nodal degrees of freedom along with the displacement vector components. This has important implications regarding discretization, because, while the displacements field is continuous along the boundary of any given region, traction vector depends on the unit normal, which can be discontinuous. Therefore, unlike the FEM, which has an intuitive continuous volume discretization, the BEM requires taking into account additional considerations when meshing.
@@ -69,15 +71,15 @@ Pre-processing in MultiFEBE consists of defining the geometry and mesh of the pr
 
 \subsection{Gmsh format}
 
-Gmsh \cite{gmsh, gmshweb} is a "finite element mesh generator and post-processor" with its own language. The software allows to create the geometry in a “bottom-up” manner, going from the most basic elements (points) to the highest order elements (volumes) or in a “Constructive Solid Geometry” manner (boolean operations) or with a combination of methodologies. Gmsh also allows to define  the so-called “physical groups” which are "groups of model entities" that gather elementary entities, where every entity must have a unique tag. On the other hand, the file containing all this geometric definition is the file *.geo whereas the mesh definition is in the file *.msh. 
+Gmsh \cite{gmsh, gmshweb} is a finite element mesh generator and post-processor with its own language. The software allows to create the geometry in a “bottom-up” manner, going from the most basic elements (points) to the highest order elements (volumes) or in a “Constructive Solid Geometry” manner (boolean operations) or with a combination of methodologies. Gmsh also allows to define  the so-called “physical groups” which are ``groups of model entities" that gather elementary entities, where every entity must have a unique tag. On the other hand, the file containing all this geometric definition is the *.geo file whereas the mesh definition is in the *.msh file. 
 
-\subsubsection{File *.geo}
+\subsubsection{GEO file}
 
-The Gmsh language allows to define parameters to use later in the script and comments as every other programming language. In this example two parameters are defined: the square side length (L) and the mesh element size (es). Every point in the geometry can be specified by its coordinates (x y z) and the mesh element size to use there with the function "Point" and every straight line of the model is created with the function "Line" and its initial and final points. Then, with the function "Physical Line" every line is converted into a single entity or physical entity with its own name. Furthermore, it is worth noting that “if an expression defines a new entity, it is enclosed between parentheses but if an expression refers to a previously defined entity, it is enclosed between braces.” \cite{gmshweb} 
+The Gmsh language allows to define parameters to use later in the script and comments as every other programming language. In this example two parameters are defined: the square side length (L) and the mesh element size (es). Every point in the geometry can be specified by its coordinates (x y z) and the mesh element size to use there with the function ``Point" and every straight line of the model is created with the function ``Line" and its initial and final points. Then, with the function ``Physical Line" every line is converted into a single entity or physical entity with its own name. Furthermore, it is worth noting that “if an expression defines a new entity, it is enclosed between parentheses but if an expression refers to a previously defined entity, it is enclosed between braces.” \cite{gmshweb} 
 
-Finally, the mesh generation, the element order and the *.msh file saving can also be specified with the expressions \textit{Mesh + mesh dimension}, \textit{SetOrder + element order} and \textit{Save + "name.msh"}, respectively.
+Finally, the mesh generation, the element order and the *.msh file saving can also be specified with the expressions ``Mesh + mesh dimension", ``SetOrder + element order" and ``Save + name.msh", respectively.
 
-The resultant *.geo file applied to the problem is the following:
+The resulting *.geo file applied to the problem is the following:
 
 \begin{Verbatim}
 L = 1;  // Square side length
@@ -116,26 +118,25 @@ Save "t1.msh";
 \begin{figure}[h]
 	\centering
 	\includegraphics[scale = 0.5]{geometry2.png}
-	\caption{File *.geo. Geometry with tangent vectors.}
+	\caption{Geometry with tangent vectors from the *.geo file.}
 	\label{fig:geometry}
 \end{figure}
 
-\subsubsection{File *.msh}
+\subsubsection{MSH file}
 
 The *.msh file begins with a mandatory section about information of the file (MeshFormat) and following by the other sections. Here, three sections are used: the physical group names (PhysicalName), the nodes (Nodes) and the elements (Elements).
 
-In the section "PhysicalName", all the physical entities of the model are defined. The first line
-indicates the number of physical entities. Then, one line per physical entity indicating the physical dimension, the tag and the name.  
+In the section ``PhysicalName", all the physical entities of the model are defined. The first line indicates the number of physical entities. Then, one line per physical entity indicating the physical dimension, the tag and the name.  
    
-In the section "Nodes", all the nodes of the model are defined. The first line indicates the number of nodes. Then, one line per node indicating the identifier of the node and its coordinates (x y z).
+In the section ``Nodes", all the nodes of the model are defined. The first line indicates the number of nodes. Then, one line per node indicating the node identifier and its coordinates (x y z).
 
-In the section "Elements", all the elements of the model are defined. The first line indicates the number of elements. Then, one line per element indicating:
+In the section ``Elements", all the elements of the model are defined. The first line indicates the number of elements. Then, one line per element indicating:
 
 \begin{itemize}
 	\item Element identifier.
 	\item Type of element.
 	\item Number of auxiliary tags.
-	\item List of tags, where the two first auxiliary tag are mandatory, and corresponds to the identifier of the physical entity to which the element belongs and the second one is the identifier of the elementary model entity to which the element belongs. The rest of the tags are optional.
+	\item List of tags, where the two first auxiliary tags are mandatory, and the first one corresponds to the identifier of the physical entity to which the element belongs and the second one is the identifier of the elementary model entity to which the element belongs. The rest of the tags are optional.
 	\item A list of identifiers corresponding to the nodes of the element.
 \end{itemize}
 
@@ -150,9 +151,9 @@ For example, in this case, an element with the identifiers 3 1 2 3 3 5 6 corresp
 	\item 5, 6: it connects the nodes 5 and 6.
 \end{itemize} 
 
-Finally, the *.msh file can be obtain in  \textit{File $\to$ Export} or by following the instructions specified in the section \textit{File *.geo}.
+Finally, the *.msh file can be obtain in \textit{File $\to$ Export} or by following the instructions specified in the section \textit{GEO file}.
 
-The resultant *.msh file applied to the problem is the following:
+The resulting *.msh file applied to the problem is the following:
 
 \begin{Verbatim}
 $MeshFormat
@@ -191,13 +192,13 @@ $EndElements
 \begin{figure}[h]
 	\centering
 	\includegraphics[scale = 0.5]{mesh.png}
-	\caption{File *.msh. Mesh.}
+	\caption{Mesh from the *.msh file.}
 	\label{fig:mesh}
 \end{figure}
 
 \subsection{Native format}
 
-By default, the mesh is read from the input file by writing the sections [nodes], [elements] and [parts] in the native format as long as the user doesn't specify another option. The format of sections is very similar to the corresponding section of the Gmsh file format but here the section [parts] corresponds to the section "PhysicalName".
+By default, the mesh is read from the input file by writing the sections [nodes], [elements] and [parts] in the native format as long as the user doesn't specify another option. The format of sections is very similar to the corresponding section of the Gmsh file format but here the section [parts] corresponds to the section ``PhysicalName".
 
 The native format applied to the problem is the following:
 
@@ -228,7 +229,7 @@ The native format applied to the problem is the following:
 1 4 "left"
 \end{Verbatim}
 
-\section{Solving}
+\subsection{Input data file}
 
 Solving in MultiFEBE consists of running the software by specifying several options in the following sections\footnote{See reference manual.}: [problem], [settings], [materials], [boundaries], [regions], [conditions over the boundaries], etc.
 
@@ -242,7 +243,7 @@ subtype = plane_strain
 analysis = static
 \end{Verbatim}
 
-Next step is to configurate the mesh. In this case, a mesh from \textit{Gmsh} will be used so that it is necessary to write the option number 2 and the document name obtained from it in the section [settings]. However, if the mesh were going to be read from the input file, it would require to write the sections [nodes], [elements] and [parts] instead.
+Next step is to configurate the mesh. In this case, a mesh from Gmsh will be used so that it is necessary to write the option number 2 and the document name obtained from it in the section [settings]. However, if the mesh were going to be read from the input file, it would require to write the sections [nodes], [elements] and [parts] instead.
 
 \begin{Verbatim}	
 [settings]
@@ -257,7 +258,7 @@ As the problem has just one material, the section [materials] will need two line
 1 elastic_solid E 1. nu 0.25
 \end{Verbatim}
 
-In the section [boundaries] it is necessary to specify the number of boundaries in the first line and a line per boundary by indicating the boundary identifier, the identifier of the part that discretize it, and finally the boundary class. In this example there are 4 boundaries: boundary 1 is the part 1 of the mesh, boundary 2 the part 2, boundary 3 the part 3 and boundary 4 the part 4 and all of them are ordinary boundaries.
+In the section [boundaries], it is necessary to specify the number of boundaries in the first line and a line per boundary by indicating the boundary identifier, the identifier of the part that discretizes it, and finally the boundary class. In this example there are 4 boundaries: boundary 1 is the part 1 of the mesh, boundary 2 the part 2, boundary 3 the part 3 and boundary 4 the part 4 and all of them are ordinary boundaries.
 
 \begin{Verbatim}	
 [boundaries]
@@ -268,7 +269,7 @@ In the section [boundaries] it is necessary to specify the number of boundaries 
 4 4 ordinary
 \end{Verbatim}
 
-The format of the [regions] section consists of a first line indicating the number of regions (1). Furthermore, for each region there must be a block of data consisting of several lines of data. The first one is the region identifier and the region class (discretization method) (1 be). As the region is a BE region, then the second line indicates the number of boundaries and a list of boundaries (4 1 2 3 4). The third line defines the material (material 1). Then, for a BE region, the fourth line defines the number and a list of BE body loads (0).
+The format of the section [regions] consists of a first line indicating the number of regions (1). Furthermore, for each region there must be a block of data consisting of several lines of data. The first one is the region identifier and the region class (discretization method) (1 be). As the region is a BE region, then the second line indicates the number  and list of boundaries (4 1 2 3 4). The third line defines the material (material 1). Then, for a BE region, the fourth line defines the number and list of BE body loads (0).
 
 \begin{Verbatim}	
 [regions]
@@ -280,7 +281,7 @@ material 1
 0
 \end{Verbatim}
 
-In the section [conditions over be boundaries] all boundaries will be specify in global coordinates because they are planar and their normal vectors are parallel to one of the global axes. As a 2D problem, there are two lines for every boundary: a first line for the "x" direction and the second one for the "y" direction, where the first number of every line indicates the type of condition (here 0 for displacement and 1 for traction) and the second one its value.
+In the section [conditions over be boundaries], all boundaries will be specify in global coordinates because they are planar and their normal vectors are parallel to one of the global axes. As a 2D problem, there are two lines for every boundary: a first line for the x direction and the second one for the y direction, where the first number of every line indicates the type of condition (here 0 for displacement and 1 for traction) and the second one its value.
 
 \begin{Verbatim}	
 [conditions over be boundaries]
@@ -349,7 +350,7 @@ For the current example, only the nodal solutions and the Gmsh output file will 
 
 \subsection{Nodal solutions file (*.nso)}
 
-This output file is a plain text file containing the nodal (node by node) results. The file starts with a set of header lines whose first character is "$\#$" (a comment line in GNU/Linux environments), describing the file and the meaning of the main data columns. 
+This output file is a plain text file containing the nodal (node by node) results. The file starts with a set of header lines whose first character is ``$\#$" (a comment line in GNU/Linux environments), describing the file and the meaning of the main data columns. 
 
 
 \begin{Verbatim}
@@ -386,8 +387,7 @@ In this case, node variables are the last four numbers where the displacement in
 
 \subsection{Gmsh results file (*.pos)}
 
-The Gmsh output file (*.pos) is a plain text containing the case mesh and results which can be read by Gmsh. The structure of this file is similar to the file *.msh but with additional sections: "NodeData" and "ElementData". The section "NodeData" specifies nodal displacements and nodal traction in the following order: the number of string tags, the name of the string tag corresponding to the results, the number of real tags, the real tag (time value), the number of integer tags, the integer tags (time steps, scalar field components and number of associated nodal values) and the node numbers with their results. The section "ElementNodeData" specifies the stress tensor in the following order:
-number of string tags, the name of the string tag corresponding to the results, the number of real tags, the real tag, the number of integer tags, the integer tags and the element numbers with the number of nodes per element value.
+The Gmsh output file (*.pos) is a plain text containing the case mesh and results which can be read by Gmsh. The structure of this file is similar to the *.msh file but with additional sections: ``NodeData" and ``ElementData". The section ``NodeData" specifies nodal displacements and nodal traction in the following order: the number of string tags, the name of the string tag corresponding to the results, the number of real tags, the real tag (time value), the number of integer tags, the integer tags (time steps, scalar field components and number of associated nodal values) and the node numbers with their results. The section ``ElementNodeData" specifies the stress tensor in the following order: number of string tags, the name of the string tag corresponding to the results, the number of real tags, the real tag, the number of integer tags, the integer tags and the element numbers with the number of nodes per element value.
 
 The whole file for the current example is in the online repository. However, the results for the third and fourth node will be presented here. 
 
@@ -416,25 +416,25 @@ The whole file for the current example is in the online repository. However, the
 \begin{figure}[h]
 	\centering
 	\includegraphics[scale = 0.5]{displacement.png}
-	\caption{File *.pos. Nodal displacement results with a displacement factor of 0.5.}
+	\caption{Nodal displacement results with a displacement factor of 0.5 from the *.pos file.}
 	\label{fig:displacement}
 \end{figure}
 
 \begin{figure}
 	\centering
 	\includegraphics[scale = 0.5]{traction.png}
-	\caption{File *.pos. Traction results.}
+	\caption{Traction results from the *.pos file.}
 	\label{fig:traction}
 \end{figure}
 
 \begin{figure}
 	\centering
 	\includegraphics[scale = 0.5]{stress.png}
-	\caption{File *.pos. Stress tensor results.}
+	\caption{Stress tensor results from the *.pos file.}
 	\label{fig:stress}
 \end{figure}
 
-\section{Results comparison}
+\section{Results and discussion}
 
 The comparison between the analytical and numerical solutions for the third and fourth nodes are shown in Table \ref{tab:square_results}. It can be seen that the numerical solution is in perfect agreement with the analytical solution.
 
@@ -474,7 +474,7 @@ The process to obtain more elements for the mesh consists of specifying the elem
 
 \subsection{Higher order elements}
 
-The process to obtain higher order elements for the mesh consists of specifying the element order in the *.geo file. For example, to obtain cuadratic elements it is enough to set a "2" in the expression "SetOrder". 
+The process to obtain higher order elements for the mesh consists of specifying the element order in the *.geo file. For example, to obtain cuadratic elements it is enough to set a ``2" in the expression ``SetOrder". 
 
 \subsection{SBIE formulation}
 
@@ -503,9 +503,9 @@ The results with this formulation are the following:
 
 \begin{thebibliography}{99}
 
-	\bibitem{gmsh} C. Geuzaine and J.-F. Remacle, "Gmsh: a three-dimensional finite element mesh generator with built-in pre- and post-processing facilities." \emph{Int. J. Numer. Methods Eng.}, Volume 79, Issue 11, pages 1309--1331, (2009)
+	\bibitem{gmsh} C. Geuzaine and J.-F. Remacle, ``Gmsh: a three-dimensional finite element mesh generator with built-in pre- and post-processing facilities." \textit{International Journal for Numerical Methods in Engineering}, Volume 79, Issue 11, pages 1309--1331, (2009).
 	
-	\bibitem{gmshweb}  C. Geuzaine and J.-F. Remacle, "Gmsh." \url{http://gmsh.info/}
+	\bibitem{gmshweb}  C. Geuzaine and J.-F. Remacle, ``Gmsh." \url{http://gmsh.info/}
 	
 \end{thebibliography}
 
