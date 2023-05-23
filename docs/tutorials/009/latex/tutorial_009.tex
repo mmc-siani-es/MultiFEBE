@@ -27,7 +27,11 @@
 
 \section{Problem description}
 
+<<<<<<< HEAD
+In this ninth tutorial, an offshore wind turbine will be studied. In this first part of the tutorial, a FEM model with no soil-structure interaction is considered and unitary horizontal displacements are directly applied at the bottom leg nodes. However, the second part of the tutorial will introduce dynamic soil-structure interaction with the presence of soil and foundations. Figure \ref{fig:geometry1} shows the geometry. Note that the geometry is defined with the z axis oriented downwards.
+=======
 In this ninth tutorial, an offshore wind turbine will be studied. In this first part of the tutorial, a FEM model with no soil-structure interaction is considered and unitary horizontal displacements are directly applied at the bottom leg nodes. However, the second part of the tutorial will introduce dynamic soil-structure interaction with the presence of soil and foundations. Figure \ref{fig:geometry1} shows the geometry. Note that the geometry is defined with the z-axis oriented downwards.
+>>>>>>> main
 
 \begin{figure}[tbh!]
 	\centering
@@ -47,7 +51,11 @@ The Gmsh language allows to define parameters to use later in the script and com
 
 In this example, several parts of the offshore wind turbine were defined in the *.geo file: Jacket joints, Jacket members, Transition piece and Tower.  
 
+<<<<<<< HEAD
+The functions used in the present model have been already explained in previous tutorials. The only new function is ``Mesh.Algorithm = 6" that sets the ``Frontal-Delaunay 2D meshing algorithm".
+=======
 The functions used in the present model have been already explained in previous tutorials. The only new function is "Mesh.Algorithm = 6" that sets the "Frontal-Delaunay 2D meshing algorithm".
+>>>>>>> main
 
 \begin{figure}[tbh!]
 	\centering
@@ -60,17 +68,29 @@ The functions used in the present model have been already explained in previous 
 
 The *.msh file begins with a mandatory section about information of the file (MeshFormat) and following by the other sections. Here, three sections are used: the physical group names (PhysicalName), the nodes (Nodes) and the elements (Elements).
 
+<<<<<<< HEAD
+In the section ``PhysicalName", all the physical entities of the model are defined. The first line indicates the number of physical entities. Then, one line per physical entity indicating the physical dimension, the tag and the name.  
+
+In the section ``Nodes", all the nodes of the model are defined. The first line indicates the number of nodes. Then, one line per node indicating the identifier of the node and its coordinates (x y z).
+
+In the section ``Elements", all the elements of the model are defined. The first line indicates the number of elements. Then, one line per element indicating:
+=======
 In the section "PhysicalName", all the physical entities of the model are defined. The first line indicates the number of physical entities. Then, one line per physical entity indicating the physical dimension, the tag and the name.  
 
 In the section "Nodes", all the nodes of the model are defined. The first line indicates the number of nodes. Then, one line per node indicating the identifier of the node and its coordinates (x y z).
 
 In the section "Elements", all the elements of the model are defined. The first line indicates the number of elements. Then, one line per element indicating:
+>>>>>>> main
 
 \begin{itemize}
 	\item Element identifier.
 	\item Type of element.
 	\item Number of auxiliary tags.
+<<<<<<< HEAD
+	\item List of tags, where the two first auxiliary tags are mandatory, and the first one corresponds to the identifier of the physical entity to which the element belongs and the second one is the identifier of the elementary model entity to which the element belongs. The rest of the tags are optional.
+=======
 	\item List of tags, where the two first auxiliary tags are mandatory, and corresponds to the identifier of the physical entity to which the element belongs and the second one is the identifier of the elementary model entity to which the element belongs. The rest of the tags are optional.
+>>>>>>> main
 	\item A list of identifiers corresponding to the nodes of the element.
 \end{itemize}
 
@@ -122,7 +142,11 @@ Next step is to configurate the mesh. In this case, a mesh from Gmsh will be use
 mesh_file_mode = 2 "mesh.msh"
 \end{Verbatim}
 
+<<<<<<< HEAD
+In the section [export], the complex notation is set as cartesian and the format for floating point numbers as ``Simple Engineering" (eng\_simple = en18.8e2) with 18 as the minimum number of positions to be used, 8 the number of digits to the right of the decimal point and 2 the number of digits in the exponent part. 
+=======
 In the section [export], the complex notation is set as cartesian and the format for floating point numbers as Simple Engineering (eng\_simple = en18.8e2) with 18 as the minimum number of positions to be used, 8 the number of digits to the right of the decimal point and 2 the number of digits in the exponent part. 
+>>>>>>> main
 
 \begin{Verbatim}
 [export]
@@ -385,7 +409,11 @@ group 1: 0 (1.,0.)
 
 \section{Problem description}
 
+<<<<<<< HEAD
+In this case, soil-structure interaction is considered, where suction caissons and soil are modelled via FEM and BEM. Seismic input is a vertically incident SH wave with unitary displacements at the free surface level. Figure \ref{fig:geometry2} shows the geometry. Note that the geometry is defined with the z axis oriented downwards.
+=======
 In this case, soil-structure interaction is considered, where suction caissons and soil are modelled via FEM and BEM. Seismic input is a vertically incident SH wave with unitary displacements at the free-surface level. Figure \ref{fig:geometry2} shows the geometry. Note that the geometry is defined with the z-axis oriented downwards.
+>>>>>>> main
 
 \begin{figure}[tbh!]
 	\centering
@@ -399,7 +427,11 @@ In this case, soil-structure interaction is considered, where suction caissons a
 \subsection{Mesh generation with Gmsh}
 
 \subsubsection{GEO file}
+<<<<<<< HEAD
+In this model several parts of the offshore wind turbine were also defined in the *.geo file: Jacket joints, Jacket members, Transition piece, Tower, Foundation (suction caissons) and Free Surface. For the Foundation and the Free Surface, auxiliary files were created and imported into the main file ``mesh.geo". These auxiliary files allowed to define the target parts by using different functions, loops and macros. For example, the customized functions were built by setting the command ``Function" followed by a name and then by ending with the command ``Return", the function ``Geometry.AutoCoherence = 0" helps to prevent any automatic duplicate check or replacement, the variable name ``newp", ``newl", ``newll" and ``news" select new line, line loop, surface and surface tags, the function ``Atan2" calculates the arc tangent of the first value divided by the second one, the function ``Rotate" turns elements by giving an angle of radians, the direction of rotation and a point on the axis of rotation, 
+=======
 In this model several parts of the offshore wind turbine were also defined in the *.geo file: Jacket joints, Jacket members, Transition piece, Tower, Foundation (suction caissons) and Free Surface. For the Foundation and the Free Surface, auxiliary files were created and imported into the main file "mesh.geo". These auxiliary files allowed to define the target parts by using different functions, loops and macros. For example, the customized functions were built by setting the command "Function" followed by a name and then by ending with the command "Return", the function "Geometry.AutoCoherence = 0" helps to prevent any automatic duplicate check or replacement, the variable name "newp", "newl", "newll" and "news" select new line, line loop, surface and surface tags, the function "Atan2" calculates the arc tangent of the first value divided by the second one, the function "Rotate" turns elements by giving an angle of radians, the direction of rotation and a point on the axis of rotation, 
+>>>>>>> main
 
 The remaining functions have been already explained in previous tutorials.
 
@@ -425,17 +457,30 @@ The mesh is shown in Figure \ref{fig:mesh2}.
 
 The principal difference of the BEM-FEM model with respect to the FEM model is the existence of incident waves.
 
+<<<<<<< HEAD
+In the section [incident waves], the incoming waves are defined. Note that in this example the geometry is defined with the z axis oriented downwards. It is of course not mandatory to define the global axes this way. In fact, the geometry can be built defining the z axis as oriented either downwards or upwards. However, this detail affects the way in which the incident field can be defined because, at the moment, the two routines implemented for the definition of the incident field (corresponding to a homogenous or a multilayered half-space) have different assumptions and restrictions:
+
+\begin{itemize}
+	\item The routine that implements the homogeneous half-space incident field only works when the positive z axis goes outside the half-space\footnote{See Tutorials 7b and 11.}.
+	
+	\item The routine that implements the multilayered half-space incident field is more general and allows both upwards and downwords z axis orientations.
+=======
 In the section [incident waves], the incoming waves are defined. Note that in this example the geometry is defined with the z-axis oriented downwards. It is of course not mandatory to define the global axes this way. In fact, the geometry can be built defining the z-axis as oriented either downwards or upwards. However, this detail affects the way in which the incident field can be defined because, at the moment, the two routines implemented for the definition of the incident field (corresponding to a homogenous or a multilayered half-space) have different assumptions and restrictions:
 
 \begin{itemize}
 	\item The routine that implements the homogeneous half-space incident field only works when the positive z-axis goes outside the half-space\footnote{See Tutorials 7b and 11.}.
 	
 	\item The routine that implements the multilayered half-space incident field is more general and allows both upwards and downwords z-axis orientations.
+>>>>>>> main
 \end{itemize}
 
 Taking into consideration the abovementioned comments, the format of this section for the present example is the following multilayered routine:
 
+<<<<<<< HEAD
+The format has a first line for the number of waves (1), a second line for the wave identifier (1), a third line for the wave class (plane), a fourth line for the space (``multilayered\_half-space" with $np = -3$; number of layers = 2; z top coordinates of the layers = 0, 100; materials of the layers = 1, 2; the same number of 1s and (0.,0.)s as layers), a fifth line for the variable (0 for displacement), the amplitude (1.,0.), the reference point ($ x0(1) = 0 $, $ x0(2) = 0 $, $ x0(3) = 0 $)  and the angles ($ varphi = 0 $, $ theta = 90 $), a sixth line for symmetry options ($ xs(1) = 0 $, $ xs(2) = 0 $, $ xs(3) = 0 $, $ symconf(1) = 0 $, $ symconf(2) = 0 $, $ symconf(3) = 0 $) and a seventh line for the region type (viscoelastic) and the wave type (sh). This data input is intended to further generalize the incident field, but the corresponding functions are not yet implemented and that is why the input has this format. 
+=======
 The format has a first line for the number of waves (1), a second line for the wave identifier (1), a third line for the wave class (plane), a fourth line for the space ("multilayered\_half-space" with $np = -3$; number of layers = 2; z top coordinates of the layers = 0, 100; materials of the layers = 1, 2; the same number of 1s and (0.,0.)s as layers), a fifth line for the variable (0 for displacement), the amplitude (1.,0.), the reference point ($ x0(1) = 0 $, $ x0(2) = 0 $, $ x0(3) = 0 $)  and the angles ($ varphi = 0 $, $ theta = 90 $), a sixth line for symmetry options ($ xs(1) = 0 $, $ xs(2) = 0 $, $ xs(3) = 0 $, $ symconf(1) = 0 $, $ symconf(2) = 0 $, $ symconf(3) = 0 $) and a seventh line for the region type (viscoelastic) and the wave type (sh). This data input is intended to further generalize the incident field, but the corresponding functions are not yet implemented and that is why the input has this format. 
+>>>>>>> main
 
 \begin{Verbatim}
 [incident waves]
@@ -607,9 +652,15 @@ Figure \ref{fig:results} shows the Rotor-Nacelle Assembly (RNA) displacement for
 
 \begin{thebibliography}{99}
 	
+<<<<<<< HEAD
+	\bibitem{gmsh} C. Geuzaine and J.-F. Remacle, ``Gmsh: a three-dimensional finite element mesh generator with built-in pre- and post-processing facilities." \emph{International Journal for Numerical Methods in Engineering}, Volume 79, Issue 11, pages 1309--1331, (2009)
+	
+	\bibitem{gmshweb} C. Geuzaine and J.-F. Remacle, ``Gmsh." \url{http://gmsh.info/}
+=======
 	\bibitem{gmsh} C. Geuzaine and J.-F. Remacle, "Gmsh: a three-dimensional finite element mesh generator with built-in pre- and post-processing facilities." \emph{International Journal for Numerical Methods in Engineering}, Volume 79, Issue 11, pages 1309--1331, (2009)
 	
 	\bibitem{gmshweb} C. Geuzaine and J.-F. Remacle, "Gmsh." \url{http://gmsh.info/}
+>>>>>>> main
 
 \end{thebibliography}
 
