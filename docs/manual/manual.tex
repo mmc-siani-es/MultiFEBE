@@ -16,9 +16,7 @@
 MultiFEBE (version 2.0.0)
 \\
 Reference Manual}
-\author{
-
-}
+\author{}
 \date{July 2022}
 
 \begin{document}
@@ -30,7 +28,7 @@ Reference Manual}
 \chapter*{Copyright Notice and Disclaimers}
 
 \begin{large}
-Copyright {\copyright} 2014-2022 Universidad de Las Palmas de Gran Canaria
+Copyright {\copyright} 2014-2024 Universidad de Las Palmas de Gran Canaria
 \\\\
 Jacob D.R. Bordón \\ 
 Guillermo M. \'Alamo \\
@@ -1602,6 +1600,11 @@ For 2D problems in a static analysis (all regions are only of the elastic solid 
 \$12,\$13 & float & Node displacements $(u_1,u_2)$. \\
 \$14,\$15 & float & Node tractions $(t_1,t_2)$. \\
 \midrule
+\multicolumn{3}{c}{BE line body load node}
+\\
+\$12,\$13 & float & Node displacements $(u_1,u_2)$. \\
+\$14,\$15 & float & Node force per unit area $(b_1,b_2)$ (note: plain strain). \\
+\midrule
 \multicolumn{3}{c}{FE region node with 2 DOFs}
 \\
 \$12,\$13 & float & Node displacements $(u_1,u_2)$. \\
@@ -1624,6 +1627,16 @@ For 3D problems in a static analysis (all regions are only of the elastic solid 
 \\
 \$13-\$15 & float & Node displacements $(u_1,u_2,u_3)$. \\
 \$16-\$18 & float & Node tractions $(t_1,t_2,t_3)$. \\
+\midrule
+\multicolumn{3}{c}{BE line body load node}
+\\
+\$13-\$15 & float & Node displacements $(u_1,u_2,u_3)$. \\
+\$16-\$18 & float & Node force per unit length $(b_1,b_2,b_3)$. \\
+\midrule
+\multicolumn{3}{c}{BE surface body load node}
+\\
+\$13-\$15 & float & Node displacements $(u_1,u_2,u_3)$. \\
+\$16-\$18 & float & Node force per unit area $(b_1,b_2,b_3)$. \\
 \midrule
 \multicolumn{3}{c}{FE region node with 3 DOFs}
 \\
@@ -1660,6 +1673,10 @@ For 2D problems in a time harmonic analysis, where each node variable is written
 \$16-\$19 & float & Node tractions $(t_1,t_2)$ (total field). \\
 \$20-\$23 & float & Node displacements $(u_1^\mathrm{inc},u_2^\mathrm{inc})$ (incident field). \\
 \$24-\$27 & float & Node tractions $(t_1^\mathrm{inc},t_2^\mathrm{inc})$ (incident field). \\
+\midrule
+\multicolumn{3}{c}{BE line body load node (elastic solid)} \\
+\$12-\$15 & float & Node displacements $(u_1,u_2)$ (total field). \\
+\$16-\$19 & float & Node force per unit area $(b_1,b_2)$ (total field). \\
 \midrule
 \multicolumn{3}{c}{BE region node (poroelastic medium)} \\
 \$12,\$13 & float & Node fluid equivalent pressure $\tau$ (total field). Note that it is related to the dynamic pore pressure by $\tau=-\phi p$, where $\phi$ is the porosity.\\
@@ -1699,6 +1716,14 @@ For 3D problems in a time harmonic analysis, where as in the 2D case each node v
 \$19-\$24 & float & Node tractions $(t_1,t_2,t_3)$ (total field). \\
 \$25-\$30 & float & Node displacements $(u_1^\mathrm{inc},u_2^\mathrm{inc},u_3^\mathrm{inc})$ (incident field). \\
 \$31-\$36 & float & Node tractions $(t_1^\mathrm{inc},t_2^\mathrm{inc},t_3^\mathrm{inc})$ (incident field). \\
+\midrule
+\multicolumn{3}{c}{BE line body load node (elastic solid)} \\
+\$13-\$18 & float & Node displacements $(u_1,u_2,u_3)$ (total field). \\
+\$19-\$24 & float & Node force per unit length $(b_1,b_2,b_3)$ (total field). \\
+\midrule
+\multicolumn{3}{c}{BE surface body load node (elastic solid)} \\
+\$13-\$18 & float & Node displacements $(u_1,u_2,u_3)$ (total field). \\
+\$19-\$24 & float & Node force per unit area $(b_1,b_2,b_3)$ (total field). \\
 \midrule
 \multicolumn{3}{c}{BE region node (poroelastic medium)} \\
 \$13,\$14 & float & Node fluid equivalent pressure $\tau$ (total field). Note that it is related to the dynamic pore pressure by $\tau=-\phi p$, where $\phi$ is the porosity.\\
