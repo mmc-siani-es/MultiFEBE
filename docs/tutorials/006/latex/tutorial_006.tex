@@ -93,7 +93,7 @@ In the section ``Elements", all the elements of the model are defined. The first
 	\item A list of identifiers corresponding to the nodes of the element.
 \end{itemize}
 
-For example, in this case, an element with the identifiers 1 8 2 1 1 1 5 7 corresponds to:
+For example, in this case, an element with the identifiers 1 8 2 1 1 1 5 17 corresponds to:
 
 \begin{itemize}
 	\item 1: element 1.
@@ -101,7 +101,7 @@ For example, in this case, an element with the identifiers 1 8 2 1 1 1 5 7 corre
 	\item 2: it has 2 auxiliary tags.
 	\item 1: it belongs to the physical entity 1.
 	\item 1: it belongs to the line 1.
-	\item 1, 5, 7: it connects the nodes 1, 5 and 7.
+	\item 1, 5, 17: it connects the nodes 1, 5 and 17.
 \end{itemize} 
 
 Finally, the *.msh file can be obtain in \textit{File $\to$ Export}.
@@ -260,7 +260,7 @@ The section [fe subregions] indicates the number of fe subregions in the first l
 1 2 0 0
 \end{Verbatim}
 
-In the section [cross sections], it is necessary to specify the number of cross sections in the first line and a line per cross section by indicating the type of fe (strbeam\_t = straight beam, Timoshenko model), number of fe subregions related to the cross section (1), fe subregion identifier (1), type of cross section (circle), radius (1.) and reference vector for the section orientation (1. 0. 0.).
+In the section [cross sections], it is necessary to specify the number of cross sections in the first line and a line per cross section by indicating the type of FE (in this case \texttt{strbeam\_t} corresponds to a straight beam with Timoshenko beam theory), number of FE subregions related to the cross section (1), FE subregion identifier (1), type of cross section (circle), diameter (1.) and reference vector for the section orientation local axis $y'$ (1. 0. 0.). In this case, the orientation of $y'$ is unimportant due to the cross section symmetry.
 
 \begin{Verbatim}
 [cross sections]
@@ -363,7 +363,7 @@ node 3: 1 1.
 
 \section{Results and discussion}
 
-Figure \ref{fig:results} shows the dimensionless pressure along a floating pile for several cases. The results from \cite{poulos} are shown together with the obtained results from the present model. The cases differ in pile slenderness $L=D$ ($ L $ is the pile length and $ D $ is the pile diameter), pile head constraints (free-head or fixed-head where rotation is constrained), loading type (horizontal force $ F_x $ or moment $ M_y $), and pile flexibility factor $ K_R = E_pI_p=(E_sL^4) $. It is observed a very good agreement except around the pile tip and head, where small discrepancies appear presumably due to the simplification introduced by a one-dimensional modelling of the pile-soil interaction.
+Figure \ref{fig:results} shows the dimensionless pressure along a floating pile for several cases. The results from \cite{poulos} are shown together with the obtained results from the present model. The cases differ in pile slenderness $L=D$ ($ L $ is the pile length and $ D $ is the pile diameter), pile head constraints (free-head or fixed-head where rotation is constrained), loading type (horizontal force $ F_x $ or moment $ M_y $), and pile flexibility factor $ K_R = E_pI_p /(E_sL^4) $. It is observed a very good agreement except around the pile tip and head, where small discrepancies appear presumably due to the simplification introduced by a one-dimensional modelling of the pile-soil interaction.
 
 \begin{figure}[tbh!]
 	\centering
