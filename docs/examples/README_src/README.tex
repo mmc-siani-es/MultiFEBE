@@ -1,0 +1,113 @@
+\documentclass{article}
+\usepackage{markdown}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{verbose,tmargin=2.5cm,bmargin=2.5cm,lmargin=3cm,rmargin=3cm}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\graphicspath{{graphics/}}
+\usepackage{fancyvrb}
+\usepackage{hyperref}
+\usepackage{lscape}
+\usepackage{adjustbox}
+\usepackage{verbatim}
+
+
+\title{MultiFEBE \\ Examples}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+This document lists all the included examples for users, and it also describes the guidelines for developing and including new examples. 
+
+Examples are organized by the type of problem \texttt{PP}, type of analysis \texttt{AA}, modeling \texttt{MM}, and number \texttt{NNN}, i.e. a generic example is encoded as \texttt{PP-AA-MM-NNN}. The examples whose title starts with ``[TUTORIAL]'' include a document with a description of the modeling approach, input files, output files and a comparison of the obtained results against other reference results (analytical or otherwise), which serves as validation.
+
+\section{List of examples for users}
+
+\begin{itemize}
+    \item \texttt{ME} Linear elastic mechanics
+    \begin{itemize}
+        \item \texttt{ST} Static
+        \begin{itemize}
+            \item \texttt{SR} Structures
+            \begin{itemize}
+                \item \texttt{001} \href{ME-ST-SR-001/}{[TUTORIAL] Cantilever beam (FEM model)}.
+            \end{itemize}
+            \item[\texttt{EL}] Elastostatics (continuum)
+            \begin{itemize}
+                \item \texttt{001} \href{ME-ST-EL-001/}{[TUTORIAL] Plain strain square (BEM model)}.
+                \item \texttt{002} \href{ME-ST-EL-002/}{[TUTORIAL] Cube (BEM model)}.
+            \end{itemize}            
+            \item \texttt{CO} Coupled 
+            \begin{itemize}
+                \item \texttt{001} \href{ME-ST-CO-001/}{[TUTORIAL] Floating pile response under head force or moment (BEM-FEM model)}.
+            \end{itemize}             
+        \end{itemize}
+        \item \texttt{TH} Time Harmonic
+        \begin{itemize}
+            \item \texttt{SR} Structures
+            \begin{itemize}
+                \item \texttt{001} \href{ME-TH-SR-001/}{[TUTORIAL] Cantilever beam (FEM model)}.
+            \end{itemize}             
+            \item \texttt{EL} Elastodynamics (continuum)
+            \begin{itemize}
+                \item \texttt{001} \href{ME-TH-EL-001/}{[TUTORIAL] Cube (BEM model)}.
+                \item \texttt{002} \href{ME-TH-EL-002/}{[TUTORIAL] Cantilever wall (BEM model)}.
+                \item \texttt{003} \href{ME-TH-EL-003/}{[TUTORIAL] Soria arch dam: fixed-base (BEM model).}
+            \end{itemize}            
+            \item \texttt{PO} Poroelastodynamics (continuum)
+            \begin{itemize}
+                \item \texttt{none}
+            \end{itemize}                 
+            \item \texttt{AC} Acoustics (continuum)
+            \begin{itemize}
+                \item \texttt{none}
+            \end{itemize}             
+            \item \texttt{CO} Coupled 
+            \begin{itemize}
+                \item \texttt{001} \href{ME-TH-CO-001/}{[TUTORIAL] Impedances of inclined pile foundations (BEM-FEM model)}.
+                \item \texttt{002} \href{ME-TH-CO-002/}{[TUTORIAL] Seismic response of a single inclined pile (BEM-FEM model)}.
+                \item \texttt{003} \href{ME-TH-CO-003/}{[TUTORIAL] Impedances of a suction caisson / bucket foundation (BEM-FEM model)}.
+                \item \texttt{004} \href{ME-TH-CO-004/}{[TUTORIAL] Seismic response of an Offshore Wind Turbine (BEM-FEM model)}.
+                \item \texttt{005} \href{ME-TH-CO-005/}{[TUTORIAL] Soria arch dam: compliant base (BEM model)}.
+                \item \texttt{006} \href{ME-TH-CO-006/}{[TUTORIAL] Soria arch dam: compliant base with 112 m water depth (BEM model)}.
+            \end{itemize}                  
+        \end{itemize}        
+    \end{itemize}    
+\end{itemize}
+
+\section{Notes for developers}
+
+Examples should be categorized within the following tree:
+\begin{itemize}
+    \item \texttt{ME} Linear elastic mechanics
+    \begin{itemize}
+        \item \texttt{ST} Static
+        \begin{itemize}
+            \item \texttt{SR} Structures. Examples using only structural and discrete finite elements.
+            \item \texttt{EL} Elastostatics (continuum). Examples using either boundary elements or finite element, where the domain is discretized without structural simplifications, i.e. a continuum or solid model.
+            \item \texttt{CO} Coupled. Examples where structures are coupled with the surrounding media.
+        \end{itemize}
+        \item \texttt{TH} Time Harmonic
+        \begin{itemize}
+            \item \texttt{SR} Structures. Examples using only structural and discrete finite elements.
+            \item \texttt{EL} Elastodynamics (continuum). Examples using either boundary elements or finite element, where the domain is discretized without structural simplifications, i.e. a continuum or solid model. Only elastic solids.
+            \item \texttt{PO} Poroelastodynamics (continuum). The same as above, but when using poroelastic media.
+            \item \texttt{AC} Acoustics (continuum). The same as above, but when using inviscid fluids.
+            \item \texttt{CO} Coupled. Examples where structures are coupled with the surrounding media, and/or where different material models are interacting.
+        \end{itemize}        
+    \end{itemize}
+    \item \texttt{LA} Laplace (to be developed)
+\end{itemize}
+
+Within the \texttt{examples} folder, the example must have a dedicated folder with the name \texttt{PP-AA-MM-NNN} according to its categorization and numbering. The structure within the example folder must be:
+\begin{itemize}
+    \item \texttt{PP-AA-MM-NNN.pdf} - It is a mandatory document describing example. It can be as simple as a readme type of document, where a brief description of the example is given, or it can be a fully documented example in a tutorial format.
+    \item \texttt{doc\_src} - It is a mandatory folder containing the sources for creating \texttt{PP-AA-MM-NNN.pdf}. It can be a plain text file \texttt{PP-AA-MM-NNN.txt}, a Microsoft Word file \texttt{PP-AA-MM-NNN.doc} or \texttt{PP-AA-MM-NNN.docx}, a Open Document Text file \texttt{PP-AA-MM-NNN.odt}, or a LaTeX file \texttt{PP-AA-MM-NNN.tex}. The preferred document source is LaTeX.
+    \item \texttt{case\_files} - It is a mandatory folder containing all input files, including MultiFEBE, mesh and other files required for running the example.
+\end{itemize}
+
+\end{document}
