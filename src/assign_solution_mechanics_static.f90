@@ -18,6 +18,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ! ---------------------------------------------------------------------
+
 subroutine assign_solution_mechanics_static
 
   ! Fortran 2003 intrinsic module
@@ -396,14 +397,27 @@ subroutine assign_solution_mechanics_static
                   if (.not.node_used(sn)) then
                     node_used(sn)=.true.
                     sn_fe=element(se)%element_node(kn)
+
+                    if (node(sn_fe)%n_dof.ge.problem%n) then
+
+                      do k=1,problem%n
+                        if (node(sn_fe)%ctype(k,1).eq.1) then
+                          node(sn)%value_r(k,1)=b_r(node(sn_fe)%col(k,1),1)
+                        else
+                          node(sn)%value_r(k,1)=node(sn_fe)%cvalue_r(k,1,1)
+                        end if
+                      end do
+
+                    else
+
+                      call fbem_warning_message(error_unit,0,'node',node(sn_fe)%id,'has <n dof, not assigning to be bodyload')
+
+                    end if
+
                     do k=1,problem%n
-                      if (node(sn_fe)%ctype(k,1).eq.1) then
-                        node(sn)%value_r(k,1)=b_r(node(sn_fe)%col(k,1),1)
-                      else
-                        node(sn)%value_r(k,1)=node(sn_fe)%cvalue_r(k,1,1)
-                      end if
                       node(sn)%value_r(problem%n+k,1)=b_r(node(sn)%col(problem%n+k,1),1)
                     end do
+
                   end if
                 end do
               end do
