@@ -43,7 +43,8 @@ subroutine read_commands(fileunit)
   integer                                :: nl
   character(len=fbem_file_record_length) :: line, word
   integer                                :: n_words
-  integer                                :: ndim
+  integer                                :: ndim, np, kp
+  integer, allocatable                   :: sp(:)
   logical                                :: exists
 
   section_name='commands'
@@ -90,9 +91,46 @@ subroutine read_commands(fileunit)
         end if
         word=trim(fbem_extract_word(line,2))
         read(word,*) ndim
+        if (.not.((ndim.eq.2).or.(ndim.eq.3))) then
+          call fbem_error_message(error_unit,0,trim(section_name),nl,'invalid ndim in this line.')
+        end if
         call fbem_convert_mesh_file_format(ndim,trim(fbem_extract_word(line,3)),trim(fbem_extract_word(line,4)),&
                                                 trim(fbem_extract_word(line,5)),trim(fbem_extract_word(line,6)))
       end if
+      !
+      ! transform_mesh_parts_to_linear <n> <Input file> <Input format> <Output file> <Output format> <np: number of selected parts> <list selected parts>
+      !
+      if (trim(word).eq.'transform_mesh_parts_to_linear') then
+        exists=.true.
+        if (n_words.lt.8) then
+          call fbem_error_message(error_unit,0,trim(section_name),nl,'invalid number of arguments in this line.')
+        end if
+        word=trim(fbem_extract_word(line,2))
+        read(word,*) ndim
+        if (.not.((ndim.eq.2).or.(ndim.eq.3))) then
+          call fbem_error_message(error_unit,0,trim(section_name),nl,'invalid ndim in this line.')
+        end if
+        word=trim(fbem_extract_word(line,7))
+        read(word,*) np
+        if (np.le.0) then
+          call fbem_error_message(error_unit,0,trim(section_name),nl,'invalid np in this line.')
+        end if
+        allocate(sp(np))
+        do kp=1,np
+          word=trim(fbem_extract_word(line,7+kp))
+          read(word,*) sp(kp)
+        end do
+        call fbem_transform_mesh_parts_to_linear(ndim,1.d-6,trim(fbem_extract_word(line,3)),trim(fbem_extract_word(line,4)),&
+                                                            trim(fbem_extract_word(line,5)),trim(fbem_extract_word(line,6)),np,sp)
+        deallocate(sp)
+      end if
+
+
+
+
+
+
+
       !
       ! Check if the command is not recognized
       !
