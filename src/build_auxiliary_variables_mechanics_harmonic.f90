@@ -2555,14 +2555,14 @@ subroutine build_auxiliary_variables_mechanics_harmonic
               select case (problem%n)
                 case (2)
                   select case (ndof_fe_node)
-                    case (0,2,3)
+                    case (0,1,2,3)
                       node(sn)%n_dof=ndof_fe_node
                     case default
                       call fbem_error_message(error_unit,0,'node',node(sn)%id,'invalid ndof_fe_node value.')
                   end select
                 case (3)
                   select case (ndof_fe_node)
-                    case (0,3,5)
+                    case (0,1,3,5)
                       node(sn)%n_dof=ndof_fe_node
                     case (6)
                       do ke=1,node(sn)%n_elements
@@ -3426,7 +3426,7 @@ subroutine build_auxiliary_variables_mechanics_harmonic
 
           ! falta incident_c
           ! Falta allocatar en los nodos, para tambien sacar las soluciones por nodos (continuas)
-
+          ! o haciendo igual que con los puntos internos, extrapolando.
 
 
         end do
