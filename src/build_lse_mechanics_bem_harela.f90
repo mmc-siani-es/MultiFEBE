@@ -99,6 +99,14 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
   ! Assembling control variable
   logical                           :: assemble
   integer                           :: col, row, kn_int, sn_int, sn_fe, se_int_n_snodes
+!  ! ********************************************************************************
+!  ! Future implementation of improved BEM-FEM coupling (only relevant for beam-soil)
+!  ! To be implemented also in al other BEM type of media
+!  integer                           :: se_int_fe, ndof_mat, col_local, col_node
+!  real(kind=real64)                 :: rmin
+!  real(kind=real64), allocatable    :: N(:,:)
+!  complex(kind=real64), allocatable :: N_c(:,:)
+!  ! ********************************************************************************
   ! Writing
   character(len=fbem_fmtstr)              :: fmtstr
   integer                                 :: output_fileunit
@@ -813,6 +821,107 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
       do kn_col=1,se_int_n_nodes
         sn_col=element(se_int)%node(kn_col)
         assemble=.false.
+
+!        ! ********************************************************************************
+!        ! Future implementation of improved BEM-FEM coupling (only relevant for beam-soil)
+!        ! To be implemented also in al other BEM type of media
+!        !
+!        !
+!        ! Experimental: strict u^bem = u^fem = N·a^fem (now u^bem = u^fem interpolating with phi)
+!        !
+!        !
+!        ! Coupling improvement (to be done in the static case):
+!        !
+!        ! 1. calcular c_lk (sbie, sbie mca...)
+!        ! 2. calcular N del elemento finito en el punto de colocacaion (hacer rutina similar a build_fem_K_*)
+!        ! 3. multiplicar c_lk*N
+!        ! 4. Ensamblar (incluyendo la posibilidad de que el elemento finito sea rigido, pero ¿es posible si N para el rigido
+!        !     no tiene sentido, o sí con matriz T alternativa?)
+!        !
+
+!        ! ==== !
+!        ! SBIE !
+!        ! ==== !
+
+!        if ((node(sn_col)%sbie.eq.fbem_sbie).and.(.not.node_freeterm_added(sn_col))) then
+!          assemble=.true.
+!          node_freeterm_added(sn_col)=.true.
+!          x_i=element(se_int)%x_i_sbie(:,kn_col)
+!          c_plus=0
+!          if (node(sn_col)%sbie_lineload_end_boundary) then
+!            do il=1,problem%n
+!              c_plus(il,il)=0.5d0
+!            end do
+!          else
+!            do il=1,problem%n
+!              c_plus(il,il)=1.d0
+!            end do
+!          end if
+!        end if
+
+!        ! ======== !
+!        ! SBIE MCA !
+!        ! ======== !
+
+!        if (node(sn_col)%sbie.eq.fbem_sbie_mca) then
+!          assemble=.true.
+!          x_i=element(se_int)%x_i_sbie_mca(:,kn_col)
+!          c_plus=0
+!          do il=1,problem%n
+!            c_plus(il,il)=1.d0
+!          end do
+!        end if
+
+!        ! ======== !
+!        ! ASSEMBLE !
+!        ! ======== !
+
+!        ! The collocation establishes the equations (rows).
+!        ! The integration establishes the variables (columns).
+!        if (assemble) then
+!          se_int_fe=element(se_int)%element
+!          call fbem_nearest_xi_nodes(problem%n,element(se_int)%type,element(se_int_fe)%x_gn,x_i,xi_i,rmin)
+!          call fbem_local_coordinates(problem%n,element(se_int)%type,element(se_int_fe)%x_gn,element(se_int)%csize,x_i,xi_i,rmin)
+!          ndof_mat=3*(problem%n-1)*element(se_int_fe)%n_nodes
+!          allocate (N(problem%n,ndof_mat),N_c(problem%n,ndof_mat))
+!          call build_fem_N(se_int_fe,element(se_int_fe)%n_dimension,xi_i,problem%n,ndof_mat,N)
+!          N_c=matmul(c_plus,N)
+
+!          !
+!          ! De momento solo beam line and shell surface coupling
+!          ! no rigid elements allow yet
+!          !
+!          ! En general, debería ser parecido a assemble_fem_*ela_stiffness_matrix
+!          !
+
+!          do il=1,problem%n
+!            row=node(sn_col)%row(il,1)
+!            col_node=1
+!            do kn_int=1,element(se_int_fe)%n_nodes
+!              sn_int=element(se_int_fe)%node(kn_int)
+!              do ik=1,element(se_int_fe)%node_n_dof(kn_int)
+!                col_local=col_node+ik-1
+!                if (node(sn_int)%ctype(ik,1).eq.1) then
+!                  col=node(sn_int)%col(ik,1)
+!                  A_c(row,col)=A_c(row,col)+N_c(il,col_local)
+!                else
+!                  b_c(row,1)=b_c(row,1)-N_c(il,col_local)*node(sn_int)%cvalue_c(ik,1,1)
+!                end if
+!              end do
+!              col_node=col_node+element(se_int_fe)%node_n_dof(kn_int)
+!            end do
+!          end do
+
+!          if (region(kr)%n_incidentfields.gt.0) then
+!            ! OJO, SIN IMPLEMENTAR CAMPO INCIDENTE
+!            stop 'build_lse_mechanics_bem_harela 898'
+!          end if
+
+!          deallocate (N,N_c)
+
+!        end if
+!        !
+!        ! ********************************************************************************
 
         ! ==== !
         ! SBIE !
@@ -1551,9 +1660,6 @@ subroutine build_lse_mechanics_bem_harela_bl(omega,kr,sb_int,se_int,se_int_n_nod
   logical                :: reversed
   ! Assembling control variable
   logical                :: assemble
-
-  ! temporary
-  logical :: tmp_log
 
   ! Wave propagation speeds and wavenumbers
   select case (problem%n)
