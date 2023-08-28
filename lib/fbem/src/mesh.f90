@@ -44,6 +44,7 @@ module fbem_mesh_module
   ! Public
   public :: fbem_mesh
   public :: fbem_convert_mesh_file_format
+  public :: fbem_transform_mesh_parts_to_linear
 
   !! Mesh: parts > elements (and auxiliary subelements: subedges and subfaces) > nodes
   type fbem_mesh
@@ -470,9 +471,12 @@ contains
     ! NODE->NODES CONNECTIVITY
     !
     call mesh%build_node_nodes_connectivity(tol)
+    !
+    ! NODE->ELEMENTS CONNECTIVITY
+    !
     call mesh%build_node_elements_connectivity
     !
-    ! OTHER CONNECTIVITIES
+    ! TODO: OTHER CONNECTIVITIES
     !
 !    call fbem_node_parts_connectivity(n_nodes,node,n_elements,element,n_parts,part)
 !    call fbem_part_nodes_connectivity(n_nodes,node,n_parts,part)
@@ -915,5 +919,138 @@ contains
     write(output_unit,*) 'Done'
     call mesh%destroy
   end subroutine fbem_convert_mesh_file_format
+
+
+  subroutine fbem_transform_mesh_parts_to_linear(n,tol,filename_in,format_in,filename_out,format_out,np,sp_eid)
+    implicit none
+    ! I/O
+    integer                                 :: n
+    real(kind=real64)                       :: tol
+    character(len=*)                        :: filename_in
+    character(len=*)                        :: format_in
+    character(len=*)                        :: filename_out
+    character(len=*)                        :: format_out
+    integer                                 :: np            ! Number of selected parts
+    integer                                 :: sp_eid(np)    ! Selected parts with external id
+    ! Local
+    type(fbem_mesh)                         :: mesh
+    integer                                 :: ke, kp, sp, kn, sn, kej, sej
+    integer                                 :: ke_real, ne_real, knj, knk, snk
+    integer                                 :: type_linear, n_nodes_linear
+    integer                                 :: nodes(4)
+    integer, allocatable                    :: tmp(:)
+    ! Read
+    call mesh%read_from_file(n,tol,filename_in,format_in)
+    !
+    ! Remove non linear nodes from elements
+    !
+    do ke=1,mesh%n_elements
+      do kp=1,np
+        sp=mesh%part_iid(sp_eid(kp))
+        if ((mesh%element(ke)%part.eq.sp).and.(fbem_element_order(mesh%element(ke)%type).gt.1)) then
+          select case (fbem_n_dimension(mesh%element(ke)%type))
+            case (1)
+              type_linear=fbem_line2
+            case (2)
+              select case (fbem_n_vertices(mesh%element(ke)%type))
+                case (3)
+                  type_linear=fbem_tri3
+                case (4)
+                  type_linear=fbem_quad4
+                case default
+                  call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element type')
+              end select
+            case (3)
+              select case (fbem_n_vertices(mesh%element(ke)%type))
+                case (4)
+                  type_linear=fbem_tet4
+                case (8)
+                  type_linear=fbem_hex8
+                case default
+                  call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element type')
+              end select
+            case default
+              call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid element type')
+          end select
+          ! Number of nodes
+          n_nodes_linear=fbem_n_nodes(type_linear)
+          ! Disconnect the element from node->elements connectivity of all non linear nodes of selected parts
+          do kn=n_nodes_linear+1,mesh%element(ke)%n_nodes
+            sn=mesh%element(ke)%node(kn)
+            do kej=1,mesh%node(sn)%n_elements
+              sej=mesh%node(sn)%element(kej)
+              if (sej.eq.ke) then
+                mesh%node(sn)%element(kej)=0
+              end if
+            end do
+          end do
+          ! Transform the element
+          mesh%element(ke)%type=type_linear
+          mesh%element(ke)%n_nodes=n_nodes_linear
+          nodes(1:n_nodes_linear)=mesh%element(ke)%node(1:n_nodes_linear)
+          deallocate(mesh%element(ke)%node)
+          allocate(mesh%element(ke)%node(n_nodes_linear))
+          mesh%element(ke)%node(1:n_nodes_linear)=nodes(1:n_nodes_linear)
+        end if
+      end do
+    end do
+    !
+    ! Remove nodes not connected to elements
+    !
+    !
+    ! Update node->elements connectivities
+    !
+    do kn=1,mesh%n_nodes
+      if (mesh%node(kn)%n_elements.ne.0) then
+        ne_real=count(mesh%node(kn)%element.ne.0)
+        if (ne_real.ne.0) then
+          if (ne_real.ne.mesh%node(kn)%n_elements) then
+            allocate(tmp(ne_real))
+            tmp=pack(mesh%node(kn)%element,mesh%node(kn)%element.ne.0)
+            deallocate(mesh%node(kn)%element)
+            allocate(mesh%node(kn)%element(ne_real))
+            mesh%node(kn)%element=tmp
+          end if
+        else
+          mesh%node(kn)%n_elements=0
+          if (allocated(mesh%node(kn)%element)) deallocate(mesh%node(kn)%element)
+        end if
+      end if
+    end do
+    !
+    ! Remove unused nodes
+    !
+    !
+    ! OJO: solo se van migrando las coordenadas, n_elements (para poder identificarlos como desconectados
+    !
+    kn=1
+    do while (kn.le.mesh%n_nodes)
+      if (mesh%node(kn)%n_elements.eq.0) then
+        !
+        ! kn es el nodo (iid) a eliminar
+        !
+        do knj=kn+1,mesh%n_nodes
+          mesh%node(knj-1)%n_elements=mesh%node(knj)%n_elements
+          mesh%node(knj-1)%id=mesh%node(knj)%id
+          mesh%node(knj-1)%x=mesh%node(knj)%x
+        end do
+        mesh%n_nodes=mesh%n_nodes-1
+        ! Move all nodes >kn in element->nodes
+        do ke=1,mesh%n_elements
+          do knk=1,mesh%element(ke)%n_nodes
+            snk=mesh%element(ke)%node(knk)
+            if (snk.gt.kn) then
+              mesh%element(ke)%node(knk)=snk-1
+            end if
+          end do
+        end do
+      end if
+      if (mesh%node(kn)%n_elements.gt.0) kn=kn+1
+    end do
+    !
+    ! Write
+    !
+    call mesh%write_to_file(filename_out,format_out)
+  end subroutine fbem_transform_mesh_parts_to_linear
 
 end module fbem_mesh_module

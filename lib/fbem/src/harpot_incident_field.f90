@@ -55,7 +55,7 @@ contains
     real(kind=real64)    :: omega         !! Angular frequency.
     real(kind=real64)    :: rho           !! Density.
     complex(kind=real64) :: c             !! Wave propagation speed.
-    complex(kind=real64) :: A             !! Amplitude of the point source at r=1
+     complex(kind=real64) :: A             !! Amplitude of the point source at r = 1
     real(kind=real64)    :: x0(rn)        !! Point coordinates.
     integer              :: space         !! Type of space: 1 full-space, 2 half-space.
     integer              :: np            !! Axis corresponding to the normal of the plane (x_np=xp).
@@ -77,16 +77,41 @@ contains
     real(kind=real64)    :: drdx(rn)
     real(kind=real64)    :: drdn
     k=omega/c
-    p1=c_1_4pi*exp(-c_im*k*1.d0)/1.d0
+
     rv=x-x0
     r=sqrt(dot_product(rv,rv))
     drdx=rv/r
     drdn=dot_product(drdx,n)
+
     if (space.eq.2) stop 'not yet'
+
     select case (rn)
       case (2)
+
+
+
+!        d1r=1.0d0/r
+!        logr=log(r)
+!        z(1)=c_im*pars%k*r
+!        call fbem_BesselKnR_decomposed(1,z,KnR)
+
+!        P=pars%P(1)*logr+pars%P(2)+pars%P(3)*KnR(0,1)
+
+!        Q=pars%Q(1)*d1r+(pars%Q(2)*logr+pars%Q(3))*r+pars%Q(4)*KnR(1,1)
+
+
+!        p_inc =
+!        Un_inc =
+!        h=h+Q*drdn*pphijw
+!        g=g+P*sphijw
+
+
+
         stop 'not yet'
+
+
       case (3)
+        p1=c_1_4pi*exp(-c_im*k*1.d0)
         p_inc=A/p1*c_1_4pi*exp(-c_im*k*r)/r
         Un_inc=-A/p1/(rho*omega**2)*c_1_4pi*(1.d0/r+c_im*k)/r*drdn*exp(-c_im*k*r)
     end select

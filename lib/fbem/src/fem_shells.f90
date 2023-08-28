@@ -770,7 +770,7 @@ contains
     end do
   end subroutine fbem_fem_degshell_Lc_enlarged
 
-  !! Calculate the displacements shape functions matrix N at a givel local coordinate (5 DOF for each node)
+  !! Calculate the displacements shape functions matrix N at a given local coordinate (5 DOF for each node)
   subroutine fbem_fem_degshell_N(etype,v_md,t_md,xi,N)
     implicit none
     ! I/O
