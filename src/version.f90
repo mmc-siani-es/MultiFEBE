@@ -31,11 +31,12 @@ subroutine version
   character(len=5) :: fmtstr
 
   fmtstr='(a80)'
+
   ! Terminal columns
   !                                   1         2         3         4         5         6         7         8
   !                          12345678901234567890123456789012345678901234567890123456789012345678901234567890
   write(output_unit,'(a10,a5)') 'MultiFEBE ', multifebe_version
-  write(output_unit,fmtstr) 'Copyright (C) 2014-2022 Universidad de Las Palmas de Gran Canaria:              '
+  write(output_unit,fmtstr) 'Copyright (C) 2014-2023 Universidad de Las Palmas de Gran Canaria:              '
   write(output_unit,fmtstr) '                        Jacob D.R. Bordon                                       '
   write(output_unit,fmtstr) '                        Guillermo M. Alamo                                      '
   write(output_unit,fmtstr) '                        Juan J. Aznarez                                         '
