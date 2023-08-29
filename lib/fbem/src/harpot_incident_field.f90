@@ -55,7 +55,7 @@ contains
     real(kind=real64)    :: omega         !! Angular frequency.
     real(kind=real64)    :: rho           !! Density.
     complex(kind=real64) :: c             !! Wave propagation speed.
-     complex(kind=real64) :: A             !! Amplitude of the point source at r = 1
+    complex(kind=real64) :: A             !! Amplitude of the point source at r = 1
     real(kind=real64)    :: x0(rn)        !! Point coordinates.
     integer              :: space         !! Type of space: 1 full-space, 2 half-space.
     integer              :: np            !! Axis corresponding to the normal of the plane (x_np=xp).
