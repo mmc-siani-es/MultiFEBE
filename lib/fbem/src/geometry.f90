@@ -3648,7 +3648,7 @@ contains
     centroid_old=fbem_element_centroid_ngp(rn,type_g,x_nodes,esize,glp)
     cl=fbem_characteristic_length(rn,type_g,x_nodes,rerror)
     ok=.false.
-    do while (ok.eqv.(.false.))
+    do while (.not.ok)
       glp=glp+1
       centroid_new=fbem_element_centroid_ngp(rn,type_g,x_nodes,esize,glp)
       rerror_new=sqrt(dot_product(centroid_new-centroid_old,centroid_new-centroid_old))/cl
