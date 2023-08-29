@@ -165,13 +165,13 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
       end if
       select case (complex_notation)
       case (1)
-        write(output_fileunit,'(a)'  )   '# 4-5      If column 2 == 1 (inviscid fluid region): Re(c), Im(c)'
-        write(output_fileunit,'(a)'  )   '# 4-7      If column 2 == 2 (viscoelastic region): Re(cp), Im(cp), Re(cs), Im(cs)'
-        write(output_fileunit,'(a)'  )   '# 4-9      If column 2 == 3 (poroelastic region): Re(cp1), Im(cp1), Re(cp2), Im(cp2), Re(cs), Im(cs)'
-      case (2)
         write(output_fileunit,'(a)'  )   '# 4-5      If column 2 == 1 (inviscid fluid region): Abs(c), Arg(c)'
         write(output_fileunit,'(a)'  )   '# 4-7      If column 2 == 2 (viscoelastic region): Abs(cp), Arg(cp), Abs(cs), Arg(cs)'
         write(output_fileunit,'(a)'  )   '# 4-9      If column 2 == 3 (poroelastic region): Abs(cp1), Arg(cp1), Abs(cp2), Arg(cp2), Abs(cs), Arg(cs)'
+      case (2)
+        write(output_fileunit,'(a)'  )   '# 4-5      If column 2 == 1 (inviscid fluid region): Re(c), Im(c)'
+        write(output_fileunit,'(a)'  )   '# 4-7      If column 2 == 2 (viscoelastic region): Re(cp), Im(cp), Re(cs), Im(cs)'
+        write(output_fileunit,'(a)'  )   '# 4-9      If column 2 == 3 (poroelastic region): Re(cp1), Im(cp1), Re(cp2), Im(cp2), Re(cs), Im(cs)'
       end select
     else
       open(unit=output_fileunit,file=trim(tmp_filename),access='append',recl=fbem_file_record_length)
