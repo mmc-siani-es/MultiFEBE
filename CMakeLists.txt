@@ -22,16 +22,22 @@ include_directories(lib/fbem/src/resources_quad_rules)
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
-
 #
 # Build and link to SDF
 #
-# add_custom_target(libsdf.a COMMAND make
-                   # WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/sdf-0.75-RC4
-# )
-# target_link_libraries(multifebe ${CMAKE_CURRENT_SOURCE_DIR}/lib/sdf-0.75-RC4/libsdf.a)
-# add_dependencies(multifebe libsdf.a)
+#add_custom_target(libsdf.a COMMAND make
+#                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/sdf-0.75-RC8
+#)
+#target_link_libraries(multifebe ${CMAKE_CURRENT_SOURCE_DIR}/lib/sdf-0.75-RC8/libsdf.a)
+#add_dependencies(multifebe libsdf.a)
 
+#
+# Build and link to fortran-csv-module
+#
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/fortran-csv-module)
+target_include_directories(multifebe PUBLIC ${CMAKE_BINARY_DIR}/lib/fortran-csv-module/fcsv_include)
+target_link_libraries(multifebe ${CMAKE_BINARY_DIR}/lib/fortran-csv-module/libfcsv.a)
+add_dependencies(multifebe fcsv)
 
 #
 # Link to OpenBLAS
@@ -48,7 +54,7 @@ endif (UNIX)
 # to delete the ".dll" part of the filename in order to take the static one.
 #
 if (WIN32)
-  string(REPLACE ".dll" "" BLAS_LIBRARIES_MOD ${BLAS_LIBRARIES})  
+  string(REPLACE ".dll" "" BLAS_LIBRARIES_MOD ${BLAS_LIBRARIES})
   message(STATUS "Modification for taking OpenBLAS static library ${BLAS_LIBRARIES_MOD}")
   target_link_libraries(multifebe ${BLAS_LIBRARIES_MOD})
 endif (WIN32)
@@ -88,7 +94,7 @@ endif (UNIX)
 #
 # For generating an installer on Windows (in MSYS2 MINGW64 terminal)
 # cpack -G "NSIS64" ..
-# 
+#
 if (WIN32)
   set(CPACK_NSIS_DISPLAY_NAME "MultiFEBE")
   set(CPACK_NSIS_PACKAGE_NAME "MultiFEBE")
