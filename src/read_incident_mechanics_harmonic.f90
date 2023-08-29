@@ -359,10 +359,6 @@ subroutine read_incident_mechanics_harmonic(fileunit)
                 if (abs(incidentfield(i)%theta-c_pi_2).gt.1.d-12) then
                   call fbem_error_message(error_unit,0,'incident wave',incidentfield(i)%id,'only vertical incidence is implemented')
                 end if
-                ! Solo sh
-                if (abs(incidentfield(i)%varphi).gt.1.d-12) then
-                  call fbem_error_message(error_unit,0,'incident wave',incidentfield(i)%id,'only varphi=0 is implemented')
-                end if
 
                 ! =================================================================
                 ! CHANGE EID TO IID IN THE INCIDENT FIELD -> MATERIALS CONNECTIVITY
