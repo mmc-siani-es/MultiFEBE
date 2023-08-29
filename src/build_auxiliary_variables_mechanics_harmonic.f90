@@ -2051,6 +2051,22 @@ subroutine build_auxiliary_variables_mechanics_harmonic
           case (fbem_bl_coupling_beam_line,fbem_bl_coupling_shell_surface)
                 do ke=1,part(sp)%n_elements
                   se=part(sp)%element(ke)
+
+
+                  !
+                  ! TODO: Kinematic and stress resultants over the element with
+                  ! respect to its centroid.
+                  !
+                  ! element(se)%value_c(1:n                   ,1): u_k
+                  ! element(se)%value_c(n+1:3*(n-1)           ,1): theta_k
+                  ! element(se)%value_c(3*(n-1)+1:3*(n-1)+n   ,1): F_k
+                  ! element(se)%value_c(3*(n-1)+n+1:2*3**(n-1),1): M_k
+                  !
+                  !allocate (element(se)%value_c(2*(3*(problem%n-1)),1))
+
+
+
+
                   do kn=1,element(se)%n_nodes
                     sn=element(se)%node(kn)
                     if (node_used(sn).eqv.(.false.)) then
@@ -3427,7 +3443,6 @@ subroutine build_auxiliary_variables_mechanics_harmonic
           ! falta incident_c
           ! Falta allocatar en los nodos, para tambien sacar las soluciones por nodos (continuas)
           ! o haciendo igual que con los puntos internos, extrapolando.
-
 
         end do
       end if
