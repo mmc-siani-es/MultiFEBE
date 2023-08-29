@@ -1,4 +1,4 @@
- Copyright (C) 2014-2022 Universidad de Las Palmas de Gran Canaria:
+ Copyright (C) 2014-2023 Universidad de Las Palmas de Gran Canaria:
                          Jacob D.R. Bordon
                          Guillermo M. Alamo
                          Juan J. Aznarez
@@ -19,5 +19,6 @@
  
  getopt_m           - Copyright (C) 2008 by Mark Gates - GPLv2
  Simple Data Format - Copyright (C) 2006,2007 University of California - LGPLv2.1 License
+ Fortran CSV Module - Copyright (c) 2017-2022, Jacob Williams - BSD-3 license
  DSYEVJ3            - Copyright (C) 2006  Joachim Kopp - LGPLv2.1 License
  f90doc             - Copyright (C) 1997-2006 Erik D. Demaine - MIT License
