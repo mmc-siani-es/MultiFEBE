@@ -130,72 +130,76 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
 
   ! TODO: put this into a function, it also is present in the calculate incident fields
 
-  ! Save the region properties to local variables
-  select case (region(kr)%subtype)
-    !
-    ! Elastic or viscoelastic
-    !
-    case (0,fbem_elastic)
-        rho=region(kr)%property_r(1)
-        nu=region(kr)%property_c(3)
-        mu=region(kr)%property_c(2)
-        lambda=region(kr)%property_c(6)
-        c1=region(kr)%property_c(7)
-        c2=region(kr)%property_c(8)
-    !
-    ! Bardet's viscoelasticity model of poroelasticity
-    !
-    case (fbem_bardet)
-      rho=region(kr)%property_r(13)+region(kr)%property_r(14)
-      c1=region(kr)%property_c(7)*zsqrt(1.0d0+c_im*omega*region(kr)%property_c(9 ))
-      c2=region(kr)%property_c(8)*zsqrt(1.0d0+c_im*omega*region(kr)%property_c(10))
-      mu=rho*c2**2
-      lambda=rho*c1**2-2.0d0*mu
-      nu=0.5d0*lambda/(lambda+mu)
-    !
-    ! Bougacha-Roesset-Tassoulas viscoelasticity model of poroelasticity
-    !
-    case (fbem_brt_cp1,fbem_brt_cp2,fbem_brt_cpm)
-      ! Save the region properties to local variables
-      lambda=region(kr)%property_c(3)
-      mu=region(kr)%property_c(4)
-      rho1=region(kr)%property_r(13)
-      rho2=region(kr)%property_r(14)
-      rhoa=region(kr)%property_r(9)
-      R=region(kr)%property_r(10)
-      Q=region(kr)%property_r(11)
-      b=region(kr)%property_r(12)
-      ! Obtain the wave velocities
-      call fbem_bem_harpor2d_calculate_basic_parameters(lambda,mu,rho1,rho2,rhoa,R,Q,b,omega,p_harpor2d)
-      ! Corresponding isomorphism
-      rho=region(kr)%property_r(13)+region(kr)%property_r(14)
-      select case (region(kr)%subtype)
-        case (fbem_brt_cp1)
-          c1=p_harpor2d%c1
-        case (fbem_brt_cp2)
-          c1=p_harpor2d%c2
-        case (fbem_brt_cpm)
-          c1=0.5d0*(p_harpor2d%c1+p_harpor2d%c2)
-      end select
-      c2=p_harpor2d%c3
-      mu=rho*c2**2
-      lambda=rho*c1**2-2.0d0*mu
-      nu=0.5d0*lambda/(lambda+mu)
-  end select
-!  if (problem%subtype.eq.fbem_mechanics_plane_stress) then
-!    E=(1.0d0-nu**2)*E
-!    nu=nu/(1.0d0+nu)
-!  end if
-  ! Parameters for BEM integration
-  select case (problem%n)
-    case (2)
-      call fbem_bem_harela2d_calculate_parameters(lambda,mu,rho,omega,p2d)
-    case (3)
-      call fbem_bem_harela3d_calculate_parameters(lambda,mu,rho,omega,p3d)
-  end select
-  ! Wavenumbers
-  k1=omega/c1
-  k2=omega/c2
+  if (region(kr)%space.eq.fbem_multilayered_half_space) then
+    stop 'not multilayered halfspace for elastodynamics yet'
+  else
+    ! Save the region properties to local variables
+    select case (region(kr)%subtype)
+      !
+      ! Elastic or viscoelastic
+      !
+      case (0,fbem_elastic)
+          rho=region(kr)%property_r(1)
+          nu=region(kr)%property_c(3)
+          mu=region(kr)%property_c(2)
+          lambda=region(kr)%property_c(6)
+          c1=region(kr)%property_c(7)
+          c2=region(kr)%property_c(8)
+      !
+      ! Bardet's viscoelasticity model of poroelasticity
+      !
+      case (fbem_bardet)
+        rho=region(kr)%property_r(13)+region(kr)%property_r(14)
+        c1=region(kr)%property_c(7)*zsqrt(1.0d0+c_im*omega*region(kr)%property_c(9 ))
+        c2=region(kr)%property_c(8)*zsqrt(1.0d0+c_im*omega*region(kr)%property_c(10))
+        mu=rho*c2**2
+        lambda=rho*c1**2-2.0d0*mu
+        nu=0.5d0*lambda/(lambda+mu)
+      !
+      ! Bougacha-Roesset-Tassoulas viscoelasticity model of poroelasticity
+      !
+      case (fbem_brt_cp1,fbem_brt_cp2,fbem_brt_cpm)
+        ! Save the region properties to local variables
+        lambda=region(kr)%property_c(3)
+        mu=region(kr)%property_c(4)
+        rho1=region(kr)%property_r(13)
+        rho2=region(kr)%property_r(14)
+        rhoa=region(kr)%property_r(9)
+        R=region(kr)%property_r(10)
+        Q=region(kr)%property_r(11)
+        b=region(kr)%property_r(12)
+        ! Obtain the wave velocities
+        call fbem_bem_harpor2d_calculate_basic_parameters(lambda,mu,rho1,rho2,rhoa,R,Q,b,omega,p_harpor2d)
+        ! Corresponding isomorphism
+        rho=region(kr)%property_r(13)+region(kr)%property_r(14)
+        select case (region(kr)%subtype)
+          case (fbem_brt_cp1)
+            c1=p_harpor2d%c1
+          case (fbem_brt_cp2)
+            c1=p_harpor2d%c2
+          case (fbem_brt_cpm)
+            c1=0.5d0*(p_harpor2d%c1+p_harpor2d%c2)
+        end select
+        c2=p_harpor2d%c3
+        mu=rho*c2**2
+        lambda=rho*c1**2-2.0d0*mu
+        nu=0.5d0*lambda/(lambda+mu)
+    end select
+  !  if (problem%subtype.eq.fbem_mechanics_plane_stress) then
+  !    E=(1.0d0-nu**2)*E
+  !    nu=nu/(1.0d0+nu)
+  !  end if
+    ! Parameters for BEM integration
+    select case (problem%n)
+      case (2)
+        call fbem_bem_harela2d_calculate_parameters(lambda,mu,rho,omega,p2d)
+      case (3)
+        call fbem_bem_harela3d_calculate_parameters(lambda,mu,rho,omega,p3d)
+    end select
+    ! Wavenumbers
+    k1=omega/c1
+    k2=omega/c2
+  end if
 
   ! Export waves propagation speeds
   if (export_wsp) call export_region_wsp_harela(kf,kr,c1,c2)
@@ -2016,3 +2020,4 @@ subroutine build_lse_mechanics_bem_harela_bl(omega,kr,sb_int,se_int,se_int_n_nod
   end do ! Loop through SYMMETRICAL ELEMENTS for INTEGRATION
 
 end subroutine build_lse_mechanics_bem_harela_bl
+
