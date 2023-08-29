@@ -41,6 +41,8 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
   use fbem_bem_harpor2d
   use fbem_harela_incident_field
 
+  use csv_module
+
   ! Module of problem variables
   use problem_variables
 
@@ -195,69 +197,8 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
   k1=omega/c1
   k2=omega/c2
 
-  ! ============================== !
-  ! EXPORT WAVE PROPAGATION SPEEDS !
-  ! ============================== !
-
-  if (export_wsp) then
-    output_fileunit=fbem_get_valid_unit()
-    tmp_filename=trim(output_filename)//'.wsp'
-    call fbem_trim2b(tmp_filename)
-    if ((kf.eq.1).and.(kr.eq.1)) then
-      open(unit=output_fileunit,file=trim(tmp_filename),action='write',recl=fbem_file_record_length)
-      write(output_fileunit,'(a)'  ) '# Program      : multifebe'
-      write(output_fileunit,'(a)'  ) '# Version      : 1.0'
-      write(output_fileunit,'(a)'  ) '# File_format  : wsp'
-      write(output_fileunit,'(a)'  ) '# Specification: 1'
-      write(output_fileunit,'(a,a)') '# Input_file   : ', trim(input_filename)
-      write(output_fileunit,'(a,i1)')'# Problem n    : ', problem%n
-      write(output_fileunit,'(a,a)') '# Description  : ', trim(problem%description)
-      write(tmp_string,*) timestamp_date_start(1:4),'-',timestamp_date_start(5:6),'-',timestamp_date_start(7:8),' ',&
-                          timestamp_time_start(1:2),':',timestamp_time_start(3:4),':',timestamp_time_start(5:10)
-      call fbem_trim2b(tmp_string)
-      write(output_fileunit,'(a,a)') '# Timestamp    : ', trim(tmp_string)
-      write(output_fileunit,*)
-      ! Column description
-      write(output_fileunit,'(a)'  ) '# Columns  Description'
-      write(output_fileunit,'(a)'  ) '# 1-2      Region id and region type (1: inviscid fluid, 2: viscoelastic, 3: poroelastic)'
-      if (frequency_units.eq.'f') then
-        write(output_fileunit,'(a)'  ) '# 3        Frequency (Hz)'
-      else
-        write(output_fileunit,'(a)'  ) '# 3        Frequency (rad/s)'
-      end if
-      select case (complex_notation)
-      case (1)
-        write(output_fileunit,'(a)'  )   '# 4-5      If column 2 == 1 (inviscid fluid region): Re(c), Im(c)'
-        write(output_fileunit,'(a)'  )   '# 4-7      If column 2 == 2 (viscoelastic region): Re(cp), Im(cp), Re(cs), Im(cs)'
-        write(output_fileunit,'(a)'  )   '# 4-9      If column 2 == 3 (poroelastic region): Re(cp1), Im(cp1), Re(cp2), Im(cp2), Re(cs), Im(cs)'
-      case (2)
-        write(output_fileunit,'(a)'  )   '# 4-5      If column 2 == 1 (inviscid fluid region): Abs(c), Arg(c)'
-        write(output_fileunit,'(a)'  )   '# 4-7      If column 2 == 2 (viscoelastic region): Abs(cp), Arg(cp), Abs(cs), Arg(cs)'
-        write(output_fileunit,'(a)'  )   '# 4-9      If column 2 == 3 (poroelastic region): Abs(cp1), Arg(cp1), Abs(cp2), Arg(cp2), Abs(cs), Arg(cs)'
-      end select
-    else
-      open(unit=output_fileunit,file=trim(tmp_filename),access='append',recl=fbem_file_record_length)
-    end if
-    write(fmtstr,*) '(2',fmt_integer,')'
-    call fbem_trimall(fmtstr)
-    write (output_fileunit,fmtstr,advance='no') region(kr)%id, 2
-    write(fmtstr,*) '(1',fmt_real,')'
-    call fbem_trimall(fmtstr)
-    if (frequency_units.eq.'f') then
-      write (output_fileunit,fmtstr,advance='no') omega*c_1_2pi
-    else
-      write (output_fileunit,fmtstr,advance='no') omega
-    end if
-    write(fmtstr,*) '(4',fmt_real,')'
-    call fbem_trimall(fmtstr)
-    select case (complex_notation)
-      case (1)
-        write(output_fileunit,fmtstr) abs(c1), fbem_zarg(c1), abs(c2), fbem_zarg(c2)
-      case (2)
-        write(output_fileunit,fmtstr) dreal(c1), dimag(c1), dreal(c2), dimag(c2)
-    end select
-    close(unit=output_fileunit)
-  end if
+  ! Export waves propagation speeds
+  if (export_wsp) call export_region_wsp_harela(kf,kr,c1,c2)
 
   ! ================================================================================================================================
   ! CALCULATE AND ASSEMBLE BEM INTEGRALS
