@@ -117,7 +117,7 @@ contains
     end do
   end subroutine fbem_harela_incident_plane_wave_multilayered_amplitudes
 
-  subroutine fbem_harela_incident_plane_wave_vertical_multilayered(d,omega,np,nl,xl,lambdal,mul,rhol,alfa,type_of_wave,A,x,n,ui,ti)
+  subroutine fbem_harela_incident_plane_wave_vertical_multilayered(d,omega,np,nl,xl,lambdal,mul,rhol,alfa,type_of_wave,A,varphi,x,n,ui,ti)
     implicit none
     ! I/O variables
     integer              :: d
@@ -131,6 +131,7 @@ contains
     real(kind=real64)    :: alfa
     integer              :: type_of_wave
     complex(kind=real64) :: A(nl,2)
+    real(kind=real64)    :: varphi
     real(kind=real64)    :: x(3)
     real(kind=real64)    :: n(3)
     complex(kind=real64) :: ui(3)
@@ -224,24 +225,32 @@ contains
     dx=x(3)-xl(kl)
     select case (type_of_wave)
       !
-      ! SH WAVE (symmetric with respect to plane XZ)
+      ! SH WAVE
       !
       case (fbem_harela_sh_wave)
+        expp=exp( cimag*ks*dx)
+        expm=exp(-cimag*ks*dx)
+        if (nint(alfa).le.0) then
+          ui(2)=-(Ap*expp+Am*expm)*sin(varphi)
+          dui(2,3)=-cimag*ks*(Ap*expp-Am*expm)*sin(varphi)
+        end if
         if (nint(alfa).ge.0) then
-          expp=exp( cimag*ks*dx)
-          expm=exp(-cimag*ks*dx)
-          ui(1)=Ap*expp+Am*expm
-          dui(1,3)=cimag*ks*(Ap*expp-Am*expm)
+          ui(1)=(Ap*expp+Am*expm)*cos(varphi)
+          dui(1,3)=cimag*ks*(Ap*expp-Am*expm)*cos(varphi)
         end if
       !
-      ! SV WAVE (antisymmetric with respect to plane XZ)
+      ! SV WAVE
       !
       case (fbem_harela_sv_wave)
+        expp=exp( cimag*ks*dx)
+        expm=exp(-cimag*ks*dx)
         if (nint(alfa).le.0) then
-          expp=exp( cimag*ks*dx)
-          expm=exp(-cimag*ks*dx)
-          ui(2)=Ap*expp+Am*expm
-          dui(2,3)=cimag*ks*(Ap*expp-Am*expm)
+          ui(2)=(Ap*expp+Am*expm)*cos(varphi)
+          dui(2,3)=cimag*ks*(Ap*expp-Am*expm)*cos(varphi)
+        end if
+        if (nint(alfa).ge.0) then
+          ui(1)=(Ap*expp+Am*expm)*sin(varphi)
+          dui(1,3)=cimag*ks*(Ap*expp-Am*expm)*sin(varphi)
         end if
       !
       ! P WAVE (symmetric with respect to plane XZ)
