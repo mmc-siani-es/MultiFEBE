@@ -1,0 +1,3 @@
+Authors of IDL versions of SDF:
+George H. Fisher <fisher at ssl dot berkeley dot edu>
+David J. Bercik <bercik at ssl dot berkeley dot edu> (sdf_read_varlist.pro)

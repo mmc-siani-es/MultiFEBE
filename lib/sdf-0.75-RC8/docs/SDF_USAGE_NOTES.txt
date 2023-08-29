@@ -1,0 +1,2061 @@
+/*
+ Simple Data Format
+ http://solarmuri.ssl.berkeley.edu/~fisher/public/software/SDF
+ Copyright (C) 2006,2007 University of California
+
+ This is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation;
+ either version 2.1 of the License, or (at your option) any later version.
+
+ This software is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ See the GNU Lesser General Public License for more details.
+
+ To view the GNU Lesser General Public License visit
+ http://www.gnu.org/copyleft/lesser.html
+ or write to the Free Software Foundation, Inc.,
+ 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
+---------------------------------------------------------------------------
+Simple Data Format Version 0.74
+
+The SDF software provides a capability for reading and writing binary output
+files that is endian-independent and more-or-less platform independent, 
+and works with large (>2GB) filesizes.  The motivation for the
+software is described in the file SDF_MANIFESTO.txt.  Details on compiling
+the C/Fortran callable functions are given in INSTALL.txt
+
+SDF files consist of a short header, and a longer body with the data.  The data
+is divided into separate "datasets", each of which is typically a large
+array of some physical quantity, or alternatively, can be short pieces of
+summary information (e.g. energies or timestep information) that you'd like
+to be able access separately.  Currently, individual SDF datasets can't
+consist of more complex entities such as structures or objects, but individual
+members of structures from IDL or C programs which are arrays or scalars
+can be read/written separately.  
+
+Strings can be read/written provided they are treated simply as arrays of 
+bytes.  In particular, in IDL, strings must be first converted to byte 
+arrays with the byte function before they can be written out to an SDF file.  
+When read back into IDL, strings are read in as byte arrays, and can be 
+converted back to strings with the IDL string function.
+
+Each dataset in an SDF file is written with
+a single call to either sdf_write (in C or IDL) or sdf_write_f77 (in Fortran). 
+The functions sdf_write and sdf_write_f77 append a dataset onto the end of 
+the file, or if the file doesn't exist, creates it and writes the 1st dataset 
+into it.
+
+Individual datasets are read from an SDF file with sdf_read (in C or IDL) or 
+sdf_read_f77 (in Fortran).
+
+If you do not know or can't remember the dataset order of a particular
+variable, the sdf_labmatch function (C or IDL) and sdf_labmatch_f77 (in
+Fortran) will return an array of dataset orders for which the label field
+of the dataset is matched by a user-defined string, labmatch.
+
+Information about the contents of an SDF file can be obtained with sdf_query
+(in C or IDL) or sdf_query_f77 (in Fortran).  A little more information on 
+the sizes of the datasets can be obtained with sdf_sizes (C) and 
+sdf_sizes_f77 (Fortran).  Complete metadata for an individual dataset in
+an sdf file can be obtained with sdf_details (C or IDL) and sdf_details_f77
+(fortran).
+
+Datasets can be deleted, inserted, or replaced in an SDF file through the usage
+of the sdf_delete, sdf_insert, and sdf_replace functions (C or IDL) and the
+sdf_delete_f77, sdf_insert_f77, and sdf_replace_f77 (Fortran) functions.
+
+Multi-dimensional arrays as datasets can be transposed or have array index
+directions changed with the sdf_transpose functions (C or IDL) and
+sdf_transpose_f77 (Fortran) functions.  The C and Fortran versions do the
+transform "in place" so that little additional memory is required.
+
+For C and Fortran examples of sdf calls, look at the files sdf_browse.c,
+main_test_sdf.c, test_sdf_3d.c, test_sdf_4d.c, test_sdf_5d.c,
+test_complex_c89.c, test_complex_c99.c, test_sdf_large.c, and sdf_test_edit.c 
+(C examples), sdf_f77_tests.f and sdf_f77_testt.f (Fortran 77 examples)
+and test_sdf_dynamic.F90, and test_sdf_transpose.F90 
+(these use allocatable arrays, only available in Fortran 90/95).
+
+Starting in version 0.70, the Fortran, C, and IDL functions now include
+sdf_wb and sdf_rb, which do large-endian binary writes, outside the
+context of the SDF file structure.  The fortran callable versions have a 
+_f77 suffix.  The calling arguments for sdf_wb and sdf_rb are given in the 
+detailed function descriptions below for Fortran and C.  In IDL, the calling
+sequence for the sdf_rb and sdf_wb procedures is slightly different from the 
+Fortran/C versions.  See the IDL documentation near the end of the file 
+for the IDL calling arguments for these precedures.
+
+Also starting in version 0.70, a non-backwards compatible change has been
+made for the fortran callable SDF subroutines:  The dims array, which appears
+in most of the fortran calls, now must be an array of 64-bit integers, rather
+than default fortran integers.  This change was necessary to ensure that very
+large arrays will be handled correctly.
+
+Starting in version 0.69, the Fortran interface now also includes wrappers to
+call all of the low-level C buffered disk I/O functions, such as fopen, fclose,
+fseeko, ftello, fread, and fwrite.  Fortran versions byteswap_f77 and
+ibe_f77 (byteswapping, and the run-time test for large-endian machine) 
+are also included.  These functions include essentially all of the
+functionality that would be necessary to customize any binary disk I/O scheme
+into a Fortran program.
+
+Starting in version 0.74, the Fortran interface also includes the subroutines
+cindcalc_f77 and memcalcc_f77, which convert between 1-d and multi-dimensional
+array indices.  These subroutines assume the standard default Fortran index
+ranges.
+
+For testing IDL usage, place the idl procedures from the idl folder 
+somewhere in your IDL path, and start using sdf_query and sdf_read
+on the sample sdf file provided in
+the distribution, sdf_example_file.sdf.  To create other test sdf files,
+in IDL, try using the sdf_write_all procedure to create sdf files of
+variables you've already defined in an IDL session.  Remember that
+sdf_write_all will not write out structures.  sdf_write_all and sdf_read_all
+use scope_varfetch which only exists in versions 6.1 and later of IDL.
+
+-----------------------------------------------------------------------
+
+USING SDF FROM FORTRAN PROGRAMS:
+
+-----------------------------------------------------------------------
+
+sdf_write_f77: 
+
+call sdf_write_f77(fname, label, datatype, nbpw, ndim, dims, data)
+
+           PURPOSE:  add a new dataset to the end of an SDF file.
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be written.
+
+           Note:  If the SDF file does not initially exist, it is created.
+
+label:     INPUT - A short Fortran character string containing a 
+           description of the dataset, e.g. "vx" or "rho".  No imbedded
+           blanks are allowed; if present they will be removed.
+
+datatype:  INPUT - A single character (character*1 or len=1) variable 
+           describing the type of the data as per this code: 
+           "b"=byte, "f" = floating point, "i" = integer, and "c" = complex.
+
+nbpw:      INPUT - a Fortran integer with the number of bytes per word.
+
+ndim:      INPUT - a Fortran integer with the number of dimensions for the
+           data to be written.
+
+dims:      INPUT - an array of 64-bit fortran integers (integer*8 or kind=8) 
+           of dimensions for the data to be written.
+
+data:      INPUT - The name of the variable or array to be written to the file.
+
+           Note:  one shortcoming is that for multi-dimensional arrays,
+           it is not possible to output only limited ranges of array indices.
+           The software assumes the entire array will be written to the file.
+
+           Note:  If you call sdf_write_f77 with several different types of
+           output data (e.g. character data and reals) in the same program,
+           some Fortran compilers (e.g. g77, g95) generate warnings about 
+           possible datatype inconsistencies), but the code will still compile 
+           and run.
+
+---
+
+sdf_read_f77: 
+
+call sdf_read_f77(fname, iorder, label, datatype, nbpw, ndim, dims, data)
+
+           PURPOSE:  Read a user specified dataset from an SDF file.
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be read from.
+
+iorder:    INPUT - Fortran integer identifying the order of the dataset to be
+           read.  
+           
+           Note:  iorder is in the range from 0 to ndat-1, where ndat is
+           the number of datasets in the file.
+
+label:     OUTPUT - A fortran character string containing a brief identifier
+           string for the data being read in. 
+           
+           Note:  label must be either initially dimensioned, or dynamically 
+           allocated, with enough space to receive the label
+
+datatype:  OUTPUT - A single character (character*1) variable describing the
+           type of the data as per this code: "b"=byte, "f" = floating point,
+           "i" = integer, and "c" = complex.
+
+nbpw:      OUTPUT - a Fortran integer into which the number of bytes per word
+           will be written.
+
+ndim:      OUTPUT - a Fortran integer into which the number of dimensions of
+           data will be written
+
+dims:      OUTPUT - an array of 64-bit Fortran integers (integer*8 or kind=8) 
+           into which the dimensions of data will be written
+  
+           Note:  dims must be either initially dimensioned, or dynamically 
+           allocated, with enough space to receive the dimensions
+
+data:      OUTPUT - the array or variable space into which the data will be
+           read.
+
+           Note:  The data array must be initially dimensioned, or dynamically
+           allocated, with enough space to receive the data.  If there's not
+           enough space, very bad things will probably happen.
+
+---
+
+sdf_details_f77: 
+
+call sdf_details_f77(fname, iorder, label, datatype, nbpw, ndim, dims)
+
+           PURPOSE:  Read the parameters describing a dataset in 
+           an SDF file (but not the data itself).
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be read from.
+
+iorder:    INPUT - Fortran integer identifying the order of the dataset to be
+           read.  
+           
+           Note:  iorder is in the range from 0 to ndat-1, where ndat is
+           the number of datasets in the file.
+
+label:     OUTPUT - A fortran character string containing a brief identifier
+           string for the data being read in. 
+           
+           Note:  label must be either initially dimensioned, or dynamically 
+           allocated, with enough space to receive the label
+
+datatype:  OUTPUT - A single character (character*1) variable describing the
+           type of the data as per this code: "b"=byte, "f" = floating point,
+           "i" = integer, and "c" = complex.
+
+nbpw:      OUTPUT - a Fortran integer into which the number of bytes per word
+           will be written.
+
+ndim:      OUTPUT - a Fortran integer into which the number of dimensions 
+           of data will be written
+
+dims:      OUTPUT - an array of 64-bit Fortran integers (integer*8 or kind=8) 
+           into which the number of dimensions of data will be written
+
+           Note:  dims must be either initially dimensioned, or dynamically 
+           allocated, with enough space to receive the dimensions
+
+---
+
+sdf_query_f77:
+
+call sdf_query_f77 (fname, ndat)
+
+           PURPOSE:  Print out summary of contents of an SDF file, and return
+           the number of datasets on it.
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be read from.
+
+ndat:      OUTPUT - Fortran integer returning the number of datasets in the
+           SDF file.
+
+           Note: calling sdf_query_f77 also prints to stdout the identifier
+           string for each dataset in the file. 
+
+---
+
+call sdf_ndat_f77 (fname, ndat)
+
+           PURPOSE:  Return the number of datasets in an SDF file.
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be read from.
+
+ndat:      OUTPUT - Fortran integer returning the number of datasets in the
+           SDF file.
+
+           Note: calling sdf_ndat_f77 does not print to stdout the identifier
+           string for each dataset in the file, unlike sdf_query_f77.
+
+---
+
+sdf_sizes_f77:
+
+call sdf_sizes_f77 (fname, ndat, dtypes, dsizes, dnbpw)
+
+           PURPOSE:  Return information on the sizes of the datasets in an SDF
+           file.
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be read from.
+
+ndat:      OUTPUT - Fortran integer returning the number of datasets in the
+           SDF file.
+
+dtypes:    OUTPUT - an array of character*1 Fortran strings, containing the
+           dataypes of each dataset in the file.  Type of the data for each
+           element: this code: "b"=byte, "f" = floating point, "i" = integer, 
+           and "c" = complex.
+
+dsizes:    OUTPUT - an array of 64-bit (integer*8 or kind=8)
+           Fortran integers containing the sizes of each dataset, measured 
+           in the number of array elements.
+
+dnbpw:     OUTPUT - an array of Fortran integers containing the number of
+           bytes per word for each dataset in the SDF file.
+
+           Note:  To compute size of a dataset in bytes, must multiply
+           dsizes by dnbpw after the call.  For complex arrays, an additional
+           factor of 2 is necessary to compute size in bytes.
+
+           Note:  dtypes, dsizes, and dnbpw need to be dimensioned or 
+           allocated ahead of time with enough space to receive the output
+           from sdf_sizes_f77.
+
+---
+
+sdf_labmatch_f77:
+
+call sdf_labmatch_f77(fname, ndat, labtest, match);
+
+           PURPOSE:  To return an array corresponding to all positive matches
+           between the input string labtest, and the label strings for all
+           datasets in an SDF file.  The 1st element of the output will
+           be equal to the dataset order number for which label matches
+           the test string, labtest.
+
+fname:     INPUT:  Fortran string with the name of the sdf file to be tested.
+
+labtest:   INPUT:  user specified fortran string to be compared with each 
+           string label corresponding to each dataset.
+
+ndat:      OUTPUT: fortran integer equal to the number of datasets in the file.
+
+match:     OUTPUT:  a fortran integer array of length at least ndat.
+           If there is a single positive match,
+           then match(1) is the order number of the dataset with the string
+           match.  If there is more than one match, the next elements
+           will provide the next datasets for which a match occurs.  The
+           remaining elements of match are set to -1.  If there were no
+           matches at all, the 1st element of match will also be -1.
+
+           NOTE:  The user must initially dimension, or dynamically
+           allocate enough space for match before calling sdf_labmatch_f77.
+
+---
+
+sdf_delete_f77:
+
+call sdf_delete_f77 (fname, idelete)
+
+           PURPOSE:  Delete a chosen dataset from an SDF file
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be edited.
+
+idelete:   INPUT - Fortran integer designating which dataset is to be deleted. 
+           Datasets are numbered from 0 to ndat-1, where ndat is the number
+           of datasets in the file
+
+---
+
+sdf_insert_f77:
+
+call sdf_insert_f77 (fname, insert, label, datatype, nbpw, ndim, dims, data)
+
+           PURPOSE:  Insert a dataset into an SDF file at a chosen location
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be edited.
+
+insert:    INPUT:  Fortran integer designating the desired sequence number
+           of the dataset to be inserted into the SDF file.  The 1st dataset
+           is designated 0, not 1.
+
+label:     INPUT - A very short Fortran character string containing a 
+           description of the dataset to be inserted, e.g. "vx" or "rho".
+
+datatype:  INPUT - A single character (character*1) variable describing the
+           type of the data to be inserted as per this code: "b"=byte, 
+           "f" = floating point, "i" = integer, and "c" = complex.
+
+nbpw:      INPUT - a Fortran integer with the number of bytes per word for
+           the dataset to be inserted.
+
+ndim:      INPUT - a Fortran integer with the number of dimensions for the
+           data to be inserted.
+
+dims:      INPUT - an array of 64-bit (integer*8 or kind=8)
+           Fortran integers for the data to be inserted.
+
+data:      INPUT - The name of the variable or array to be inserted into 
+           the file.
+
+---
+
+sdf_replace_f77:
+
+call sdf_replace_f77 (fname, replace, label, datatype, nbpw, ndim, dims, data)
+
+           PURPOSE:  Replace a chosen dataset in an SDF file with 
+           another dataset
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be edited.
+
+replace:   INPUT:  Fortran integer designating the desired sequence number
+           of the dataset to be inserted into the SDF file.
+           Datasets are numbered from 0 to ndat-1, where ndat is the number
+           of datasets in the file
+
+label:     INPUT - A very short Fortran character string containing a 
+           description of the dataset to be inserted, e.g. "vx" or "rho".
+
+datatype:  INPUT - A single character (character*1) variable describing the
+           type of the data to be inserted as per this code: "b"=byte, 
+           "f" = floating point, "i" = integer, and "c" = complex.
+
+nbpw:      INPUT - a Fortran integer with the number of bytes per word for
+           the dataset to be inserted.
+
+ndim:      INPUT - a Fortran integer with the number of dimensions for the
+           data to be inserted.
+
+dims:      INPUT - an array of 64-bit Fortran integers containing the 
+           dimensions for the data to be inserted.
+
+data:      INPUT - The name of the variable or array to be inserted into 
+           the file.
+
+---
+
+sdf_rm_f77:
+
+call sdf_rm_f77(fname)
+ 
+           PURPOSE:  To remove an SDF file
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be removed.
+
+           Note:  If file "fname" is not an SDF file, it will not be removed.
+
+
+---
+
+sdf_transpose_f77:
+
+call sdf_transpose_f77(indorder,directions,dtype,nbpw,ndim,dims,data)
+
+indorder:  INPUT - a fortran integer array of length at least ndim, 
+           that specifies the order in which the new dimensions will run 
+           in terms of the old order.  For example, for a 3-d array, setting 
+           indorder to (3,2,1) will reverse the order of the indices and
+           dimensions in the transposed array c.f. the original order.  
+           Setting indorder to (2,1,3) would leave the 3rd dimension alone, 
+           but transpose the 1st two dimensions.  The elements of indorder
+           are assumed to range over values from 1 to ndim (this is
+           in contrast to the C-callable version, where indorder goes from 
+           0 to ndim-1).
+
+directions: INPUT - a fortran integer array of length at least ndim, 
+           that specifies
+           whether the index directions of the transposed array are in the
+           forward or reverse direction.  The directions are expressed in
+           terms of the *new* (not the old) index and dimension order,
+           after the transpose has been done.  If the sign of the element of
+           directions is negative, the index order will be reversed.
+
+dtype:     INPUT - a character*1 variable corresponding to "f", "c", "i",
+           or "b" (float, complex, integer, or byte) describing the data type.
+
+nbpw:      INPUT - a fortran integer describing the number of bytes per word.
+           For complex variables, this is the number of bytes of the real or
+           imaginary parts, considered separately.  Most commonly this is 4 
+           or 8, except for byte arrays, where it should be 1.
+
+ndim:      INPUT - a fortran integer with the number of dimensions of the
+           data.
+
+dims:      INPUT and OUTPUT - on input, an array of 64-bit (integer*8 or kind=8)
+           fortran integers of length at least ndim, containing the dimensions 
+           of the data array.  On output, dims contains the re-ordered 
+           dimensions corresponding to the transposed array.
+
+data:      INPUT and OUTPUT - on input, contains the array to be transformed.
+           On output, also contains the transposed array.
+
+NOTE:      The transpose is done "in place" to save memory in the case of
+           very large arrays.  The "vacancy cycle tracking" technique of
+           Ding (2001) is used.
+
+NOTE:      If you are not running close to the memory limit, you might want
+           to consider using the Fortran 90 reshape function with the order
+           parameter specified, to do the transpose instead of this function.
+ 
+---
+
+------------------------------------------------------------------------
+
+Other low-level Fortran subroutines available in the SDF library:
+
+------------------------------------------------------------------------
+
+sdf_wb_f77: 
+
+call sdf_wb_f77(fname, datapos, nelem, nbpw, fp, data)
+
+           PURPOSE:  Perform a large endian binary write of nelem elements
+           of the array data to the file fname
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be written.
+
+           Note:  If the file does not initially exist, it is created.
+
+datapos:   INPUT and OUTPUT: A 64-bit Fortran integer (e.g. integer*8
+           or integer (kind=8) ) that on input is the byte location in the file
+           from which the write will start.  datapos=0 corresponds to the
+           beginning of the file.  On output, datapos contains the next
+           available position in the file.
+
+nelem:     INPUT - A 64-bit Fortran integer that is the number of data
+           elements that will be written to the file.
+
+nbpw:      INPUT - a default Fortran integer with the number of bytes per word.
+
+fp:        INPUT - a 64-bit Fortran integer, which is set either to 0 or
+           is set with the subroutine fopen_f77.  If zero, sdf_wb_f77
+           opens and closes the file fname itself; if non-zero, it assumes
+           the value of fp is a pointer (address) to an open file descriptor, 
+           and fname is not opened or closed within this subroutine.
+
+data:      INPUT - The name of the variable or array to be written to the file.
+
+           Note:  If you call sdf_wb_f77 with several different types of
+           output data (e.g. character data and reals) in the same program,
+           some Fortran compilers (e.g. g77, g95) generate warnings about 
+           possible datatype inconsistencies), but the code will still compile 
+           and run.
+
+---
+
+sdf_rb_f77: 
+
+call sdf_rb_f77(fname, datapos, nelem, nbpw, fp, data)
+
+           PURPOSE:  Perform a large endian binary read of nelem elements
+           of the array data from the file fname
+
+fname:     INPUT - Fortran character string containing the name of the 
+           SDF file to be read.
+
+           Note:  If the file does not initially exist, it is created.
+
+datapos:   INPUT and OUTPUT: A 64-bit Fortran integer (e.g. integer*8
+           or integer (kind=8) ) that on input is the byte location in the file
+           from which the read will start.  datapos=0 corresponds to the
+           beginning of the file.  On output, datapos contains the next
+           available position in the file.
+
+nelem:     INPUT - A 64-bit Fortran integer that is the number of data
+           elements that will be read from the file.
+
+nbpw:      INPUT - a default Fortran integer with the number of bytes per word.
+
+fp:        INPUT - a 64-bit Fortran integer, which is set either to 0 or
+           is set with the subroutine fopen_f77.  If zero, sdf_rb_f77
+           opens and closes the file fname itself; if non-zero, it assumes
+           the value of fp is a pointer (address) to an open file descriptor, 
+           and fname is not opened or closed within this subroutine.
+
+data:      OUTPUT - The name of the variable or array to be read from the file.
+
+           Note:  If you call sdf_rb_f77 with several different types of
+           output data (e.g. character data and reals) in the same program,
+           some Fortran compilers (e.g. g77, g95) generate warnings about 
+           possible datatype inconsistencies), but the code will still compile 
+           and run.
+
+---
+
+byteswap_f77:
+
+call byteswap_f77(arr, lengthf, nbpwf)
+
+PURPOSE:  To byteswap the array arr, consisting of lengthf elements, each of
+          which is nbpwf bytes long.
+
+arr:      INPUT and OUTPUT - The variable or array to be byteswapped.
+
+          Note:  The array arr can be of any type, but if the array type differs
+          in different calls to the subroutine, the fortran compiler may issue
+          a warning.  The code should still compile and run, however.
+
+lengthf:  INPUT - a 64-bit fortran integer (integer*8 or kind=8), equal 
+          to the number of array elements to be byteswapped.
+
+nbpwf:    INPUT - a default sized fortran integer, equal to the number of
+          bytes per array element.
+
+          Note:  If the array is complex, nbpwf corresponds to the number of
+          bytes per word for the real or imaginary parts, considered
+          separately.
+
+---
+
+ibe_f77:
+
+call ibe_f77(ibe)
+
+PURPOSE: To determine if the current machine is large endian or not.
+
+ibe:     OUTPUT -  ibe is a default sized fortran integer, set to 1 if
+         the machine is determined to be large endian, and set to 0 otherwise.
+
+---
+
+file_sz_f77:
+
+call file_sz_f77(fname, filesize)
+
+PURPOSE:  Determine the size (in bytes) of the file fname.
+
+fname:    INPUT - a fortran string containing the name of the file
+
+filesize: OUTPUT - a 64-bit Fortran integer (integer*8 or kind=8) that will
+          be set equal to the size of the file in bytes.
+
+---
+
+fopen_f77:
+
+call fopen_f77(fnamef77, mode, fp)
+
+PURPOSE: To open a file for C-style I/O (calls the C function fopen)
+
+fnamef77: INPUT - a fortran string containing the name of the file.
+
+mode:    INPUT - a fortran string containing the "mode" of the fopen call
+         (Examples are "rb" for read binary, "rb+" for reading and writing, 
+         "wb" for binary writing only, etc. see man page for C function fopen)
+
+fp:      OUTPUT - a Fortran 64-bit integer (integer*8 or kind=8)
+         (which is large enough to hold an address in either a 32-bit 
+         or 64-bit OS).  From the standpoint of the calling Fortran program, 
+         fp can be considered simply as an integer that is returned from 
+         fopen_f77, similar to the "unit number" returned from a
+         Fortran file open.  While the file is open, fp must not be 
+         altered by the calling program.  The value of fp is actually
+         the address of the C file descriptor.
+
+---
+
+fclose_f77:
+
+call fclose_f77(fp)
+
+PURPOSE: To close a file opened with fopen_f77.
+
+fp:      INPUT - the 64-bit integer  ("unit number") that was 
+         returned from a call to fopen_f77.  See the discussion of fp in 
+         documentation for fopen_f77.
+
+---
+
+fwrite_f77:
+
+call fwrite_f77(arr, nbpwf, lengthf, fp)
+
+PURPOSE: To perform a C-style binary write operation on the file described by
+         fp, of the array arr.
+
+arr:     INPUT - The array or variable to be written to the file.
+
+nbpwf:   INPUT - a default sized fortran integer, equal to the number of
+         bytes per array element.
+
+lengthf: INPUT - a 64-bit integer (integer*8 or kind=8) equal to the number
+         array elements to be written out.
+
+fp:      INPUT - a file "unit" returned by fopen_f77.  See the documentation
+         for fopen_f77.
+
+---
+
+fread_f77:
+
+call fread_f77(arr, nbpwf, lengthf, fp)
+
+PURPOSE: To perform a C-style binary read operation on the file described by
+         fp, of the array arr.
+
+arr:     OUTPUT - The array that will be read in from the file.
+
+nbpwf:   INPUT - a default sized fortran integer, equal to the number of
+         bytes per array element.
+
+lengthf: INPUT - a 64-bit integer (integer*8 or kind=8) equal to the number
+         array elements to be written out.
+
+fp:      INPUT - a file "unit" returned by fopen_f77.  See the documentation
+         for fopen_f77.
+
+---
+
+fseeko_f77:
+
+call fseeko_f77(fp, filepos)
+
+PURPOSE:  To move to a position filepos bytes from the start of a file.
+
+fp:       INPUT - 64-bit integer (integer*8 or kind=8) that 
+          contains the "unit number" returned by fopen_f77.  See the 
+          documentation of fopen_f77.
+
+filepos:  INPUT - a 64-bit Fortran integer (integer*8 or kind=8) that is set
+          to the desired position in the file relative to the beginning of the
+          file.
+
+---
+
+ftello_f77:
+
+call ftello_f77(fp, filepos)
+
+PURPOSE:  To return the current file position, in bytes, relative to the
+          beginning of the file.
+
+fp:       INPUT - 64-bit integer (integer*8 or kind=8) that contains the 
+          "unit number" returned by fopen_f77.  See the documentation of 
+          fopen_f77.
+
+filepos:  OUTPUT - a 64-bit Fortran integer (integer*8 or kind=8) that is
+          set to the current position in the file relative to the beginning of
+          the file.
+
+---
+
+sdf_ftc_f77:
+
+call sdf_ftc_f77(fp, datasize)
+
+PURPOSE: To truncate an open file of "unit number" fp, to a size = datasize 
+         bytes.  This can be used to either shorten or lengthen a file.
+
+fp:      INPUT - a 64-bit integer (integer*8 or kind=8) that contains
+         file "unit" returned by fopen_f77.  See documentation for fopen_f77.
+
+datasize: INPUT - a 64-bit fortran integer (integer*8 or kind=8) that is
+         set to the desired length of the file in bytes.
+
+---
+
+fflush_f77:
+
+call fflush_f77(fp)
+
+PURPOSE: To flush the buffer for the file "unit number" fp.
+
+fp:      INPUT - a 64-bit integer (integer*8 or kind=8) that contains the 
+         file "unit number" returned by fopen_f77.  See documentation for 
+         fopen_f77.
+
+---
+
+ffstdout_f77:
+
+call ffstdout_f77()
+
+PURPOSE: To flush the buffer for stdout.
+
+---
+
+cindcalc_f77:
+
+call cindcalc_f77(ndim, dims, ind, i)
+
+PURPOSE: To convert a 1-d array index to the corresponding multi-
+         dimensional array indices for an equivalently sized array with ndim 
+         dimensions.
+
+ndim:    INPUT - default fortran integer, with the number of dimensions
+
+dims:    INPUT - 64-bit integer array of length at least ndim, containing
+         the values of the dimensions.  Must already be dimensioned or 
+         allocated.
+
+ind:     OUTPUT - 64-bit integer array that will contain the multi-dimensional
+         indices.  Must already be allocated or dimensioned. 
+
+i:       INPUT - 64-bit integer that contains the 1-d index to be converted
+         into a multi-dimensional index.
+
+NOTE:    For both the 1-d index on input and multi-dimensional indices on 
+         output, cindcalc_f77 assumes the standard fortran integer index ranges,
+         ie starting at 1, and ending at the dimension value, c.f. the C-
+         callable function cindcalc, which assumes indices start at 0 and 
+         end at one less than the dimension value.  cindcalc_f77 assumes
+         column major array structure, the default in Fortran.
+
+---
+
+memcalcc_f77:
+
+call memcalcc_f77(dims, ind, ndim, i)
+
+PURPOSE: To convert a multi-dimensional array index to the equivalent 1-d
+         array index.
+
+dims:    INPUT - 64-bit integer array containing the multi-dimensional array
+         dimensions.  dims must be dimensioned ndim or greater.
+
+ind:     INPUT - 64-bit array containing the indices to be converted into
+         the equivalent 1-d index
+
+ndim:    INPUT - default fortran integer equal to the number of dimensions
+         of the multi-dimensional array
+
+i:       OUTPUT - 64-bit integer equal to the equivalent 1-d array index
+         corresponding to the multi-dimensional indices, ind.
+
+NOTE:    For both the 1-d index on input and multi-dimensional indices on 
+         output, memcalcc_f77 assumes the standard fortran integer index ranges,
+         ie starting at 1, and ending at the dimension value, c.f. the C-
+         callable function memcalcc, which assumes indices start at 0 and 
+         end at one less than the dimension value.  memcalcc_f77 assumes
+         column major array structure, the default in Fortran.
+
+
+-------------------------------------------------------------------------
+
+USING SDF FROM C PROGRAMS:
+
+-------------------------------------------------------------------------
+
+First, C programs that use the SDF functions should be compiled with large
+file support to avoid inconsistencies with the way that SDF was compiled.
+The needed compiler flags are:
+-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
+See the file INSTALL.txt for more details.  Second, the typedefs
+defined in sdf_subs.h will be needed to call the SDF functions, so the 
+calling C-code should have this include statement:
+#include <sdf_subs.h>
+
+If you are on the IBM SPX machines, this include file should be ahead of
+all the other include files.  If that is not possible, add the line
+#define _LARGE_FILES 1 
+ahead of all other declarations in your C program.
+
+Definitions used throughout the SDF functions include the integer type "pos",
+which is an 8-byte integer used to describe file positions, and "i4", a
+4 byte integer.  There is also a structure type "data_id" that is used
+frequently, which has the following members, assuming that id is a pointer
+to such a structure:
+
+id->order - an i4 integer describing the order of the dataset in the file
+id->label - a pointer to a C-style character string with a very short 
+            description of data
+id->datatype - a single character that identifies the datatype
+id->nbpw - an i4 integer with the number of bytes per word
+id->ndim - an i4 integer with the number of dimensions
+id->dims - a pointer to a pos integer array with the dimensions themselves.
+
+It is strongly recommended that you use the sdf_create_id function to
+create the id structure for e.g. calls to sdf_write, 
+rather than using generic malloc calls, to avoid
+possible conflicts between libraries used to compile sdf and those used in
+the caller programs.  It is also strongly recommended that once the
+user is done using the id structure, that they delete it with the sdf_free_id
+function.  Data returned by sdf_read, or arrays returned by sdf_sizes, should
+be freed with sdf_free, and not with with the generic "free" function, as
+this too might conflict with the versions of malloc used by sdf.  
+
+In general, any memory allocation and de-allocation done to variables or 
+arrays which are used in sdf function calls should use sdf_malloc and 
+sdf_free rather than malloc and free.
+
+Finally, if you are planning on using dynamically allocated, multi-dimensional
+arrays in C that will be read or written with SDF functions, please read the
+special section on these arrays that occurs at the end of this section on
+the C interface (just before the description of the IDL version of SDF).
+
+sdf_read:
+
+id=sdf_read(char *fname, i4 order, void **data);
+
+          PURPOSE:  Read a user specified dataset from an SDF file.
+
+id:       OUTPUT - pointer to the structure describing the dataset.
+
+          Note:  In the caller function, you should free id after using it 
+          to avoid a memory leak.  You should use sdf_free_id to do this.
+
+fname:    INPUT - a pointer to a string containing the name of the SDF file
+
+order:    INPUT - i4 integer with the desired dataset order
+
+data:     OUTPUT - a pointer to memory location that contains the results
+          from reading the dataset. In other words,
+          *data is a pointer to the first element of the output data, 
+          and data is the address of that pointer.  *data is allocated
+          within sdf_read.
+
+          Note:  The user will need to re-cast "data" into the desired
+          variable type in the calling program.
+
+          Note:  The user will need to free data in the caller
+          once done with it to avoid a memory leak.  You should use
+          the sdf_free function to do this.
+
+          Note:  Even though the dataset itself can be multi-dimensional,
+          it is read from the file into a contiguous block of memory.  
+          In C, this is most easily done by treating data as a 
+          1-dimensional array, and using a standard row-major index-to-
+          memory calculation to relate the multi-dimensional array elements 
+          to the location in memory.  There are 2 functions callable from C
+          built into SDF to aid in this conversion, rindcalc, and memcalcr, 
+          which go back and forth between indices for multiple dimensions and 
+          those for 1 dimension.  See the source code and/or descriptions of 
+          these 2 functions in this document for more details.
+
+          If you allocate a multi-dimensional array in C using nested 
+          malloc or calloc calls, and then use
+          a pointer to that array in the call to sdf_read, it is very likely
+          that the array elements from the file will get read into
+          memory incorrectly.  If you need to have a dynamically allocated,
+          multi-dimensional array in C, the solutions are to (1) just use 
+          a 1-D array and use ad-hoc indexing or pointer arithmetic to 
+          simulate multiple indices, or (2) use the series of functions 
+          sdf_1d_to_2d, sdf_1d_to_3d, sdf_1d_to_4d, or sdf_1d_to_5d provided 
+          in SDF (see below) to convert the 1d array from sdf_read into a 
+          multi-dimensional, indexable array in C.
+ 
+---
+
+sdf_details:
+
+id=sdf_details(char *fname, i4 order);
+
+          PURPOSE:  Read the properties of a user specified dataset from 
+          an SDF file (but not the data itself).
+
+id:       OUTPUT - pointer to the structure describing the dataset.
+
+          Note:  In the caller function, you should free id after using it 
+          to avoid a memory leak.  Use sdf_free_id to do this.
+
+fname:    INPUT - a pointer to a string containing the name of the SDF file
+
+order:    INPUT - i4 integer with the desired dataset order
+
+---
+
+sdf_write:
+
+sdf_write(char *fname, data_id *id, void * data);
+
+          PURPOSE:  add a new dataset to the end of an SDF file.
+
+fname:    INPUT - pointer to a string containing the name of the SDF file
+
+id:       INPUT - pointer to the structure describing dataset to be written.
+
+          Note:  Use the sdf_create_id function to create the id structure.
+
+data:     INPUT - a pointer to the 1st element of the data to be 
+          written to the dataset.
+
+          Note: sdf_write calculates the amount of data to be written
+          as measured from the 1st element of the data, and using values of
+          id->datatype, id->nbpw,id->ndim and id->dims.  This can lead
+          to big trouble if you have allocated data dynamically as a 
+          multi-dimensional array in C, using nested malloc or calloc calls,
+          as is frequently done.  This can create gaps in memory
+          at the end of rows.  Instead, either write the data to a 1-d
+          array in C arranged in standard row-major index order, or follow
+          the special instructions at the end of the C documentation to 
+          create a dynamically allocated
+          multi-dimensional array which can work with sdf_write. 
+
+          Statically allocated multi-dimensional arrays in C seem to work
+          OK.
+
+          This does not seem to be a problem in Fortran, and the fortran
+          version sdf_write_f77 appears to handle multi-dimensional arrays
+          both statically allocated and dynamically allocated,
+          without the need to convert them to 1d arrays or provide any special
+          treatment.
+
+---
+
+sdf_query:
+
+ndat=sdf_query(char *fname);
+
+          PURPOSE:  Print out summary of contents of an SDF file to stdout, 
+          and return the number of datasets on it.
+
+fname:    INPUT - pointer to the string with the name of the SDF file
+
+ndat:     OUTPUT - i4 integer with number of datasets in the SDF file
+
+---
+
+sdf_ndat:
+
+ndat=sdf_ndat(char *fname);
+
+          PURPOSE:  Return the number of datasets in an SDF file.
+
+fname:    INPUT - pointer to the string with the name of the SDF file
+
+ndat:     OUTPUT - i4 integer with number of datasets in the SDF file
+
+---
+
+sdf_sizes:
+
+sdf_sizes(char *fname, i4 *ndat, char ** datatypes, pos ** datasizes,
+          i4 **nbpw);
+
+
+           PURPOSE:  Return information on the sizes of the datasets in an SDF
+           file.
+
+fname:     INPUT:  pointer to the string with the name of the SDF file to be
+           probed.
+
+ndat:      OUTPUT: - pointer to an integer with the number of datasets in file
+
+datatypes: OUTPUT: pointer to an array of datatypes correponding to each
+           dataset in the file.  Use sdf_free in the caller to free the 
+           array when you are done with it .
+
+datasizes: OUTPUT: pointer to a pos integer array containing the datasizes
+           (in array elements) for each dataset in the file.  Use sdf_free in
+           the caller to free the array when you are done with it.
+
+nbpw:      OUTPUT: pointer to an i4 array containing the number of bytes per
+           word for each of the datasets in the SDF file.  Use sdf_free in the
+           caller to free the array when you are done with it.
+
+
+---
+
+sdf_labmatch:
+
+match = (i4 *)sdf_labmatch((char *)fname, (i4 *)ndat, (char *)labtest);
+
+           PURPOSE:  To return an array corresponding to all positive matches
+           between the input string labtest, and the label strings for all
+           datasets in an SDF file.  The 1st element of the output will
+           be equal to the dataset order number for which label matches
+           the test string, labtest.
+
+fname:     INPUT:  the name of the sdf file to be tested.
+
+labtest:   INPUT:  user specified string to be compared with each string
+           label corresponding to each dataset.
+
+ndat:      OUTPUT: ndat points to the number of datasets in the file.
+
+match:     OUTPUT:  The output of the function is a pointer to an i4
+           array of length *ndat.  If there is a single positive match,
+           then match[0] is the order number of the dataset with the string
+           match.  If there is more than one match, the next elements
+           will provide the next datasets for which a match occurs.  The
+           remaining elements of match are set to -1.  If there were no
+           matches at all, the 1st element of match will also be -1.
+
+           Note:  When done with the match array in the caller, free it with
+           the sdf_free function.
+
+---
+
+sdf_malloc:
+
+a=sdf_malloc(pos * nmemb);
+
+           PURPOSE:  to provide a way of allocating memory that is consistent
+           with the SDF library functions.
+
+nmemb:     INPUT - a pos integer describing the number of bytes to allocate
+           
+           Note:  malloc expects nmemb to be of size size_t.  It is possible
+           that trouble could happen converting a pos integer to size_t
+           (but no trouble thus far).
+
+a:         OUPUT - a void pointer to the allocated memory.  
+
+           Note:  sdf_malloc will exit with an error message if it is unable
+           to allocate the requested memory.
+
+---
+
+sdf_free:
+
+sdf_free(void *ptr);
+
+           PURPOSE:  to provide a way of freeing memory that is consistent
+           with the SDF library functions.
+
+ptr:       INPUT - the pointer to the memory to be freed.
+
+---
+
+sdf_create_id:
+
+id = (data_id *) sdf_create_id(i4 order, char * label, char dtype, i4 nbpw, 
+           i4 ndim, pos * dims);
+
+           PURPOSE:  To create a pointer to a data_id structure that contains
+           as its members the 6 arguments to this function, ie order, label,
+           dtype, nbpw, ndim, and dims.
+
+order:     INPUT - an i4 integer value denoting the order of this dataset.
+
+label:     INPUT - the short string that describes the data.
+
+dtype:     INPUT - A single character that describes the data type
+           ("f", "c", "i" or "b" (floating point, complex, integer, or byte)
+
+nbpw:      INPUT - i4 integer denoting the number of bytes per word (most
+           typically 4 or 8 for types "f" or "i", but is 1 for byte.  For
+           complex datasets, nbpw is the no. bytes/word for the real or
+           imaginary parts, considered separately.
+
+ndim:      INPUT - i4 integer denoting the number of dimensions of the dataset.
+           for scalars or 1-d arrays, this is 1.
+
+dims:      INPUT - pointer to a pos array that contains the values of all the
+           dimensions of the dataset.  For a scalar, this is the single value
+           1.
+
+id:        OUTPUT - pointer to the id structure that sdf_create_id function
+           creates.
+
+           NOTE - To free id in the caller when done using id, use the
+           function sdf_free_id .
+
+---
+
+sdf_free_id:
+
+sdf_free_id(data_id * id);
+
+           PURPOSE:  to free the memory allocated to data_id structure, along
+           with freeing the memory for the label and dims members.  This
+           function uses sdf_free so that it can be called from outside
+           of the SDF library.
+
+id:        INPUT - pointer to the data_id structure that is to be freed.
+
+---
+
+sdf_cp_id:
+
+idc = (data_id *)sdf_cp_id(id);
+
+         PURPOSE:  copy an existing id structure into a new id structure
+
+id:      INPUT:  an existing id structure, from e.g. a call to sdf_read
+         or a call to sdf_create_id.
+
+idc:     OUTPUT:  a new id structure, containing members that are exactly
+         the same as the members of the input structure id.
+
+---
+
+sdf_transpose:
+
+sdf_transpose(i4 *indorder, i4 *directions, data_id * id, void *data);
+
+indorder:  INPUT - a pointer to an i4 integer array of length at least ndim, 
+           that specifies the order in which the new dimensions will run 
+           in terms of the old order.  For example, for a 3-d array, setting 
+           indorder to (2,1,0) will reverse the order of the indices and
+           dimensions in the transposed array c.f. the original order.  
+           Setting indorder to (1,0,2) would leave the 3rd dimension alone, 
+           but transpose the 1st two dimensions.  The elements of indorder
+           are assumed to range over values from 0 to ndim-1 (this is
+           in contrast to the Fortran-callable version, where indorder goes 
+           from 1 to ndim).
+
+directions: INPUT - a pointer to an i4 integer array of length at least ndim, 
+           that specifies
+           whether the index directions of the transposed array are in the
+           forward or reverse direction.  The directions are expressed in
+           terms of the *new* (not the old) index and dimension order,
+           after the transpose has been done.  If the sign of the element of
+           directions is negative, the index order will be reversed.
+
+id:        INPUT and OUTPUT - On input, id->ndim, id->dims, id->datatype
+           and id->nbpw are used to compute how the transpose will be done.
+           All members of id are unchanged on output except for id->dims,
+           the values of which are permuted as indicated by the values of
+           the indorder array.
+
+data:      INPUT and OUTPUT - On input, data points to the data to be
+           transposed.  On output, data points to the transposed array.
+           The transpose is done in place, to conserve memory and to make
+           it possible to transpose very large arrays.  The "vacancy
+           cycle tracking" method of Ding (2001) is used to do the transpose.
+
+---
+
+sdf_rm:
+
+sdf_rm(char *fname);
+
+         PURPOSE:  remove the SDF file fname
+
+fname:   INPUT - pointer to the string with the name of the SDF file to be
+         removed.
+
+---
+
+sdf_delete:
+
+sdf_delete(char *fname, i4 idelete);
+
+         PURPOSE:  delete one dataset from the SDF file fname
+
+fname:   INPUT:  pointer to the string with the name of the SDF file to be
+         edited.
+
+idelete: INPUT: i4 integer indicating the order number of the dataset to delete
+
+---
+
+sdf_insert:
+
+sdf_insert(char *fname, i4 insert, data_id * id_new, void * data_new);
+
+          PURPOSE:  insert one dataset into the SDF file fname at location
+          insert
+
+fname:    INPUT:  pointer to the string with the name of the SDF file to be
+          edited.
+
+insert:   INPUT:  i4 integer indicating the desired dataset sequence in the
+          SDF file
+
+id_new:   INPUT: pointer to a data_id type structure describing the metadata for
+          the dataset to be inserted
+
+data_new: INPUT: pointer to the data to be inserted into the data portion 
+          of the SDF file.
+
+---
+
+sdf_replace:
+
+sdf_replace(char *fname, i4 replace, data_id * id_new, void * data_new);
+
+          PURPOSE:  replace one dataset into the SDF file fname at location
+          replace
+
+fname:    INPUT:  pointer to the string with the name of the SDF file to be
+          edited.
+
+replace:  INPUT:  i4 integer indicating the desired dataset sequence in the
+          SDF file to be replaced.
+
+id_new:   INPUT: pointer to a data_id type structure describing the metadata for
+          the dataset to replace the existing one
+
+data_new: INPUT: pointer to the data to replace the existing data in the 
+          data portion of the SDF file.
+
+---
+
+rindcalc:
+
+i4 rindcalc(i4 ndim, pos *dims, pos *indices, pos memloc_r)
+
+PURPOSE:  Compute indices for a multi-dimensional array, given the dimensions
+          and the equivalent 1-D array index.
+
+ndim:     INPUT:  i4 integer whose value is number of dimensions of the array
+
+dims:     INPUT:  pointer to a (pos) array of the actual dimension values
+
+indices:  OUTPUT: pointer to a (pos) array of length at least ndim, which
+          will contain the computed index values.
+
+          Note:  rindcalc assumes that the memory for indices has already been
+          allocated before the function is called.
+
+memloc_r: INPUT:  a pos integer, whose value is the equivalent 1-D index
+          value.
+
+          Note:  rindcalc assumes row-major index convention.  There is
+          an analagous function, cindcalc, with exactly the same arguments,
+          that uses column-major index convention. 
+
+---
+
+memcalcr:
+
+i4 memcalcr(pos *dims, pos *indices, i4 ndim, pos *memloc_r)
+
+PURPOSE:  To compute equivalent 1-d array index, given the array dimensions
+          and the corresponding indices for a given array element.
+
+dims:     INPUT: pointer to the pos array of dimensions
+
+indices:  INPUT: pointer to the pos array of indices
+
+ndim:     INPUT: i4 integer, whose value is the number of dimensions
+
+memloc_r: OUTPUT: pointer to a pos integer, whose value will be the equivalent
+          1-D index corresponding to indices.
+
+          Note:  memcalcr uses the row-major index convention to calculate
+          *memloc_r .  There is an analagous function, memcalcc, with the same
+          calling arguments, which will compute a column-major 1-D address.
+
+---
+
+sdf_mk_2d:
+
+arr2d = (void **)sdf_mk_2d(data_id *id);
+
+          PURPOSE:  Create a 2-dimensional, indexable array that corresponds
+          to the values of nbpw, ndim, and dims contained in the id structure
+
+id:       INPUT:  Pointer to a data_id structure containing all the
+          information needed to define the word and array sizes of the 
+          desired 2D array.
+
+arr2d:    OUTPUT:  Pointer to the multi-dimensional array, which can be
+          accessed as arr2d[i][j].  Note that the variable type is defined
+          by sdf_mk_2d to be of type void **, so the user should recast it
+          to a pointer to the desired variable type.  For example, if the
+          desired variable type is float, then in the calling program, the
+          variable arr2d should be declared as float **arr2d, and the cast 
+          in the above call should be (float **) instead of (void **). 
+          To write out the data elements in arr2d to sdf_write, be sure to 
+          use arr2d[0] in the sdf_write call.
+
+---
+
+sdf_mk_3d:
+
+arr3d = (void ***)sdf_mk_3d(data_id *id);
+
+          PURPOSE:  Create a 3-dimensional, indexable array that corresponds
+          to the values of nbpw, ndim, and dims contained in the id structure
+
+id:       INPUT:  Pointer to a data_id structure containing all the
+          information needed to define the word and array sizes of the 
+          desired 3D array.
+
+arr3d:    OUTPUT:  Pointer to the multi-dimensional array, which can be
+          accessed as arr3d[i][j][k].  Note that the variable type is defined
+          by sdf_mk_3d to be of type void ***, so the user should recast it
+          to a pointer to the desired variable type.  For example, if the
+          desired variable type is float, then in the calling program, the
+          variable arr3d should be declared as float ***arr3d, and the cast 
+          in the above call should be (float ***) instead of (void ***). 
+          To write out the data elements in arr3d using sdf_write, be sure to 
+          use arr3d[0][0] for data in the sdf_write call.
+
+---
+
+sdf_mk_4d:
+
+arr4d = (void ****)sdf_mk_4d(data_id *id);
+
+          PURPOSE:  Create a 4-dimensional, indexable array that corresponds
+          to the values of nbpw, ndim, and dims contained in the id structure
+
+id:       INPUT:  Pointer to a data_id structure containing all the
+          information needed to define the word and array sizes of the 
+          desired 4D array.
+
+arr4d:    OUTPUT:  Pointer to the multi-dimensional array, which can be
+          accessed as arr4d[i][j][k][l].  Note that the variable type is defined
+          by sdf_mk_4d to be of type void ****, so the user should recast it
+          to a pointer to the desired variable type.  For example, if the
+          desired variable type is float, then in the calling program, the
+          variable arr4d should be declared as float ****arr4d, and the cast 
+          in the above call should be (float ****) instead of (void ****). 
+          To write out the data elements in arr4d using sdf_write, be sure to 
+          use arr4d[0][0][0] for data in the sdf_write call.
+
+---
+
+sdf_mk_5d:
+
+arr5d = (void *****)sdf_mk_5d(data_id *id);
+
+          PURPOSE:  Create a 5-dimensional, indexable array that corresponds
+          to the values of nbpw, ndim, and dims contained in the id structure
+
+id:       INPUT:  Pointer to a data_id structure containing all the
+          information needed to define the word and array sizes of the 
+          desired 5D array.
+
+arr5d:    OUTPUT:  Pointer to the multi-dimensional array, which can be
+          accessed as arr5d[i][j][k][l][m].  Note that the variable type 
+          is defined by sdf_mk_5d to be of type void *****, so the user 
+          should recast it to a pointer to the desired variable type.  
+          For example, if the desired variable type is float, then in the 
+          calling program, the variable arr5d should be declared as 
+          float *****arr5d, and the cast in the above call should be 
+          (float *****) instead of (void *****).  To write out the data 
+          elements in arr5d using sdf_write, be sure to use arr5d[0][0][0][0] 
+          for data in the sdf_write call.
+
+---
+
+sdf_1d_to_2d:
+
+arr2d = (void **)sdf_1d_to_2d(data_id *id, void *data);
+
+          PURPOSE:  Create a 2-dimensional, indexable array that corresponds
+          to the values of nbpw, ndim, and dims contained in the id structure,
+          and containing the array values pointed to by data.
+
+id:       INPUT:  Pointer to a data_id structure containing all the
+          information needed to define the word and array sizes of the 
+          desired 2D array.
+
+data:     INPUT:  Pointer to the data as read in from sdf_read.
+
+arr2d:    OUTPUT:  Pointer to the multi-dimensional array that corresponds to
+          data, and which can be accessed as arr2d[i][j].  Note that the 
+          variable type is defined by sdf_1d_to_2d to be of type void **, so 
+          the user should recast it to a pointer to the desired variable type.  
+          For example, if the desired variable type is float, then in the 
+          calling program, the variable arr2d should be declared as 
+          float **arr2d, and the cast in the above call should be 
+          (float **) instead of (void **).  
+
+---
+
+sdf_1d_to_3d:
+
+arr3d = (void ***)sdf_1d_to_3d(data_id *id, void *data);
+
+          PURPOSE:  Create a 3-dimensional, indexable array that corresponds
+          to the values of nbpw, ndim, and dims contained in the id structure,
+          and containing the array values pointed to by data.
+
+id:       INPUT:  Pointer to a data_id structure containing all the
+          information needed to define the word and array sizes of the 
+          desired 3D array.
+
+data:     INPUT:  Pointer to the data as read in from sdf_read.
+
+arr3d:    OUTPUT:  Pointer to the multi-dimensional array that corresponds to
+          data, and which can be accessed as arr3d[i][j][k].  Note that the 
+          variable type is defined by sdf_1d_to_3d to be of type void ***, so 
+          the user should recast it to a pointer to the desired variable type.  
+          For example, if the desired variable type is float, then in the 
+          calling program, the variable arr3d should be declared as 
+          float ***arr3d, and the cast in the above call should be 
+          (float ***) instead of (void ***).  
+
+---
+
+sdf_1d_to_4d:
+
+arr4d = (void ****)sdf_1d_to_4d(data_id *id, void *data);
+
+          PURPOSE:  Create a 4-dimensional, indexable array that corresponds
+          to the values of nbpw, ndim, and dims contained in the id structure,
+          and containing the array values pointed to by data.
+
+id:       INPUT:  Pointer to a data_id structure containing all the
+          information needed to define the word and array sizes of the 
+          desired 4D array.
+
+data:     INPUT:  Pointer to the data as read in from sdf_read.
+
+arr4d:    OUTPUT:  Pointer to the multi-dimensional array that corresponds to
+          data, and which can be accessed as arr4d[i][j][k][l].  Note that the 
+          variable type is defined by sdf_1d_to_4d to be of type void ****, so 
+          the user should recast it to a pointer to the desired variable type.  
+          For example, if the desired variable type is float, then in the 
+          calling program, the variable arr4d should be declared as 
+          float ****arr4d, and the cast in the above call should be 
+          (float ****) instead of (void ****).  
+
+---
+
+sdf_1d_to_5d:
+
+arr5d = (void *****)sdf_1d_to_5d(data_id *id, void *data);
+
+          PURPOSE:  Create a 5-dimensional, indexable array that corresponds
+          to the values of nbpw, ndim, and dims contained in the id structure,
+          and containing the array values pointed to by data.
+
+id:       INPUT:  Pointer to a data_id structure containing all the
+          information needed to define the word and array sizes of the 
+          desired 5D array.
+
+data:     INPUT:  Pointer to the data as read in from sdf_read.
+
+arr5d:    OUTPUT:  Pointer to the multi-dimensional array that corresponds to
+          data, and which can be accessed as arr5d[i][j][k][l][m].  Note 
+          that the variable type is defined by sdf_1d_to_5d to be of type 
+          void *****, so the user should recast it to a pointer to the 
+          desired variable type.  For example, if the desired variable type 
+          is float, then in the calling program, the variable arr5d should 
+          be declared as float *****arr5d, and the cast in the above call 
+          should be (float *****) instead of (void *****).  
+
+---
+
+sdf_free_2d:
+
+sdf_free_2d(data_id *id, void **data2d);
+
+          PURPOSE:  Free the multi-dimensional, dynamically allocated array
+          created by sdf_free_2d or sdf_mk_2d.  This is necessary to avoid
+          memory leaks (especially if the arrays are being created repeatedly
+          in the calling program).
+
+id:       INPUT: Pointer to the data_id structure defining the sizes and
+          dimensions of the data2d array.
+
+data2d:   INPUT:  Pointer to the 2-d array created by either sdf_mk_2d
+          or sdf_1d_to_2d.
+  
+---
+
+sdf_free_3d:
+
+sdf_free_3d(data_id *id, void ***data3d);
+
+          PURPOSE:  Free the multi-dimensional, dynamically allocated array
+          created by sdf_free_3d or sdf_mk_3d.  This is necessary to avoid
+          memory leaks (especially if the arrays are being created repeatedly
+          in the calling program).
+
+id:       INPUT: Pointer to the data_id structure defining the sizes and
+          dimensions of the data3d array.
+
+data3d:   INPUT:  Pointer to the 3-d array created by either sdf_mk_3d
+          or sdf_1d_to_3d.
+  
+---
+
+sdf_free_4d:
+
+sdf_free_4d(data_id *id, void ****data4d);
+
+          PURPOSE:  Free the multi-dimensional, dynamically allocated array
+          created by sdf_free_4d or sdf_mk_4d.  This is necessary to avoid
+          memory leaks (especially if the arrays are being created repeatedly
+          in the calling program).
+
+id:       INPUT: Pointer to the data_id structure defining the sizes and
+          dimensions of the data4d array.
+
+data4d:   INPUT:  Pointer to the 4-d array created by either sdf_mk_4d
+          or sdf_1d_to_4d.
+  
+---
+
+sdf_free_5d:
+
+sdf_free_5d(data_id *id, void *****data5d);
+
+          PURPOSE:  Free the multi-dimensional, dynamically allocated array
+          created by sdf_free_5d or sdf_mk_5d.  This is necessary to avoid
+          memory leaks (especially if the arrays are being created repeatedly
+          in the calling program).
+
+id:       INPUT: Pointer to the data_id structure defining the sizes and
+          dimensions of the data5d array.
+
+data5d:   INPUT:  Pointer to the 5-d array created by either sdf_mk_5d
+          or sdf_1d_to_5d.
+
+---------------------------------------------------
+
+Other Low-level C functions available in the sdf library:
+
+---------------------------------------------------
+
+sdf_wb:
+
+sdf_wb(char *fname, pos *datapos, pos nelem, i4 nbpw, FILE *fp, (void *)data);
+
+          PURPOSE:  Perform a large-endian binary write of nelem elements
+          of the array data into the file fname.
+
+fname:    INPUT:  A C character string containing the name of the file to be
+          written.
+
+datapos:  INPUT and OUTPUT:  On input, datapos is a pointer to a (pos)
+          (i.e. 64-bit) integer, which is the location in the file where the
+          write will start.  On output, datapos points to the next available
+          location in the file.
+
+nelem:    INPUT:  a pos integer containing the number of data elements to
+          be written out.
+
+fp:       INPUT:  If fp == NULL, the file is opened and closed by sdf_rb,
+          but if fp != NULL, fp is assumed to point to an open file
+          descriptor, and this file descriptor is used to designate the
+          file that is read from (ie the filename fname isn't used).
+
+data:     INPUT:  Pointer to the data to be written to the file.
+
+---
+
+sdf_rb:
+
+sdf_rb(char *fname, pos *datapos, pos nelem, i4 nbpw, FILE *fp, (void *)data);
+
+          PURPOSE:  Perform a large-endian binary read of nelem elements
+          of the array data from the file fname.
+
+fname:    INPUT:  A C character string containing the name of the file to be
+          read.
+
+datapos:  INPUT and OUTPUT:  On input, datapos is a pointer to a (pos)
+          (i.e. 64-bit) integer, which is the location in the file where the
+          read will start.  On output, datapos points to the next available
+          location in the file.
+
+nelem:    INPUT:  a pos integer containing the number of data elements to
+          be read in.
+
+fp:       INPUT:  If fp == NULL, the file is opened and closed by sdf_rb,
+          but if fp != NULL, fp is assumed to point to an open file
+          descriptor, and this file descriptor is used to designate the
+          file that is read from (ie the filename fname isn't used).
+
+data:     OUTPUT:  Pointer to the data to be read in from the file.
+
+---
+
+byteswap:
+
+i4 byteswap(unsigned char *arr, pos arrsize, i4 nbpw);
+
+          PURPOSE: Byteswap an array of size arrsize, each element of which
+          is nbpw bytes long, starting at address arr.  
+
+arr:      INPUT and OUTPUT:  On input arr points to the beginning of the
+          array to be byteswapped.  On output, arr points to the byteswapped
+          array.  The byteswapping is done in-place to save memory for very
+          large arrays.  Note that in this function, arr is treated as a 
+          character array.  Therefore, in the calling sequence, you'll 
+          probably need to cast the input array pointer as type void * 
+          or type char *.
+
+
+arrsize:  INPUT:  A pos sized integer containing the number of elements in
+          the array to be byteswapped.
+
+nbpw:     INPUT:  an i4 integer equal to the number of bytes per array
+          element.  Note that for complex arrays, nbpw is the number of 
+          bytes per element of the real or imaginary parts, considered 
+          separately.
+
+---
+
+i4 is_big_endian();
+
+          PURPOSE:  This function returns a value of 1 if a big endian machine
+          is detected; otherwise it returns 0.
+
+          INPUT: None.
+
+---
+
+filesize = file_sz(char *fname);
+          
+          PURPOSE:  This function returns the size of the file whose name
+          is in the string fname.
+
+          INPUT:  character string fname, containing the name of the file.
+
+          OUTPUT:  The function returns a pos integer, equal to the size of
+          the file in bytes.
+
+---
+
+
+
+USING DYNAMICALLY ALLOCATED, MULTI-DIMENSIONAL ARRAYS WITH SDF FROM C 
+
+Multi-dimensional arrays in C can have a very different structure in memory
+depending on whether the arrays are allocated at compile time, or whether
+they are dynamically allocated at run-time.  The SDF I/O functions require
+that the array occupies a contiguous block in memory, or else they will not
+be read in or written out correctly.
+
+Multi-dimensional arrays in C that are stack or static variables allocated 
+at compile time appear to occupy contiguous blocks of memory, and the name of 
+the array can be passed as an argument to e.g. sdf_read or sdf_write without 
+any problems, regardless of the number of dimensions.
+
+Dynamically allocated arrays that are 1-dimensional also occupy a contiguous
+block of memory, and can also be passed without any problem as arguments to
+sdf_read or sdf_write, as described in the detailed notes above.
+
+However, dynamically allocated multi-dimensional arrays that are created 
+using nested malloc or calloc calls as frequently described in textbooks on C, 
+will typically have gaps in memory at the end of rows (for a 2-d array), and 
+arrays created this way will not work correctly in SDF.  Of course, for large 
+scale simulations, the arrays are generally big and multi-dimensional, so 
+one needs to have some systematic way of using these arrays and performing I/O
+using SDF.
+
+There are basically 2 choices: (1) Use a 1-d array instead of a multi-d array,
+and use an ad-hoc indexing or pointer arithmetic scheme to mimic the 
+functionality of multiple indices; or (2) change the way the multi-dimensional 
+array is created in such a way that the data can occupy a contiguous block of 
+memory.  Here, we describe how both approaches can be used with SDF.
+
+To use a 1-d array for SDF I/O, one can either copy the contents of a
+multi-dimensional array into a 1-d array before writing, or just do the 
+simulations using a 1-d array in the first place.  Either way, the main 
+challenge is to convert between the multi-dimensional indices and the 
+equivalent index for the 1-d array.  The SDF library contains 2 functions 
+to aid in this task, rindcalc, and memcalcr.  The function rindcalc 
+computes a set of multi-dimensional indices given the array dimensions and 
+the equivalent 1-d index value.  The function memcalcr goes in the reverse 
+direction, and computes the equivalent 1-d index value, given the array 
+dimensions and a set of indices.  The calling sequence for rindcalc and 
+memcalcr are described along with the other SDF functions in
+the detailed function descriptions above.
+
+To create a dynamically allocated, multi-dimensional array in such a way 
+that the data occupies a contiguous block of memory, SDF provides a set 
+of functions which will create multi-dimensional arrays in which the number of
+dimensions (rank) ranges from 2 to 5, and which work nicely with
+sdf_read and sdf_write.  One set of functions (sdf_mk_2d, sdf_mk_3d,
+sdf_mk_4d, and sdf_mk_5d) will create dynamically allocated arrays to which
+the user can then assign values using standard array index notation, and
+which can then by easily written with sdf_write.  Another
+set of functions (sdf_1d_to_2d, sdf_1d_to_3d, sdf_1d_to_4d, and sdf_1d_to_5d)
+will take the 1-d array that is read from sdf_read and create the addressing
+needed to manipulate the resulting array with standard array indexing.
+The memory allocated by these functions should be freed using the functions
+sdf_free_2d, sdf_free_3d, sdf_free_4d, and sdf_free_5d when the user is done
+with the arrays.
+
+Examples using all of these functions can be found in the example programs
+test_sdf_large.c, test_sdf_3d.c, test_sdf_4d.c, and test_sdf_5d.c.  
+
+To create Multi-dimensional complex arrays in C, the choice depends on whether
+one is using a C99 compliant compiler -- complex variables are defined in
+C99, but not in C89.  Many compilers (such as MSVC) do not support complex
+variables in C, but most modern versions of gcc (including recent versions
+of MinGW) do.
+
+To create a multi-dimensional complex array with a C99 compiler, see 
+the examples in the test_sdf_complex_c99.c example file, which just uses 
+e.g. the sdf_mk_2d or sdf_1d_to_2d functions just as for other variables.  
+To create a multi-dimensional complex array with a C89 compiler, see the
+examples in the test_sdf_complex_c89.c example file.  Basically, one just
+creates an array with an additional last dimension of 2, in which the index is
+either 0 or 1 and denotes either the real or imaginary parts of the complex
+array.  This example illustrates how one can perform arithmetic on complex
+variables using this notation.
+-------------------------------------------------------------------------
+
+IDL VERSION OF SDF:
+
+-------------------------------------------------------------------------
+
+IDL usage:
+
+The IDL folder contains the IDL versions of the SDF procedures.  
+Note:  use of sdf_read_all, sdf_write_all, sdf_read_varlist *require* 
+IDL version 6.1 or later; most other sdf functionality works as far back as
+IDL versions 5.6.  Make sure the contents of the idl folder of the sdf
+distribution are included in your IDL path, and the IDL version of SDF should
+work fine.
+
+Because of the existence of the "size" function in IDL, it is possible to
+eliminate some of the calling arguments needed in the Fortran and C callable
+versions.  Thus, the arguments "datatype", "nbpw", "ndim" and "dims" are all
+eliminated in the IDL calls to SDF.  The IDL versions of the SDF functions
+are "self-documenting", in that typing in the name of the function results in
+its calling arguments.  Shown further below is the results of this self-
+documentation.
+
+Starting with version 0.74, of the IDL version of sdf, the default
+initial header size of the sdf file can be changed by using a new keyword in
+sdf_write, sdf_insert, and sdf_replace, namely hinitsz=nnnn.  Here, nnnn
+is whatever integer value in bytes you desire.  In earlier versions,
+this is hard-wired to be 2000, and 2000 bytes is still the default value that
+is used if the keyword is not set.
+
+GDL usage:
+
+Most of the SDF i/o
+procedures also work in GDL (Gnu Data Language), with the exception of the 
+3 editing procedures sdf_insert, sdf_delete, and sdf_replace, and the
+3 procedures sdf_read_all, sdf_write_all, and sdf_read_varlist.  The 3 editing
+procedures require the existence of the truncate_lun procedure, which at this
+point doesn't yet exist in GDL.  
+
+*In fact, at the present time, trying to
+run these 3 editing procedures from within GDL will corrupt your .sdf file,
+so don't use sdf_insert, sdf_replace, or sdf_delete from GDL!*
+
+The sdf_read_all and sdf_write_all
+procedures require the scope_varfetch function, which does not yet exist
+in GDL.  The SDF software otherwise runs in GDL version 0.8.11 (and beyond,
+presumably).  As a work-around for the lack of sdf_read_all and 
+sdf_read_varlist in GDL, one can use the sdf_read_var function 
+(see its documentation below).
+
+Large file (> 2GB) I/O has not yet been tested from within GDL.
+
+------------------------------------------------------------
+
+THE SDF PROCEDURES AND FUNCTIONS FOR IDL:
+
+--------------------------------------------------------------
+
+sdf_write:
+
+% SDF_WRITE: Usage:
+% SDF_WRITE: sdf_write,fname,label,data,/quiet,hinitsz=hinitsz
+% SDF_WRITE: Purpose: Write out 1 dataset to an SDF file
+% SDF_WRITE: Input:   fname  = the name of the SDF file
+% SDF_WRITE:          label = brief string descriptor of dataset
+% SDF_WRITE:          data  = the data to be written
+% SDF_WRITE:          /quiet  = keyword to suppress non-error messages
+% SDF_WRITE:          hinitsz  -- keyword set to initial header size
+% SDF_WRITE:          (if not set, uses default value of 2000 bytes)
+
+sdf_write_all:
+
+% SDF_WRITE_ALL: Usage:
+% SDF_WRITE_ALL: sdf_write_all,fname,suffix=suffix, /append, hinitsz=hinitsz
+% SDF_WRITE_ALL: Purpose: Write out all IDL vars to an SDF file
+% SDF_WRITE_ALL: Input:   fname  = the name of the SDF file
+% SDF_WRITE_ALL: Input:   valid IDL variables at calling level (level=-1)
+% SDF_WRITE_ALL: Output:  the SDF file, containing all the recognized IDL
+% SDF_WRITE_ALL:          variables defined at the calling level of session
+% SDF_WRITE_ALL: keyword: suffix = trailing string to add to label in file
+% SDF_WRITE_ALL: keyword: /append = set to append data to an existing file
+% SDF_WRITE_ALL: keyword: hinitsz = initial header size (optional)
+
+sdf_read:
+
+% SDF_READ: Usage:
+% SDF_READ: sdf_read,fname,dorder,label,data, /quiet
+% SDF_READ: Purpose: Read in 1 dataset from an SDF file
+% SDF_READ: Input:   fname  = the name of the SDF file
+% SDF_READ:          dorder = order of desired dataset in file
+% SDF_READ: Output:  label = brief string descriptor of dataset
+% SDF_READ:          data  = the returned data
+% SDF_READ:          /quiet - set to suppress printing non-errors msgs
+
+sdf_read_var:
+
+% SDF_READ_VAR: Usage:
+% SDF_READ_VAR: data=sdf_read_var(fname,labtest)
+% SDF_READ_VAR: Purpose: Read in 1st dataset from SDF file with input label
+% SDF_READ_VAR:          matching the dataset label
+% SDF_READ_VAR: Input:   fname  = the name of the SDF file
+% SDF_READ_VAR:          labtest = input label for desired dataset in file
+% SDF_READ_VAR: Output:  data = the returned data
+% SDF_READ_VAR: Note:    If there are repeated occurrences of datasets
+% SDF_READ_VAR:          with the same label, the *first* occurrence in
+% SDF_READ_VAR:          the file is returned
+
+sdf_read_varlist:
+
+% SDF_READ_VARLIST: Usage:
+% SDF_READ_VARLIST: sdf_read_varlist,fname,vars=vars,suffix=suffix
+% SDF_READ_VARLIST: Purpose: Read data from sdf data file
+% SDF_READ_VARLIST: Input:   fname  = name of sdf file to read
+% SDF_READ_VARLIST: Keyword: vars  = string with names of variables to read
+% SDF_READ_VARLIST: Keyword: suffix  = string to append to variable names
+% SDF_READ_VARLIST: Output: variables in main IDL session read from file
+% SDF_READ_VARLIST:
+% SDF_READ_VARLIST: Example:  Read all variables in file junk.sdf:
+% SDF_READ_VARLIST: sdf_read_varlist,"junk.sdf"
+% SDF_READ_VARLIST:
+% SDF_READ_VARLIST: Example:  Read vx and bz from file junk.sdf:
+% SDF_READ_VARLIST: sdf_read_varlist,"junk.sdf",vars="vx bz"
+
+sdf_read_arr:
+
+% SDF_READ_ARR: Usage:
+% SDF_READ_ARR: data=sdf_read_arr(fname,labtest)
+% SDF_READ_ARR: Purpose: Read *all* datasets from file for which labtest
+% SDF_READ_ARR:          matches dataset label
+% SDF_READ_ARR: Input:   fname  = the name of the SDF file
+% SDF_READ_ARR:          labtest = input label for desired dataset in file
+% SDF_READ_ARR: Output:  data_arr = the returned data, as a "time series"
+% SDF_READ_ARR: Note:    data_arr has 1 more dimension than the individual
+% SDF_READ_ARR:          datasets. The value of the last dimension is the
+% SDF_READ_ARR:          number of occurrences of label in the sdf file.
+
+sdf_read_all:
+
+% SDF_READ_ALL: Usage:
+% SDF_READ_ALL: sdf_read_all,fname,suffix=suffix
+% SDF_READ_ALL: Purpose: Read in all datasets from an SDF file
+% SDF_READ_ALL:          assuming variable names = label
+% SDF_READ_ALL: Input:   fname  = the name of the SDF file
+% SDF_READ_ALL: Output:  all of the variables from the SDF file
+% SDF_READ_ALL:          which are placed into level 1 (main level) of IDL
+% SDF_READ_ALL: Note:    if there are repeated occurrences of a dataset
+% SDF_READ_ALL:          with the same label, the *last* occurrence
+% SDF_READ_ALL:          of the dataset with a given label is returned
+% SDF_READ_ALL: keyword: suffix - additional trailing string for var names
+
+sdf_details:
+
+% SDF_DETAILS: sdf_details,fname,dorder,label,dtype,nbpw,ndim,dims
+% SDF_DETAILS: Purpose: Read in info about 1 dataset from an SFD file
+% SDF_DETAILS: Input:   fname  = the name of the SDF file
+% SDF_DETAILS:          dorder = order of desired dataset in file
+% SDF_DETAILS: Output:  label = brief string descriptor of dataset
+% SDF_DETAILS: Output:  dtype = type of data stored in dataset
+% SDF_DETAILS: Output:  nbpw = No. bytes per word in dataset
+% SDF_DETAILS: Output:  ndim = No. dimensions of dataset
+% SDF_DETAILS: Output:  dims = array[ndim] containing data dimensions
+
+sdf_query:
+
+% SDF_QUERY: Usage:
+% SDF_QUERY: sdf_query,fname,ndat,/quiet
+% SDF_QUERY: Purpose: Print out summary of an SDF file
+% SDF_QUERY: Input:   fname  = the name of the SDF file
+% SDF_QUERY: Output:  ndat  = the number of datasets in the file
+% SDF_QUERY: Keyword: /quiet - suppress all non-error messages
+
+sdf_sizes:
+
+% SDF_SIZES: sdf_sizes,fname,ndat,dtypes,dsizes,dnbpw
+% SDF_SIZES: Purpose: Return arrays of datatypes and array sizes for
+% SDF_SIZES: the datasets in an SDF file
+% SDF_SIZES: Input:   fname  = the name of the SDF file
+% SDF_SIZES: Output:  ndat  = the number of datasets in the file
+% SDF_SIZES: Output:  dtypes = datatypes of all the datasets in the file
+% SDF_SIZES: Output:  dsizes  = the array elements for all datasets
+% SDF_SIZES: Output:  dnbpw  = the values of nbpw for all datasets
+
+sdf_delete:
+
+% SDF_DELETE: sdf_delete,fname,idelete
+% SDF_DELETE: Purpose: Delete 1 dataset of an SDF file
+% SDF_DELETE: Input:   fname  = the name of the SDF file
+% SDF_DELETE:          idelete = sequence of dataset to delete
+
+sdf_insert:
+
+% SDF_INSERT: Usage:
+% SDF_INSERT: sdf_insert,fname,insert,ilabel,data, hinitsz=hinitsz
+% SDF_INSERT: Purpose: insert 1 dataset into an SDF file
+% SDF_INSERT: Input:   fname  = the name of the SDF file
+% SDF_INSERT:          insert = desired sequence of dataset to insert
+% SDF_INSERT:          ilabel = brief label for dataset to insert
+% SDF_INSERT:          data = the data to be inserted
+% SDF_INSERT:          hinitsz  -- keyword set to initial header size
+% SDF_INSERT:          (if not set, uses default value of 2000 bytes)
+
+sdf_replace:
+
+% SDF_REPLACE: Usage:
+% SDF_REPLACE: sdf_replace,fname,replace,ilabel,data, hinitsz=hinitsz
+% SDF_REPLACE: Purpose: replace 1 dataset in an SDF file
+% SDF_REPLACE: Input:   fname  = the name of the SDF file
+% SDF_REPLACE:          replace = desired sequence of dataset to replace
+% SDF_REPLACE:          ilabel = brief label for new dataset
+% SDF_REPLACE:          data = the data to replace old data
+% SDF_REPLACE:          hinitsz  -- keyword set to initial header size
+% SDF_REPLACE:          (if not set, uses default value of 2000 bytes)
+
+sdf_labmatch:
+
+% SDF_LABMATCH: order=sdf_labmatch,fname,ndat,labtest
+% SDF_LABMATCH: Purpose: Determine the order number of datasets with label
+% SDF_LABMATCH:          equal to labtest
+% SDF_LABMATCH: Input:   fname  = the name of the SDF file
+% SDF_LABMATCH: Input:   labtest  = the string to test against label
+% SDF_LABMATCH: Output:  ndat  = the number of datasets in the file
+% SDF_LABMATCH: Return:  array of length ndat containing dataset orders of
+% SDF_LABMATCH:          match results
+% SDF_LABMATCH:          with values of -1 corresponding to no match
+
+sdf_transpose:
+
+% SDF_TRANSPOSE: sdf_transpose,indorder,directions,data
+% SDF_TRANSPOSE: Purpose: Perform multi-dimensional transpose of data
+% SDF_TRANSPOSE:          according to the order specified by indorder
+% SDF_TRANSPOSE: Input:   indorder  = an array specifying the order of the
+% SDF_TRANSPOSE:          new indices and dimensions in the transposed array
+% SDF_TRANSPOSE: Input:   directions  = an array specifying the direction of
+% SDF_TRANSPOSE:          new indices corresponding to the new dimensions in
+% SDF_TRANSPOSE:          the transposed array.  If any element of
+% SDF_TRANSPOSE:          directions is < 0, the corresponding set of
+% SDF_TRANSPOSE:          indices is reversed
+% SDF_TRANSPOSE: Input:   data = the input array
+% SDF_TRANSPOSE: Output:  data = the transposed array, returned in place
+
+sdf_rm:
+
+% SDF_RM: Usage:
+% SDF_RM: sdf_rm,fname,/quiet
+% SDF_RM: Purpose: remove SDF file fname
+% SDF_RM: Input:   fname  = the name of the SDF file
+% SDF_RM: Keyword: /quiet  - eliminate non-error output messages
+
+
+----------------------------------------------------------------------
+
+Other low-level IDL procedures for doing large endian binary I/O outside
+the context of the SDF file format:
+
+----------------------------------------------------------------------
+
+sdf_wb:
+
+% SDF_WB: sdf_wb,fname,datapos,data,elem0=elem0,nelem=nelem
+% SDF_WB: Purpose: Write data to file in large endian binary format
+% SDF_WB: Input:   fname  = the name of the file for binary I/O
+% SDF_WB: Input and Output: datapos  = the location (bytes) to start
+% SDF_WB:          writing in the file on input; on output, datapos
+% SDF_WB:          = next available location for writing.
+% SDF_WB:          Be sure to set datapos to 0LL for initial call
+% SDF_WB: Input:   data  = the data to be written
+% SDF_WB:          The array data must intially exist
+% SDF_WB: Keyword: elem0  = the initial element of data to be written
+% SDF_WB:          (= 0 if not specified)
+% SDF_WB: Keyword: nelem  = the number of elements to write
+% SDF_WB:          (= n_elements(data) if not specified)
+
+sdf_rb:
+
+% SDF_RB: sdf_rb,fname,datapos,data,elem0=elem0,nelem=nelem,
+% SDF_RB: Purpose: Read data from file in large endian binary format
+% SDF_RB: Input:   fname  = the name of the binary file to read
+% SDF_RB: Input and Output: datapos  = the starting location (bytes)
+% SDF_RB:          in the file; on output, datapos = next available
+% SDF_RB:          location for reading
+% SDF_RB: Output:  data  = the data to be read
+% SDF_RB:          Note:  data *must* be pre-defined and dimensioned
+% SDF_RB:          correctly or sdf_rb will exit without reading data
+% SDF_RB:          or will read data incorrectly
+% SDF_RB: Keyword: elem0  = the initial element of data to be read
+% SDF_RB:          (= 0 if not specified)
+% SDF_RB: Keyword: nelem  = the number of elements to read
+% SDF_RB:          (= n_elements(data) if not specified)
+% SDF_RB: Note:    Since sdf_rb uses no metadata, you must have full
+% SDF_RB:          pre-existing knowledge of the file structure to
+% SDF_RB:          use sdf_rb correctly
+
