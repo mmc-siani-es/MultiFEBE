@@ -443,7 +443,7 @@ subroutine calculate_incident_mechanics_harmonic(kf)
                       call fbem_harela_incident_plane_wave_vertical_multilayered(problem%n,omega,incidentfield(sif)%np,&
                       incidentfield(sif)%n_layers,incidentfield(sif)%layer_ztop,incidentfield(sif)%layer_lambda,&
                       incidentfield(sif)%layer_mu,incidentfield(sif)%layer_rho,incidentfield(sif)%symconf(2),&
-                      incidentfield(sif)%wave_type,incidentfield(sif)%layer_amplitudes,xn,nn,ui,ti)
+                      incidentfield(sif)%wave_type,incidentfield(sif)%layer_amplitudes,incidentfield(sif)%varphi,xn,nn,ui,ti)
                   end select
                   ! Depending on the leading variable of the incident wave field
                   select case (incidentfield(sif)%variable)
@@ -735,7 +735,7 @@ subroutine calculate_incident_mechanics_harmonic(kf)
                       call fbem_harela_incident_plane_wave_vertical_multilayered(problem%n,omega,incidentfield(sif)%np,&
                       incidentfield(sif)%n_layers,incidentfield(sif)%layer_ztop,incidentfield(sif)%layer_lambda,&
                       incidentfield(sif)%layer_mu,incidentfield(sif)%layer_rho,incidentfield(sif)%symconf(2),&
-                      incidentfield(sif)%wave_type,incidentfield(sif)%layer_amplitudes,xn,nn,ui,ti)
+                      incidentfield(sif)%wave_type,incidentfield(sif)%layer_amplitudes,incidentfield(sif)%varphi,xn,nn,ui,ti)
                   end select
                   ! Depending on the leading variable of the incident wave field
                   select case (incidentfield(sif)%variable)
@@ -956,7 +956,7 @@ subroutine calculate_incident_mechanics_harmonic(kf)
                     call fbem_harela_incident_plane_wave_vertical_multilayered(problem%n,omega,incidentfield(sif)%np,&
                     incidentfield(sif)%n_layers,incidentfield(sif)%layer_ztop,incidentfield(sif)%layer_lambda,&
                     incidentfield(sif)%layer_mu,incidentfield(sif)%layer_rho,incidentfield(sif)%symconf(2),&
-                    incidentfield(sif)%wave_type,incidentfield(sif)%layer_amplitudes,xn,nn,ui,ti)
+                    incidentfield(sif)%wave_type,incidentfield(sif)%layer_amplitudes,incidentfield(sif)%varphi,xn,nn,ui,ti)
                 end select
                 ! Depending on the leading variable of the incident wave field
                 select case (incidentfield(sif)%variable)
