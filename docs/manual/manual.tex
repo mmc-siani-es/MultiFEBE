@@ -1,5 +1,5 @@
 %
-% -------- COMPILAR CON XELATEX -----------
+% -------- COMPILE USING XELATEX -----------
 %
 
 \documentclass[a4paper,fleqn]{book}
@@ -103,14 +103,15 @@ It has a full set of linear elastic finite elements:
         \item 2D/3D bar element (2 nodes).
         \item 2D/3D beam elements (doubly symmetric cross-section):
         \begin{itemize}
-            \item 2 or 3 nodes Euler-Bernoulli or Timoshenko straight element.
-            \item 3 or 4 nodes curved element based on the degeneration from solid (Timoshenko theory).
+            \item 2 and 3 nodes Euler-Bernoulli and Timoshenko straight element \cite{onate2013,friedman1993}.
+            \item 2, 3 and 4 nodes curved element based on the degeneration from solid (Timoshenko theory) \cite{bathe1996}.
         \end{itemize}
         \item 3D shell elements (Reissner-Mindlin theory):
         \begin{itemize}
-            \item 3 or 6 nodes triangular shell element based on the degeneration from solid (full/selective/reduced integration).
-            \item 4, 8 or 6 nodes quadrilateral shell element based on the degeneration from solid (full/selective/reduced integration).
-            \item 9 nodes quadrilateral MITC element (locking-free).
+            \item 3 and 6 nodes triangular shell element based on the degeneration from solid (full/selective/reduced integration) \cite{onate2013}.
+            \item 4, 8 and 6 nodes quadrilateral shell element based on the degeneration from solid (full/selective/reduced integration) \cite{onate2013}.
+            \item 3 and 6 nodes triangular MITC element (locking-free): MITC3 \cite{lee2004}, MITC6a \cite{lee2004}.
+            \item 4, 8 and 9 nodes quadrilateral MITC element (locking-free): MITC4 \cite{dvorkin1984}, MITC8 \cite{Bathe1986}, MITC9 \cite{Bucalem1993}.
         \end{itemize}
     \end{itemize}
     \item Discrete finite elements:
@@ -124,16 +125,16 @@ It also has a full set of boundary elements for linear elastic solids, poroelast
 \begin{itemize}
     \item For two-dimensional plane strain / plane stress problems:
     \begin{itemize}
-        \item 2, 3 or 4 line ordinary or crack boundary elements.
-        \item 2, 3 or 4 line body load elements.
+        \item 2, 3 and 4 line ordinary or crack boundary elements.
+        \item 2, 3 and 4 line body load elements.
     \end{itemize}
     \item For three-dimensional problems:
     \begin{itemize}
-        \item 3 or 6 triangular ordinary or crack boundary elements.
-        \item 4, 8 or 9 quadrilateral ordinary or crack boundary elements.
-        \item 2, 3 or 4 line body load elements (only in elastic regions).
-        \item 3 or 6 triangular body load elements.
-        \item 4, 8 or 9 quadrilateral body load elements.        
+        \item 3 and 6 triangular ordinary and crack boundary elements.
+        \item 4, 8 and 9 quadrilateral ordinary and crack boundary elements.
+        \item 2, 3 and 4 line body load elements (only in elastic regions).
+        \item 3 and 6 triangular body load elements.
+        \item 4, 8 and 9 quadrilateral body load elements.        
     \end{itemize}
 \end{itemize}
 
@@ -1225,7 +1226,7 @@ In this section, the data sections related to the conditions (boundary and inter
 This part of the manual is incomplete as it only deals with conditions for elastic solids.
 
 \subsection{Section \texttt{symmetry planes}}
-If present, in this section the symmetry planes of the problem are defined. All symmetry planes are assumed to be at the origin of coordinates. By using symmetry planes, only a half, quarter or octant of the model has to be discretized. For BE regions, no additional boundary conditions are required. For FE regions, however, this must be done manually over nodes belonging to the symmetry planes in the usual way. In future releases, this will be done automatically.
+If present, in this section the symmetry planes of the problem are defined. All symmetry planes are assumed to be at the origin of coordinates. By using symmetry planes, only a half, quarter or octant of the model has to be discretized. For BE regions, no additional boundary conditions are required since influence matrices are built taking symmetry planes into account. For FE regions, the corresponding boundary conditions are applied to nodes at symmetry planes.
 
 In order to indicate the existence and the nature of the symmetry, it is necessary to define up to three of the symmetry planes implemented: plane with unit normal $\mathbf{n}=\mathbf{e}_1=(1,0,0)$ (plane $yz$), plane with unit normal $\mathbf{n}=\mathbf{e}_2=(0,1,0)$ (plane $zx$), or plane with unit normal $\mathbf{n}=\mathbf{e}_3=(0,0,1)$ (plane $xy$); where each of one can be either of symmetry or antisymmetry. The general format for the section is:
 \begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [symmetry planes]}]
@@ -1784,8 +1785,8 @@ For 3D problems in a static analysis:
 \multicolumn{3}{c}{Discrete translational/rotational spring finite element} \\
 \$18-\$23 & float & Force/moment on each spring: $N_{x'}$, $N_{y'}$, $N_{z'}$, $M_{x'}$, $M_{y'}$, $M_{z'}$. \\
 \midrule
-\multicolumn{3}{c}{Discrete translational/rotational spring finite element} \\
-\$18-\$25 & float & Membrane forces ($N_{x'}$, $N_{y'}$, $N_{x'y'}$), bending moments ($M_{x'}$, $M_{y'}$, $M_{x'y'}$) and shear forces ($V_{x'}$, $V_{y'}$).
+\multicolumn{3}{c}{Shell finite element} \\
+\$18-\$25 & float & Membrane forces ($N_{x'}$, $N_{y'}$, $N_{x'y'}$), bending moments ($M_{x'}$, $M_{y'}$), twisting moment ($M_{x'y'}$) and shear forces ($V_{x'}$, $V_{y'}$)).
 \end{longtable}
 
 
@@ -1828,8 +1829,8 @@ For 3D problems in a time harmonic analysis, where each node variable is written
 \multicolumn{3}{c}{Discrete translational/rotational spring finite element} \\
 \$18-\$29 & float & Force/moment on each spring: $N_{x'}$, $N_{y'}$, $N_{z'}$, $M_{x'}$, $M_{y'}$, $M_{z'}$. \\
 \midrule
-\multicolumn{3}{c}{Discrete translational/rotational spring finite element} \\
-\$18-\$33 & float & Membrane forces ($N_{x'}$, $N_{y'}$, $N_{x'y'}$), bending moments ($M_{x'}$, $M_{y'}$, $M_{x'y'}$) and shear forces ($V_{x'}$, $V_{y'}$).
+\multicolumn{3}{c}{Shell finite element} \\
+\$18-\$33 & float & Membrane forces ($N_{x'}$, $N_{y'}$, $N_{x'y'}$), bending moments ($M_{x'}$, $M_{y'}$), twisting moment ($M_{x'y'}$) and shear forces ($V_{x'}$, $V_{y'}$).
 \end{longtable}
 
 %\section{Resultant solutions file (\texttt{*.tot})}
