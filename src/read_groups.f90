@@ -96,6 +96,28 @@ subroutine read_groups(fileunit)
         group(i)%type=fbem_group_type_nodes
         tmp_check_built=.false.
         !
+        ! ALL
+        !
+        if (trim(tmp_built).eq.'all') then
+          tmp_check_built=.true.
+          group(i)%n_objects=0
+          ! Just to read something and move to the next line
+          read(fileunit,*) group(i)%id, tmp_type, tmp_built
+          do j=1,n_nodes
+            if (node(j)%n_parts.gt.0) then
+              group(i)%n_objects=group(i)%n_objects+1
+            end if
+          end do
+          allocate (group(i)%object(group(i)%n_objects))
+          k=0
+          do j=1,n_nodes
+            if (node(j)%n_parts.gt.0) then
+              k=k+1
+              group(i)%object(k)=j
+            end if
+          end do
+        end if
+        !
         ! LIST: group of nodes defined by giving a list of nodes
         !
         ! Syntax:
@@ -689,6 +711,10 @@ subroutine read_groups(fileunit)
         ! CASE DEFAULT
         !
         if (tmp_check_built.eqv.(.false.)) call fbem_error_message(error_unit,0,'section_name',group(i)%id,'unknown built mode')
+      end if
+
+      if (.not.tmp_check_built) then
+        call fbem_error_message(error_unit,0,'group',group(i)%id,'unknown type of group')
       end if
 
     end do
