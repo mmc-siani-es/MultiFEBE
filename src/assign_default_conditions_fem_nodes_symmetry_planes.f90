@@ -82,19 +82,13 @@ subroutine assign_default_conditions_fem_nodes_symmetry_planes
           ! Loop through nodes
           do i=1,n_nodes
             if (part(node(i)%part(1))%type.eq.fbem_part_fe_subregion) then
-
-              !
-              ! Experimental: automatic symmetry bc
-              !
-
               !
               ! If the node is at a symmetry plane, and the component has opposite
               ! signs at it, the DOF is zero (prescribed displacement/rotation).
               !
               ! It is assummed that all nodes are 6DOF/3DOF nodes, which means that shell nodes
-              ! must be 6DOF (this is done in build_data_at_functional_nodes).
+              ! must be 6DOF (this is done in build_auxiliary_variables_mechanics_*).
               !
-
               do kks=1,node(i)%n_symplanes
                 ks=node(i)%symplane(kks)
                 ! Traslational (displacements)
@@ -130,19 +124,13 @@ subroutine assign_default_conditions_fem_nodes_symmetry_planes
           ! Loop through nodes
           do i=1,n_nodes
             if (part(node(i)%part(1))%type.eq.fbem_part_fe_subregion) then
-
-              !
-              ! Experimental: automatic symmetry bc
-              !
-
               !
               ! If the node is at a symmetry plane, and the component has opposite
               ! signs at it, the DOF is zero (prescribed displacement/rotation).
               !
               ! It is assummed that all nodes are 6DOF/3DOF nodes, which means that shell nodes
-              ! must be 6DOF (this is done in build_data_at_functional_nodes).
+              ! must be 6DOF (this is done in build_auxiliary_variables_mechanics_*).
               !
-
               do kks=1,node(i)%n_symplanes
                 ks=node(i)%symplane(kks)
                 ! Traslational (displacements)
