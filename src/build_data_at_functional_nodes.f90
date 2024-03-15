@@ -590,19 +590,6 @@ subroutine build_data_at_functional_nodes
                       ! v2 = v3 x esp
                       v2=fbem_cross_product(element(ke)%v_midnode(:,3,kn),esp)
                       v2=v2/sqrt(dot_product(v2,v2))
-
-!                      ! ¿?¿¿?¿?¿?
-!                      ! Warning message for older files with regard to the local definition of rotations
-!                      ! ¿?¿?¿?¿?¿?
-!                      ! To be deprecated
-!                      write(*,*) '-----'
-!                      write(*,*) 'Node ', node(sn)%id
-!                      write(*,*) 'Warning: if the file is old, check the boundary condition of this node, '
-!                      write(*,*) 'it has been produced a change of criteria when selecting the local rotations.'
-!                      if (node(sn)%n_symplanes.eq.1) write(*,*) 'Now, alpha rotation is the rotation with direction tangent to the symmetry plane, and beta with the normal.'
-!                      if (node(sn)%n_symplanes.eq.2) write(*,*) 'Now, alpha rotation is the rotation with tangent direction, and beta with the normal, with respect to the first symmetry plane present in this list: x, y or z.'
-!                      write(*,*) '-----'
-
                     !
                     ! If the node does not belong to any symmetry plane
                     !
@@ -658,12 +645,10 @@ subroutine build_data_at_functional_nodes
                 ! Save results
                 element(ke)%v_midnode(:,1,kn)=v1
                 element(ke)%v_midnode(:,2,kn)=v2
-
                 ! Write v1, v2, v3
 !                write(22,'(2i11,6e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,1,kn)
 !                write(23,'(2i11,6e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,2,kn)
 !                write(24,'(2i11,6e25.16)') element(ke)%id, node(element(ke)%node(kn))%id, element(ke)%x_gn(:,kn), element(ke)%v_midnode(:,3,kn)
-
               end do
 
             ! --------------
