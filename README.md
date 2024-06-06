@@ -1,5 +1,4 @@
 <p align="center"> <img src="docs/img/logo_128x128.png"> </p>  
-[![License][license-image]][license]
 
 MultiFEBE is a multi-domain Finite Element and Boundary Element linear mechanics solver. It is available for Windows and GNU/Linux 64 bits (see below).
 
