@@ -39,6 +39,18 @@ Mesh files can be formatted in a native format, or in [Gmsh](https://gmsh.info) 
 The native mesh file format is very easy to build manually or from custom-built scripts. In this sense, we have created a .bas template file which can be used in [GiD](https://www.gidsimulation.com/) pre- and post-processor to generate our native mesh files.
 More details can be found in the [manual](https://github.com/mmc-siani-es/MultiFEBE/blob/main/docs/manual.pdf).
 
+Getting started
+===============
+
+After installation, we suggest to follow some of the basic tutorials:
+
+  * [Static analysis of a cantilever beam (FEM model)](docs/examples/ME-ST-SR-001/).
+  * [Time harmonic analysis of a cantilever beam (FEM model)](docs/examples/ME-TH-SR-001/).
+  * [Static analysis of a plain strain square (BEM model)](docs/examples/ME-ST-EL-001/).
+  * [Static analysis of a cube (BEM model)](docs/examples/ME-ST-EL-002/).
+  * [Time harmonic analysis of a cube (BEM model)](docs/examples/ME-TH-EL-001/).
+  * [Time harmonic analysis of a cantilever wall (BEM model)](docs/examples/ME-TH-EL-002/).
+
 License:
 ========
 
