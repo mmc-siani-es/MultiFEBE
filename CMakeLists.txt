@@ -25,11 +25,11 @@ option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 #
 # Build and link to SDF
 #
-#add_custom_target(libsdf.a COMMAND make
-#                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/sdf-0.75-RC8
-#)
-#target_link_libraries(multifebe ${CMAKE_CURRENT_SOURCE_DIR}/lib/sdf-0.75-RC8/libsdf.a)
-#add_dependencies(multifebe libsdf.a)
+add_custom_target(libsdf.a COMMAND make
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/sdf-0.75-RC8
+)
+target_link_libraries(multifebe ${CMAKE_CURRENT_SOURCE_DIR}/lib/sdf-0.75-RC8/libsdf.a)
+add_dependencies(multifebe libsdf.a)
 
 #
 # Build and link to fortran-csv-module
