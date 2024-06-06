@@ -1,0 +1,96 @@
+%% Creator: Inkscape 1.3.2 (1:1.3.2+202311252150+091e20ef0f), www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'strbeam.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{453.54330709bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.375)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0.15000001,0.1125){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$u_y^{(i)}$\end{tabular}}}}%
+    \put(0.53124999,0.09375){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$x'$ axis points from node $i$ to node $j$\end{tabular}}}}%
+    \put(0.24999999,0.00625){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}(a) 2D analysis\end{tabular}}}}%
+    \put(0.53124999,0.0625){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$y'$ is on the $x'$--$\mathbf{y}'_\mathrm{ref}$ plane.\end{tabular}}}}%
+    \put(0.14375001,0.08750001){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}node $i$\end{tabular}}}}%
+    \put(0.28750002,0.25625){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}node $j$\end{tabular}}}}%
+    \put(0.31874999,0.27500002){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$u_x^{(j)}$\end{tabular}}}}%
+    \put(0.19375002,0.08750001){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$u_x^{(i)}$\end{tabular}}}}%
+    \put(0.28125004,0.31875){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$u_y^{(j)}$\end{tabular}}}}%
+    \put(0.18749999,0.2125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
+    \put(0.21875002,0.2125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
+    \put(0.22500002,0.18125){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$z'$\end{tabular}}}}%
+    \put(0.61875004,0.1375){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$\mathbf{y}'_\mathrm{ref}$: $y'$ axis reference vector\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{strbeam.pdf}}%
+    \put(0.03124999,0.1125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y$\end{tabular}}}}%
+    \put(0.08125018,0.05625001){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$x$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{strbeam.pdf}}%
+    \put(0.55000004,0.21250002){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}node $i$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{strbeam.pdf}}%
+    \put(0.40625009,0.1125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$z$\end{tabular}}}}%
+    \put(0.43750009,0.08750001){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$y$\end{tabular}}}}%
+    \put(0.45625009,0.05625001){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$x$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{strbeam.pdf}}%
+    \put(0.80000004,0.2625){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$u_x^{(j)}$\end{tabular}}}}%
+    \put(0.83750004,0.2625){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$\theta_x^{(j)}$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{strbeam.pdf}}%
+    \put(0.84375004,0.3375){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$u_y^{(j)}$, $\theta_y^{(j)}$\end{tabular}}}}%
+    \put(0.77500003,0.3375){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$u_z^{(j)}$, $\theta_z^{(j)}$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{strbeam.pdf}}%
+    \put(0.75000004,0.00625){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}(b) 3D analysis\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{strbeam.pdf}}%
+    \put(0.65624994,0.28125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
+    \put(0.69374994,0.26875){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{strbeam.pdf}}%
+    \put(0.68124994,0.225){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$z'$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{strbeam.pdf}}%
+    \put(0.29375002,0.29375){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$\theta_z^{(j)}$\end{tabular}}}}%
+    \put(0.15625,0.0625){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$\theta_z^{(i)}$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=10]{strbeam.pdf}}%
+  \end{picture}%
+\endgroup%

@@ -4,22 +4,26 @@
 
 \documentclass[a4paper,fleqn]{book}
 \include{packages}
+\graphicspath{{figures/}}
 \renewcommand{\arraystretch}{1.5}
 \newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 
-
 \title{
 \includegraphics[width=4cm]{../../docs/img/logo.pdf}
 \\
-MultiFEBE (version 2.0.0)
+MultiFEBE (version 2.0.1)
 \\
 Reference Manual}
 \author{
 
 }
-\date{July 2022}
+\date{July 2024}
+
+%\newcommand{\sectionbreak}{\clearpage\newpage}
+%\newcommand{\subsectionbreak}{\clearpage\newpage}
+
 
 \begin{document}
 
@@ -30,6 +34,7 @@ Reference Manual}
 \chapter*{Copyright Notice and Disclaimers}
 
 \begin{large}
+\ttfamily
 Copyright {\copyright} 2014-2022 Universidad de Las Palmas de Gran Canaria
 \\\\
 Jacob D.R. Bordón \\ 
@@ -116,7 +121,7 @@ It has a full set of linear elastic finite elements:
     \end{itemize}
     \item Discrete finite elements:
     \begin{itemize}
-        \item 2D/3D discrete translational and translational-rotational spring/dashpot 2 node elements.
+        \item 2D/3D discrete translational and translational-rotational spring-dashpot 2 node elements.
         \item 2D/3D mass elements.
     \end{itemize}
 \end{itemize}
@@ -317,7 +322,7 @@ The case data is divided into \textbf{sections}. Each section is a block of data
 
 \begin{Verbatim}[frame=single, fontsize=\small, label=input.dat]
 [case description] <-- this is an unrecognized section used as a comment section
-3x3 pile group analysis of stresses
+analysis of soil stresses around a 3x3 pile group 
 
 [problem]
 n = 3D
@@ -340,7 +345,7 @@ plane_yz: antisymmetry
 
 All the identifiers of model entities (regions, boundaries, elements, nodes, etc) must be integers greater than 0. Floating point numbers can be expressed as \texttt{125.} (simple precision), \texttt{1.25e2} (simple precision) or \texttt{1.25d2} (double precision). Complex numbers are expressed as \texttt{(2.d3,1.d1)}.
 
-\begin{table}
+\begin{table}[p]
 {\footnotesize
 \centering
 \begin{tabular}{lL{7cm}L{2cm}}
@@ -350,51 +355,55 @@ All the identifiers of model entities (regions, boundaries, elements, nodes, etc
 \midrule
 \multicolumn{3}{c}{\textit{General sections}} \\
 \midrule
-\texttt{problem}     & Type of problem, dimension $\mathbb{R}^n$ of the ambient space, and analysis to be performed & mandatory  \\
-\texttt{frequencies} & Frequencies for a time harmonic analysis & dependent \\
-\texttt{settings}    & Solver settings & optional  \\
-\texttt{export}      & Export options and settings & optional  \\
-\texttt{materials}   & Materials to be used in the model & optional \\
+\hyperref[sec:problem]{\texttt{problem}} & Type of problem, dimension $\mathbb{R}^n$ of the ambient space, and analysis to be performed & mandatory \\
+\hyperref[sec:frequencies]{\texttt{frequencies}} & Frequencies for a time harmonic analysis & dependent \\
+\hyperref[sec:settings]{\texttt{settings}} & Solver settings & optional \\
+\hyperref[sec:export]{\texttt{export}} & Export options and settings & optional \\
+\hyperref[sec:bem_formulation_boundaries]{\texttt{bem formulation over boundaries}} & Set BEM collocation strategies & optional \\
 \midrule
-\multicolumn{3}{c}{\textit{Low-level entities of the model (mesh) in native format}} \\
+\multicolumn{3}{c}{\textit{Low-level entities of the model (mesh -- geometric entities)}} \\
 \midrule
-\texttt{nodes}           & Nodes of the mesh                                            & dependant  \\
-\texttt{elements}        & Elements of the mesh                                         & dependant  \\
-\texttt{parts}           & Parts of the mesh (a connected set of elements of the same intrinsic dimension) & dependant  \\
+\hyperref[sec:nodes]{\texttt{nodes}} & Nodes of the mesh                                            & dependant  \\
+\hyperref[sec:elements]{\texttt{elements}} & Elements of the mesh                                         & dependant  \\
+\hyperref[sec:parts]{\texttt{parts}}           & Parts of the mesh (a connected set of elements of the same intrinsic dimension) & dependant  \\
 \midrule
-\multicolumn{3}{c}{\textit{High-level entities of the model (topology)}} \\
+\multicolumn{3}{c}{\textit{High-level entities of the model (physical entities)}} \\
 \midrule
-\texttt{boundaries}    & Boundaries of BE regions (a part with elements of intrinsic dimension $\mathbb{R}^{n-1}$) & dependant  \\
-\texttt{be body loads} & Body loads of BE regions (a part with elements of intrinsic dimension from 0D (point) to $\mathbb{R}^{n}$) & dependant  \\
-\texttt{fe subregions} & Subregions of FE regions (a part with elements of intrinsic dimension $\mathbb{R}^n$ (solid) or lower (structure))     & dependant  \\
-\texttt{cross sections} & Cross sections of the model. It contains data which complements the geometrical information contained in the mesh. It is required for structural elements. & dependant  \\
-\texttt{regions}       & Regions (or subdomains) of the model & mandatory  \\
+\hyperref[sec:materials]{\texttt{materials}}   & Materials to be used in the model & optional \\
+\hyperref[sec:cross_sections]{\texttt{cross sections}} & Cross sections of the model. It contains data which complements the geometrical information contained in the mesh. It is required for structural elements. & dependant  \\
+\hyperref[sec:regions]{\texttt{regions}}       & Regions (or subdomains) of the model & mandatory  \\
+\hyperref[sec:fe_subregions]{\texttt{fe subregions}} & Subregions of FE regions (a part with elements of intrinsic dimension $\mathbb{R}^n$ (solid) or lower (structure))     & dependant  \\
+\hyperref[sec:boundaries]{\texttt{boundaries}}    & Boundaries of BE regions (a part with elements of intrinsic dimension $\mathbb{R}^{n-1}$) & dependant  \\
+\hyperref[sec:be_bodyloads]{\texttt{be body loads}} & Body loads of BE regions (a part with elements of intrinsic dimension from 0D (point) to $\mathbb{R}^{n}$) & dependant  \\
 \midrule
 \multicolumn{3}{c}{\textit{Auxiliary entities of the model}} \\
 \midrule
-\texttt{internal points} & Internal points of BE regions where the solution is calculated & optional  \\
-\texttt{groups}          & Group of entities of the same class                            & optional  \\
+\hyperref[sec:internal_points]{\texttt{internal points}} & Internal points of BE regions where the solution is calculated at post-processing & optional  \\
+\hyperref[sec:internal_elements]{\texttt{internal elements}} & Internal elements of BE regions where the solution is calculated at post-processing & optional  \\
+\hyperref[sec:groups]{\texttt{groups}}          & Group of entities of the same class                            & optional  \\
 \midrule
-\multicolumn{3}{c}{\textit{Conditions throughout the model}} \\
+\multicolumn{3}{c}{\textit{Model conditions}} \\
 \midrule
-\texttt{symmetry planes}               & Symmetry planes of the model          & optional  \\
-\texttt{conditions over be boundaries} & Boundary conditions of BE boundaries  & dependent \\
-\texttt{conditions over fe elements}   & Boundary conditions of FE elements    & optional  \\
-\texttt{conditions over nodes}         & Boundary conditions of BE or FE nodes & optional  \\
-\texttt{incident waves}                & Input or incident wave fields         & dependant
+\hyperref[sec:symmetry_planes]{\texttt{symmetry planes}}               & Symmetry planes of the model          & optional  \\
+\hyperref[sec:conditions_be_boundaries]{\texttt{conditions over be boundaries}} & Boundary conditions of BE boundaries  & dependent \\
+\hyperref[sec:conditions_fe_elements]{\texttt{conditions over fe elements}}   & Boundary conditions of FE elements    & optional  \\
+\hyperref[sec:conditions_nodes]{\texttt{conditions over nodes}}         & Boundary conditions of BE or FE nodes & optional  \\
+\hyperref[sec:incident_waves]{\texttt{incident waves}}                & Input or incident wave fields         & dependant
 \end{tabular}
 \caption{Sections of the data file}
 \label{tab:section}
 }
 \end{table}
 
+
 \section{General sections}
 
 \subsection{Section \texttt{problem}}
+\label{sec:problem}
 
 This section defines the main aspects of the case. It is composed of one or more unordered lines containing one assignment \texttt{keyword = values}. Table \ref{tab:problem} shows the recognized keywords, the values they can take, and a brief description of them.
 
-\begin{table}
+\begin{table}[h]
 \centering
 {\footnotesize
 \begin{tabular}{llll}
@@ -431,6 +440,7 @@ analysis = static
 \end{Verbatim}
 
 \subsection{Section \texttt{frequencies}}
+\label{sec:frequencies}
 
 This section is required when \texttt{analysis = harmonic} in section \texttt{[problem]}. That is because, for a time harmonic analysis, it is necessary to specify the frequencies to be analyzed, which are defined in this section. This section can be present in the input file, or in another auxiliary file whose path is defined in section  \texttt{[settings]} (see section \ref{sec:settings}).
 
@@ -542,7 +552,6 @@ log
 \end{center}
 
 \subsection{Section \texttt{settings}}
-
 \label{sec:settings}
 
 This section defines several settings of the solver. It is optional since all the parameters here defined have reasonable default values. It is composed of one or more lines containing an assignment \texttt{keyword = values}. Table \ref{tab:settings} shows the recognized settings and a brief description of each one. These are related to the boundary element integration, geometrical parameters, solving of linear system of equations and auxiliary files definition. 
@@ -601,6 +610,7 @@ mesh_file_mode = 2 "pilegroup.msh"
 \end{Verbatim} 
 
 \subsection{Section \texttt{export}}
+\label{sec:export}
 
 This section allows the definition of export options. It is optional since all the parameters here defined have reasonable default values. It is composed of one or more lines containing one assignment \texttt{keyword = values}. It is meant to configure which and how output files have to be exported. Table \ref{tab:export} shows the recognized export options and a brief description of each of them.
 
@@ -687,112 +697,98 @@ Integer               &             & \texttt{Iw}    & \texttt{Iw.m}    \\
 \label{tab:format_descriptor}
 \end{table}
 
-\subsection{Materials}
+\subsection{Section \texttt{bem formulation over boundaries}}
+\label{sec:bem_formulation_boundaries}
 
-This section allows the definition of a set of materials and its properties. The type of materials available are three linear elastic materials: inviscid fluid, elastic solid, and Biot's poroelastic medium \cite{biot1956}. Each one of these represent a very different kind of material. The first one represents an acoustic medium, where only longitudinal P waves can propagate. It is therefore appropriate to model sound propagation through fluids like air or water. The second one is the common material for modelling structures, soils, etc. In a continuum region, longitudinal P and transverse S waves can propagate. The last one represent a porous medium where a compressible fluid is present inside a elastic frame. In a continuum region, two types of longitudinal waves (P1 and P2) and transverse S waves can propagate.
+In this section, the user can modify the BEM formulation, i.e. the type of Boundary Integral Equations (BIEs) to be used when building the BEM equations and the collocation strategy to be used. The default formulations (BIEs and collocation strategies) work for almost all cases, and any change done here should be done with care and only when necessary, see below. 
 
-The section format is a sequence of numbers and strings, whose format can be described as follows:
-\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [materials]}]
-[materials]
-<n = number of materials>
-<material 1 identifier> <type of material> <property> <value> <property> <value> ...
-<material 2 identifier> <type of material> <property> <value> <property> <value> ...
+There are two fundamental types of BIEs used in MultiFEBE:
+\begin{description}
+    
+    \item[Singular BIE (SBIE)] It is also called the displacement or pressure BIE, since this equation relates the primary field variable (displacements in elasticity, pressure in acoustics, ...) at the collocation point with the the primary and secondary (tractions in elasticity, fluxes, ...) field variables over the boundaries and the body loads. This BIE can be collocated everywhere (the collocation point is the location of the Dirac delta of the Green's function). However, the nodal collocation (collocation at the boundary element nodes) is the ideal since it leads to the best conditioning of the system. Non-nodal collocation is also possible, but it should be used only where nodal collocation turns problematic. 
+    
+    \item[Hypersingular BIE (HBIE)] It is also called the traction or flux BIE, since it relates the secondary field variable with the the primary and secondary field variables over the boundaries and body loads. This BIE can be collocated only where the discretization has $\mathcal{C}^1$ displacement continuity. Since MultiFEBE only considers $\mathcal{C}^0$ continuous elements, this means that HBIE must have non-nodal collocation (except at element interior nodes).
+    
+\end{description}
+
+The non-nodal collocation strategy implemented here is the so-called Multiple Collocation Approach\footnote{J. Dom\'inguez \& M.P. Ariza. A direct traction BIE for three-dimensional
+crack problems. Engng Anal Bound Elem 2000;24:727–38.} (MCA). When building the BIE associated with a given node, the MCA consists on building the equation by adding up as many BIEs as the number of elements sharing the node, being each BIE collocated near the node but shifted towards inside the element. For a given element, the local coordinates of the collocation point $(\xi^i_k,\eta^i_k)$ contributing to the node $k$ located at $(\xi_k,\eta_k)$ is controlled by the dimensionless distance $\delta$, which is a measure of the separation between the collocation point and the corresponding node such that:
+\begin{align}
+\textnormal{Line elements:}\quad\xi^i_k &= \left(1-\delta\right)\xi_k,\;\xi_k\in\left[-1,1\right] \\
+\textnormal{Quadrilateral elements:}\quad\xi^i_k &= \left(1-\delta\right)\xi_k,\;\xi_k\in\left[-1,1\right] \\
+\quad\eta^i_k &= \left(1-\delta\right)\eta_k,\;\eta_k\in\left[-1,1\right] \\
+\textnormal{Triangular elements:}\quad\xi^i_k &= \left(1-\delta\right)\xi_k+\delta/3,\;\xi_k\in\left[0,1\right] \\
+\quad\eta^i_k &= \left(1-\delta\right)\eta_k+\delta/3,\;\eta_k\in\left[0,1\right],\;\xi_k+\eta_k\leq1
+\end{align}
+This way $\delta\rightarrow0$ means that the collocation point is approaching the node, and $\delta\rightarrow1$ means that the collocation point is approaching the element's centroid in local coordinates. Formally $0<\delta<1$, but in practice it should be $0.01<\delta<0.6$. By default, we use is $\delta=0.42$ for linear elements, $\delta=0.23$ for quadratic elements and $\delta=0.14$ for cubic elements.
+
+% Falta documentar la entrada via groups of nodes y parts. Falta implementar la entrada para opciones de formulacion de body loads.
+
+\noindent The general format for this data section is:
+\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [bem formulation over boundaries]}]
+[bem formulation over boundaries]
+boundary <boundary id>: <keyword: type of formulation> <values>
+\end{Verbatim} 
+\noindent where the available formulations and their options are given in Table~\ref{tab:bem_formulation_boundaries}. 
+
+For instance, in a problem with six boundaries, where the collocation strategy in all boundaries must be nodal, with the exception of boundary 6, where a non-nodal collocation strategy is prefered for all the nodes along its boundaries, with a displacement towards inside each element of 10\% the width of the element, one should write:
+\begin{Verbatim}[frame=single, fontsize=\small, label={input.dat}]
 ...
-<material n identifier> <type of material> <property> <value> <property> <value> ...
-\end{Verbatim}
-The first line must contain the number of materials to be considered. Next, there must be as many lines as the number of materials defined. Each line starts with the material identifier (a integer greater than 0). Then, it follows with a string indicating the type of material to be defined in that line: \texttt{fluid}, \texttt{elastic\_solid}, or \texttt{biot\_poroelastic\_medium}. After defining the type of material, if follows several pairs of string (property symbol) and real value (property value), which depends on the type of material. 
 
-If the type of material is \texttt{fluid} (which can be used only for time harmonic analysis), then it is necessary to define two between the three following properties: bulk modulus $K$, density $\rho$ and wave propagation speed $c$. Optionally, you can define an articial hysteretic damping ratio $\xi$, which is zero by default. See Table \ref{tab:fluid} for more details.
+[bem formulation over boundaries]
+boundary 1: sbie
+boundary 2: sbie
+boundary 3: sbie
+boundary 4: sbie
+boundary 5: sbie
+boundary 6: sbie_boundary_mca 0.1
+\end{Verbatim} 
+
 
 \begin{table}
 \centering
-{\small
-\begin{tabular}{lcc}
-\textbf{Property} & \textbf{Math symbol} & \textbf{Plain text symbol} \\
+{\footnotesize
+\begin{tabular}{lcL{10cm}}
+\textbf{Keyword} & \textbf{Values} & \textbf{Description} \\
 \midrule
-Bulk modulus             & $K$                & \texttt{K}   \\
-Density                  & $\rho$             & \texttt{rho} \\
-Wave propagation speed   & $c=\sqrt{K/\rho}$  & \texttt{c}   \\ 
-Artificial hysteretic damping ratio  & $\xi$  & \texttt{xi} 
+\multicolumn{3}{c}{\textit{Ordinary boundaries}} \\
+\midrule
+\texttt{sbie} & none & SBIE with nodal collocation strategy for all nodes of the boundary. This is unsafe since at doubled nodes, depending on the boundary conditions, it can lead to a singular linear system of equations. This option can not be used in truncated boundaries, such as those for surfaces of unbounded regions. \\
+\texttt{sbie\_boundary\_mca} & $\delta$ & \textbf{This is the default formulation for ordinary boundaries.} SBIE with nodal collocation strategy for all nodes of the boundary except for the nodes at the boundary of the boundary, where MCA is used. The default value is $\delta=0.05$.  \\
+\texttt{sbie\_mca} & $\delta$ & SBIE with MCA for all nodes of the boundary. The default value is indicated by Note 1. \\
+\texttt{hbie} & $\delta$ & HBIE with MCA for all nodes. For using default values (see Note 1), the user must write a value $\delta\leq0$. Other values  \\
+\texttt{dual\_bm\_same} & $\delta$ & Burton and Miller formulation (SBIE$+i/k$HBIE) for eliminating spurious frequencies when solving some exterior problems. SBIE and HBIE with MCA (same $\delta$) for all nodes. The default value is indicated by Note 1. \\
+\texttt{dual\_bm\_mixed} & $\delta_\mathrm{S}$ $\delta_\mathrm{H}$ & Burton and Miller formulation (SBIE$+i/k$HBIE) for eliminating spurious frequencies when solving some exterior problems. SBIE with nodal collocation for all nodes of the boundary except for the nodes at the boundary of the boundary where MCA is used ($\delta_\mathrm{S}$), and HBIE with MCA ($\delta_\mathrm{H}$) for all nodes. For SBIE, the default value $\delta_\mathrm{S}=0.05$. For HBIE, the default value $\delta_\mathrm{H}$ is indicated by Note 1. \\
+\midrule
+\multicolumn{3}{c}{\textit{Crack-like boundaries}} \\
+\midrule
+\texttt{same} & $\delta$ & \textbf{This is the default formulation for crack-like boundaries.} Dual BEM (SBIE/HBIE) formulation for crack boundary elements with MCA for all nodes. The default value $\delta$ is indicated by Note 1. \\
+\texttt{mixed} & $\delta_\mathrm{S}$ $\delta_\mathrm{H}$ & Dual BEM (SBIE/HBIE) formulation for crack boundary elements. SBIE with nodal collocation for all nodes of the boundary except for the nodes at the boundary of the boundary where MCA is used ($\delta_\mathrm{S}$), and HBIE with MCA ($\delta_\mathrm{H}$) for all nodes. For SBIE, the default value $\delta_\mathrm{S}=0.05$. For HBIE, the default value $\delta_\mathrm{H}$ is indicated by Note 1. \\
 \end{tabular}
+\begin{flushleft}
+\begin{itemize}
+\item General note 1: Formally $0<\delta<1$, but in practice it should be $0.01<\delta<0.6$.
+\item General note 2: If the user assigns a value $\delta\leq0$, default values are considered.
+\item Note 1: By default, $\delta=0.42$ for linear elements, $\delta=0.23$ for quadratic elements, and $\delta=0.14$ for cubic elements. 
+\end{itemize}
+\end{flushleft}
+
+
+
+\caption{List of options and values in section \texttt{bem formulation boundaries}}
+\label{tab:bem_formulation_boundaries}
 }
-\caption{Properties of an inviscid fluid (\texttt{fluid}). Only usable for time harmonic analysis. At least two between $K$, $\rho$ and $c$ must be defined. $\xi$ is optional ($\xi=0$ by default).}
-\label{tab:fluid}
 \end{table}
 
-If the type of material is \texttt{elastic\_solid}, then it is necessary to define two of the five following properties: Young's modulus $E$, bulk modulus $K$, Lam\'e's first parameter, $\lambda$, shear modulus $\mu$ and Poisson's ratio $\nu$. If a time harmonic analysis is going to be performed, it is mandatory to define the density. Optionally, you can define the hysteretic damping ratio $\xi$, which is zero by default. See Table \ref{tab:elastic} for more details.
-
-\begin{table}
-\centering
-{\small
-\begin{tabular}{lccl}
-\textbf{Property} & \textbf{Math symbol} & \textbf{Plain text symbol} \\
-\midrule
-Young's modulus (elastic modulus)         & $E$       & \texttt{E}      \\
-Bulk modulus                              & $K$       & \texttt{K}      \\
-Lam\'e's first parameter                  & $\lambda$ & \texttt{lambda} \\
-Lam\'e's second parameter (shear modulus) & $\mu$     & \texttt{mu}     \\
-Poisson's ratio                           & $\nu$     & \texttt{nu}     \\
-Density                                   & $\rho$    & \texttt{rho}    \\
-Hysteretic damping ratio                  & $\xi$     & \texttt{xi}     
-\end{tabular}
-}
-\caption{Properties of an elastic solid (\texttt{elastic\_solid}). At least two between $E$, $K$, $\lambda$, $\mu$ and $\nu$ must be defined. $\rho$ is mandatory for time harmonic analysis. $\xi$ is optional ($\xi=0$ by default).}
-\label{tab:elastic}
-\end{table}
-
-If the type of material is \texttt{biot\_poroelastic\_medium}, then it is necessary to define two of the five following properties of the solid phase: Young's modulus $E$, bulk modulus $K$, Lam\'e's first parameter, $\lambda$, shear modulus $\mu$ and Poisson's ratio $\nu$. It is mandatory to define the solid and fluid phases densities, as well as the porosity, coupling parameters, additional density and dissipation constant. Optionally, you can define the solid phase hysteretic damping ratio $\xi$, which is zero by default. See Table \ref{tab:poroelastic} for more details.
-
-\begin{table}
-\centering
-{\small
-\begin{tabular}{lcc}
-\textbf{Property} & \textbf{Symbol} & \textbf{Plain text symbol} \\
-\midrule
-\multicolumn{3}{c}{\textit{Solid phase}} \\
-\midrule
-Young's modulus (elastic modulus)         & $E$       & \texttt{E}      \\
-Bulk modulus                              & $K$       & \texttt{K}      \\
-Lam\'e's first parameter                  & $\lambda$ & \texttt{lambda} \\
-Lam\'e's second parameter (shear modulus) & $\mu$     & \texttt{mu}     \\
-Poisson's ratio                           & $\nu$     & \texttt{nu}     \\
-Hysteretic damping ratio                  & $\xi$     & \texttt{xi}     \\
-Solid density                             & $\rho_s$  & \texttt{rhos}   \\
-\midrule
-\multicolumn{3}{c}{\textit{Fluid phase and coupling parameters}} \\
-\midrule
-Fluid density               & $\rho_f$ & \texttt{rhof} \\
-Porosity                    & $\phi$   & \texttt{phi}  \\
-Biot's coupling parameter   & $Q$      & \texttt{Q}    \\
-Biot's coupling parameter   & $R$      & \texttt{R}    \\
-Additional apparent density & $\rho_a$ & \texttt{rhoa} \\
-Dissipation constant        & $b$      & \texttt{b}    \\
-\end{tabular}
-}
-\caption{Properties of a Biot's poroelastic medium (\texttt{biot\_poroelastic\_medium}). At least two between $E$, $K$, $\lambda$, $\mu$ and $\nu$ must be defined. $\xi$ is optional ($\xi=0$ by default). The other properties are mandatory.}
-\label{tab:poroelastic}
-\end{table}
-
-Let's show a very simple example where we have two materials: water ($c=1480$ $\textrm{m/s}$, $\rho=1000$ $\mathrm{kg/m^3}$) and soil modelled as an elastic solid ($E=60$ $\mathrm{MPa}$, $\nu=0.4$, $\rho=2000$ $\mathrm{kg/m^3}$, $\xi=5\%$). In such a case, the section should be written as:
-\begin{Verbatim}[frame=single, fontsize=\small, label=input.dat]
-...
-
-[materials]
-2
-1 fluid c 1480. rho 1000.
-2 elastic_solid E 60.d6 nu 0.4 rho 2000. xi 0.05
-
-...
-\end{Verbatim}
-
-\section{Low-level entities of the model (mesh) in native format}
-The low-level entities of the model are the elementary entities (mesh) of the model: nodes, elements and parts. By default, the mesh is read from the input file by writing by hand the sections \texttt{[nodes]}, \texttt{[elements]} and \texttt{[parts]}, as explained below. However, there are other ways to create and read the mesh.
+\section{Low-level entities of the model (mesh -- geometric entities)}
+The low-level entities of the model are the elementary geometric entities (mesh) of the model: nodes, elements and parts. By default, the mesh is read from the input file by writing by hand the sections \texttt{[nodes]}, \texttt{[elements]} and \texttt{[parts]}, as explained below. However, there are other ways to create and read the mesh.
 
 We have written a template file \texttt{*.bas} for the \href{http://www.gidhome.com/}{GiD} pre- and post-processor, which allows GiD to produce a mesh file in our native mesh file format. Then, you can copy the contents of the generated file to the input file, or use \texttt{mesh\_file\_mode = 1 "filepath"} option in \texttt{[settings]} to indicate the format and path to the file. Each ``layer'' in GiD jargon corresponds to our concept of ``part''.
 
 The program can read directly a mesh file from the \href{http://gmsh.info/}{Gmsh} pre- and post-processor (MSH file format version 2.2), by using the \texttt{mesh\_file\_mode = 2 "filepath"} option in \texttt{[settings]} to indicate the format and path to the file. Each ``physical'' entity in their Gmsh jargon corresponds to our concept of ``part''.
 
 \subsection{Section \texttt{nodes}}
+\label{sec:nodes}
 
 In this section, all the nodes of the model are defined. Nodes are the most elementary part of the mesh, and they carry geometrical information (position of nodes), but also a functional/physical information (value of displacement, traction, etc. at that position). 
 
@@ -807,6 +803,7 @@ The first line indicates the number of nodes. Then, one line per node indicating
 \end{Verbatim} 
 
 \subsection{Section \texttt{elements}}
+\label{sec:elements}
 
 In this section, all the elements of the model are defined. The elements are the fundamental part of the mesh, they allow the definition of an interpolation of the geometry and physical variables (displacements, tractions, etc.) supported on the nodes. On the other hand, high-level entities like boundaries and subdomains are built using a connected set of elements, which here it is called a ``part''. 
 
@@ -849,6 +846,7 @@ Let's show an example of a mesh with 10 elements of the type \texttt{line3} (qua
 Note that given that we use an identifier for each element, the order is unimportant. The same happens with other model entities such as nodes and parts.
 
 \subsection{Section \texttt{parts}}
+\label{sec:parts}
 
 In this section, all the parts of the model are defined. A part is a connected set of elements. Hence, an element belongs only to one part, and one part can contain several elements. Note that the relationship between elements and parts was done when defining the elements. The general format of this section is:
 \begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [parts]}]
@@ -861,163 +859,211 @@ In this section, all the parts of the model are defined. A part is a connected s
 \end{Verbatim} 
 where \texttt{<part name>} is a string which allows labelling the part for easy identification. However, this is not used in the rest of the case input file.
 
-\section{High-level entities of the model (topology)}
+\section{High-level entities of the model (physical entities)}
 
 The high-level entities of the model are the classical topological entities: boundaries, and regions (or sub-domains); which are used to assign material properties and conditions to different parts of the model. For convenience, four entities are defined: \texttt{boundaries} (boundary element boundaries), \texttt{be bodyloads} (body loads within a boundary element region), \texttt{fe subregions} (finite element subregions) and \texttt{regions}. These are defined by writing the corresponding sections \texttt{[boundaries]}, \texttt{[be bodyloads]}, \texttt{[fe subregions]} and \texttt{[regions]}, which are explained in the below.
 
-\subsection{Section \texttt{boundaries}}
+\subsection{Section \texttt{materials}}
+\label{sec:materials}
 
-In a $n$-dimensional problem, a boundary $\Gamma$ is a $(n-1)$-dimensional oriented entity that is a part or the whole boundary of a region. The whole boundary $\partial\Omega$ of a region $\Omega$ treated by the Boundary Element Method, BE region in the following, is defined as a set of boundaries:
-\begin{equation}
-\partial\Omega = \left\{\ldots,\Gamma_j,\ldots\right\}
-\end{equation}
-whose orientation must be outwards from the BE region. A minus sign before $\Gamma_j$ can be used to indicate the reversion of the orientation of $\Gamma_j$ in order to get a compatible $\partial\Omega$. 
+This section allows the definition of a set of materials and its properties. The type of materials available are three linear elastic materials: inviscid fluid, elastic solid, and Biot's poroelastic medium \cite{biot1956}. Each one of these represent a very different kind of material. The first one represents an acoustic medium, where only longitudinal P waves can propagate. It is therefore appropriate to model sound propagation through fluids like air or water. The second one is the common material for modelling structures, soils, etc. In a continuum region, longitudinal P and transverse S waves can propagate. The last one represent a porous medium where a compressible fluid is present inside a elastic frame. In a continuum region, two types of longitudinal waves (P1 and P2) and transverse S waves can propagate.
 
-There are two main classes of boundaries:
-\begin{itemize}
-  \item \textbf{Ordinary.} An ordinary boundary is a boundary in the classical sense. It can be connected with one or two BE regions. In both cases, the boundary can be connected with FE elements.
-
-  \begin{minipage}[b]{\linewidth}
-    \centering
-    \begin{minipage}[t]{0.28\linewidth}
-      \begin{figure}[H]
-      \centering
-      \input{figures/ordinary_boundary_exterior.ps_tex}
-      \caption{Ordinary boundary connected with one region}
-      \end{figure}
-    \end{minipage}
-    \begin{minipage}[t]{0.71\linewidth}
-      \begin{figure}[H]
-      \centering
-      \input{figures/ordinary_boundary_interface.ps_tex}
-      \caption{Ordinary boundary connected with two regions\label{fig:ordinary_boundary_interface}}
-      \end{figure}
-    \end{minipage}
-  \end{minipage}
-
-  \item \textbf{Crack-like.} A special boundary that lies inside a BE region and is composed by two crack-like sub-boundaries ($\Gamma^+$ and $\Gamma^-$) of opposite orientations. Thus, a crack-like boundary can be connected only with one BE region. Generally speaking, it is the condensed geometric description of a null thickness inclusion or void. Its orientation defines the orientation of the positive sub-boundary $\Gamma^+$, i.e. it defines which face is $\Gamma^+$ and which face is $\Gamma^-$.
-  
-  \begin{minipage}[b]{\linewidth}
-    \centering
-    \begin{figure}[H]
-      \centering
-      \input{figures/coincident_boundary.ps_tex}
-      \caption{Crack-like boundary}
-    \end{figure}
-  \end{minipage}
-\end{itemize}
-
-Each boundary is build up with unique boundary elements and nodes, which are defined by a ``part'' of the mesh. Thus, all boundaries must be connected with one and only one mesh part. The orientation of all boundary elements in that part must be the same, i.e. be compatible, which defines the orientation of the boundary.
-
-The first line indicates the number of boundaries. Then, one line per boundary indicating the boundary identifier, the identifier of the part that discretize it, and finally the boundary class (\texttt{ordinary} or \texttt{crack-like}). The general format of the section is:
-\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [boundaries]}]
-[boundaries]
-<n = number of boundaries>
-<boundary 1 identifier> <part identifier> <boundary class: ordinary or crack-like>
-<boundary 2 identifier> <part identifier> <boundary class: ordinary or crack-like>
+The section format is a sequence of numbers and strings, whose format can be described as follows:
+\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [materials]}]
+[materials]
+<n = number of materials>
+<material 1 identifier> <type of material> <property> <value> <property> <value> ...
+<material 2 identifier> <type of material> <property> <value> <property> <value> ...
 ...
-<boundary n identifier> <part identifier> <boundary class: ordinary or crack-like>
-\end{Verbatim} 
-Next, it is shown an example with 4 boundaries, where boundary 1 is the part 1 of the mesh and is an ordinary boundary, boundary 3 is the part 6 of the mesh and is an ordinary boundary, boundary 4 is the part 2 of the mesh and is a crack-like boundary, and boundary 2 is the part 3 of the mesh and is an ordinary boundary:
+<material n identifier> <type of material> <property> <value> <property> <value> ...
+\end{Verbatim}
+The first line must contain the number of materials to be considered. Next, there must be as many lines as the number of materials defined. Each line starts with the material identifier (a integer greater than 0). Then, it follows with a string indicating the type of material to be defined in that line: \texttt{fluid}, \texttt{elastic\_solid}, or \texttt{biot\_poroelastic\_medium}. After defining the type of material, if follows several pairs of string (property symbol) and real value (property value), which depends on the type of material. 
+
+If the type of material is \texttt{fluid} (which can be used only for time harmonic analysis), then it is necessary to define two between the three following properties: bulk modulus $K$, density $\rho$ and wave propagation speed $c$. Optionally, you can define an articial hysteretic damping ratio $\xi$, which is zero by default. See Table \ref{tab:fluid} for more details.
+
+\begin{table}[h]
+\centering
+{\small
+\begin{tabular}{lcc}
+\textbf{Property} & \textbf{Math symbol} & \textbf{Plain text symbol} \\
+\midrule
+Bulk modulus             & $K$                & \texttt{K}   \\
+Density                  & $\rho$             & \texttt{rho} \\
+Wave propagation speed   & $c=\sqrt{K/\rho}$  & \texttt{c}   \\ 
+Artificial hysteretic damping ratio  & $\xi$  & \texttt{xi} 
+\end{tabular}
+}
+\caption{Properties of an inviscid fluid (\texttt{fluid}). Only usable for time harmonic analysis. At least two between $K$, $\rho$ and $c$ must be defined. $\xi$ is optional ($\xi=0$ by default).}
+\label{tab:fluid}
+\end{table}
+
+If the type of material is \texttt{elastic\_solid}, then it is necessary to define two of the five following properties: Young's modulus $E$, bulk modulus $K$, Lam\'e's first parameter, $\lambda$, shear modulus $\mu$ and Poisson's ratio $\nu$. If a time harmonic analysis is going to be performed, it is mandatory to define the density. Optionally, you can define the hysteretic damping ratio $\xi$, which is zero by default. See Table \ref{tab:elastic} for more details.
+
+\begin{table}[h]
+\centering
+{\small
+\begin{tabular}{lccl}
+\textbf{Property} & \textbf{Math symbol} & \textbf{Plain text symbol} \\
+\midrule
+Young's modulus (elastic modulus)         & $E$       & \texttt{E}      \\
+Bulk modulus                              & $K$       & \texttt{K}      \\
+Lam\'e's first parameter                  & $\lambda$ & \texttt{lambda} \\
+Lam\'e's second parameter (shear modulus) & $\mu$     & \texttt{mu}     \\
+Poisson's ratio                           & $\nu$     & \texttt{nu}     \\
+Density                                   & $\rho$    & \texttt{rho}    \\
+Hysteretic damping ratio                  & $\xi$     & \texttt{xi}     
+\end{tabular}
+}
+\caption{Properties of an elastic solid (\texttt{elastic\_solid}). At least two between $E$, $K$, $\lambda$, $\mu$ and $\nu$ must be defined. $\rho$ is mandatory for time harmonic analysis. $\xi$ is optional ($\xi=0$ by default).}
+\label{tab:elastic}
+\end{table}
+
+If the type of material is \texttt{biot\_poroelastic\_medium}, then it is necessary to define two of the five following properties of the solid phase: Young's modulus $E$, bulk modulus $K$, Lam\'e's first parameter, $\lambda$, shear modulus $\mu$ and Poisson's ratio $\nu$. It is mandatory to define the solid and fluid phases densities, as well as the porosity, coupling parameters, additional density and dissipation constant. Optionally, you can define the solid phase hysteretic damping ratio $\xi$, which is zero by default. See Table \ref{tab:poroelastic} for more details.
+
+\begin{table}[h]
+\centering
+{\small
+\begin{tabular}{lcc}
+\textbf{Property} & \textbf{Symbol} & \textbf{Plain text symbol} \\
+\midrule
+\multicolumn{3}{c}{\textit{Solid phase}} \\
+\midrule
+Young's modulus (elastic modulus)         & $E$       & \texttt{E}      \\
+Bulk modulus                              & $K$       & \texttt{K}      \\
+Lam\'e's first parameter                  & $\lambda$ & \texttt{lambda} \\
+Lam\'e's second parameter (shear modulus) & $\mu$     & \texttt{mu}     \\
+Poisson's ratio                           & $\nu$     & \texttt{nu}     \\
+Hysteretic damping ratio                  & $\xi$     & \texttt{xi}     \\
+Solid density                             & $\rho_s$  & \texttt{rhos}   \\
+\midrule
+\multicolumn{3}{c}{\textit{Fluid phase and coupling parameters}} \\
+\midrule
+Fluid density               & $\rho_f$ & \texttt{rhof} \\
+Porosity                    & $\phi$   & \texttt{phi}  \\
+Biot's coupling parameter   & $Q$      & \texttt{Q}    \\
+Biot's coupling parameter   & $R$      & \texttt{R}    \\
+Additional apparent density & $\rho_a$ & \texttt{rhoa} \\
+Dissipation constant        & $b$      & \texttt{b}    \\
+\end{tabular}
+}
+\caption{Properties of a Biot's poroelastic medium (\texttt{biot\_poroelastic\_medium}). At least two between $E$, $K$, $\lambda$, $\mu$ and $\nu$ must be defined. $\xi$ is optional ($\xi=0$ by default). The other properties are mandatory.}
+\label{tab:poroelastic}
+\end{table}
+
+Let's show a very simple example where we have two materials: water ($c=1480$ $\textrm{m/s}$, $\rho=1000$ $\mathrm{kg/m^3}$) and soil modelled as an elastic solid ($E=60$ $\mathrm{MPa}$, $\nu=0.4$, $\rho=2000$ $\mathrm{kg/m^3}$, $\xi=5\%$). In such a case, the section should be written as:
 \begin{Verbatim}[frame=single, fontsize=\small, label=input.dat]
 ...
 
-[boundaries]
-4
-1 1 ordinary 
-3 6 ordinary
-4 2 crack-like
-2 3 ordinary
+[materials]
+2
+1 fluid c 1480. rho 1000.
+2 elastic_solid E 60.d6 nu 0.4 rho 2000. xi 0.05
 
 ...
-\end{Verbatim} 
-
-It is important to highlight that, in case of adjacent boundaries with different boundary conditions or with geometries such that a discontinuity in tractions will arrive, it is necessary to double (duplicate) the nodes in the boundaries of such BEM boundaries. A non-nodal collocation strategy is followed by default in all these boundary nodes.
-
-\subsection{Section \texttt{be bodyloads}}
-
-Body loads in BE regions are defined in this section. The general format follows a simpler pattern as the previous section. The first line contains the number of BE body loads to be defined, next as many lines are BE body loads. Each line contains first the BE body load identifier, and last the mesh part which contains the elements associated with it. The general format can be written as:
-\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [fe subregions]}]
-[be bodyloads]
-<n = number of BE body loads>
-<BE bodyload 1 identifier> <part identifier>
-<BE bodyload 2 identifier> <part identifier>
-...
-<BE bodyload n identifier> <part identifier>
 \end{Verbatim}
-where the last two zeros at the end of the each line are mandatory, and they are going to be used in the future for additional features.
-
-\subsection{Section \texttt{fe subregions}}
-A FE subregion is a partition of a FE region. A FE subregion is associated with a part of the mesh. The general format of the section is:
-\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [fe subregions]}]
-[fe subregions]
-<n = number of FE subregions>
-<FE subregion 1 identifier> <part identifier> 0 0
-<FE subregion 2 identifier> <part identifier> 0 0
-...
-<FE subregion n identifier> <part identifier> 0 0
-\end{Verbatim}
-where the last two zeros at the end of the each line are mandatory, and they are going to be used in the future for additional features.
-
-\subsection{Section \texttt{regions}}
-In a $n$-dimensional problem, a region (or subdomain) $\Omega$ is a $n$-dimensional entity that is a part or the whole domain of the problem. In MultiFEBE, a region $\Omega$ can be discretized by one of two different methods:
-\begin{itemize}
-  \item \textbf{BEM (BE region).} The region is treated by the BEM. Its discretization is defined by its boundary $\partial\Omega$, which in general is built using a set of boundaries, which in turn is associated with mesh parts and hence with boundary elements.
-  \item \textbf{FEM (FE region).} The region is treated by the FEM. Its discretization is defined by a set of FE subregions, which in turn is associated with parts and hence with finite elements. FE region can only be made of elastic solid materials, i.e. finite elements for fluid or poroelastic medium are not availabe.
-\end{itemize}
-The interaction (coupling) between BE regions is done through their shared boundaries, which must have opposite orientation for each region, see Figure \ref{fig:ordinary_boundary_interface}. The interaction between FE regions is done through their shared nodes as usual. The interaction between BE boundaries and FE regions is done through the BE boundaries and the boundary of the FE elements that shares the same position. The interaction between BE and FE elements is automatically detected.
 
 
-The format of this section is explained in the following. The first line indicates the number of regions. Then, for each region there must be a block of data consisting of several lines of data. The first one is the region identifier and the region class (discretization method: ``fe'' or ``be''). If the region is a BE region, then the second line indicates the number of boundaries and a list of boundaries (with their orientation signs). If the region is a FE region, then the second line indicates the number of FE subregions and a list of fe subregions. The third line defines the material. Then, only if the region is a BE region, the fourth line defines the number and a list of BE body loads. Also, only if the region is a BE region and the analysis is time harmonic, the fifth line defines the number and a list of incident fields. The general format of the section is:
-\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [regions]}]
-[regions]
-<n = number of regions>
+\subsection{Section \texttt{cross sections}}
+\label{sec:cross_sections}
+\label{subsec:cross_sections}
 
-<region 1 identifier> <region class (discretization method): be or fe> 
-<number of boundaries or fe subregions> <list of boundaries or fe subregions identifiers>
-material <list of materials>
-[<if be: number of be body loads> <list of be body loads>]
-[<if be and analysis=harmonic: number of incident fields> <list of incident fields>]
+In order to define a structural finite element four pieces of information are required:
+\begin{enumerate}
 
-<region 2 identifier> <region class (discretization method): be or fe> 
-<number of boundaries or fe subregions> <list of boundaries or fe subregions identifiers>
-material <list of materials>
-[<if be: number of be body loads> <list of be body loads>]
-[<if be and analysis=harmonic: number of incident fields> <list of incident fields>]
+  \item \textbf{Material properties}. It defines the constitutive law, density, and other intrinsic material properties. When needed by the structural element, these properties are taken from the \textbf{material} assigned to the \textbf{region} where the element belongs.
 
-...
+  \item \textbf{Reference geometry}. It defines the mid-line for beams, mid-surface for plates/shells, etcetera. This information is provided by the defined \textbf{mesh}.
+  
+  \item \textbf{Structural element type}. It defines the physical behaviour of the element. A given line element could be a simple bar element with only axial tension/compression stiffness, or a spring-dashpot or a beam.
+  
+  \item \textbf{Cross section properties}. It complements the information provided by the mesh, allowing a full description of the structural element. The cross section properties could be given in a detailed manner (cross section dimensions), or by providing effective geometrical properties (area, inertias, ...), or by providing effective mechanical properties (stiffnesses, masses, ...).
+  
+\end{enumerate}
+In this section, both the structural element type and the cross section properties are defined. Both aspects are globally denoted as a ``cross section''.
 
-<region n identifier> <region class (discretization method): be or fe> 
-<number of boundaries or fe subregions> <list of boundaries or fe subregions identifiers>
-material <list of materials>
-[<if be: number of be body loads> <list of be body loads>]
-[<if be and analysis=harmonic: number of incident fields> <list of incident fields>]
-\end{Verbatim} 
-
-
-
-
-
-\section{Cross sections}
-
-In this section, the additional data required for structural elements (elements simplifying the physics and the geometrical description of continuum media: beams, discrete springs, point masses, etcetera) is introduced. Both the model/theory used for the structural elements and the additional data is assigned at the same time. 
-
-The first line of the section defines the number of cross section / structural elements to be defined. Next, there must be as many lines as the number of cross section / structural elements defined. Each line starts first with the type of cross section / structural element to be defined in this line. Next, the number of FE subregions where this type of cross section is assigned, followed by the list of FE subregions. Next, depending on the type of cross section / structural element, different parameters have to be defined. Therefore, the general format of this section is:
-\begin{Verbatim}[frame=single, fontsize=\footnotesize, label={general format of section [regions]}]
+The first line of this data section defines the number of different cross sections to be defined. Next, there must be as many lines as the number of cross sections defined. Each of these lines start with the type of structural element to be defined, then the number of FE subregions where this type of structural element is assigned, followed by the list of FE subregions. Next, depending on the type of structural element, different cross section properties are defined. Therefore, the general format of this section is:
+\begin{Verbatim}[frame=single, fontsize=\footnotesize, label={general format of section [cross sections]}]
 [cross sections]
-<n = number of cross sections>
-
-<type of cross section 1> <m = n. of FE subregions> <subr. 1 id> <subr. 2 id> ... <subr. m id> ...
-<type of cross section 2> <m = n. of FE subregions> <subr. 1 id> <subr. 2 id> ... <subr. m id> ...
+<# cross sections>
+<type of structural element 1> <# FE subregions> <list of FE subregions ids.> <cross section properties>
+<type of structural element 2> <# FE subregions> <list of FE subregions ids.> <cross section properties>
 ...
-<type of cross section n> <m = n. of FE subregions> <subr. 1 id> <subr. 2 id> ... <subr. m id> ...
+\end{Verbatim} 
+In the following subsections, the previous data format will be condensed to:
+\begin{Verbatim}[frame=single, fontsize=\footnotesize, label={general format of section [cross sections]}]
+[cross sections]
+<# cross sections>
+<type of structural element 1> <FE subregions> <cross section properties>
+<type of structural element 2> <FE subregions> <cross section properties>
+...
+\end{Verbatim} 
+where \texttt{<FE subregions>} in reality denotes \texttt{<\# FE subregions> <list of FE subregions ids.>}.
+
+The list of available types of structural elements are:
+\begin{itemize}
+  \item Discrete element:
+  \begin{itemize}
+    \item Discrete axial spring-dashpot (\texttt{spring-dashpot}).  
+    \item General discrete translational spring-dashpot (\texttt{distra}).
+    \item General discrete rotational/translational spring-dashpot (\texttt{disrotra}).
+    \item Discrete point mass (\texttt{pmass}).
+  \end{itemize}
+  \item Bar finite element (\texttt{bar}).
+  \item Beam finite element:
+  \begin{itemize}
+    \item Straight beam finite element (\texttt{strbeam}).
+    \item Curved beam finite element based on the degeneration from solid (\texttt{degbeam}).
+  \end{itemize}
+  \item Shell finite element based on the degeneration from solid (\texttt{degshell}).
+\end{itemize}
+When considering a 3D analysis, most of the structural elements require orienting their cross section, which leads to a particular cartesian local basis (local axes $x'y'z'$) where the relevant dimensions and the internal stress resultants are defined. In the case of one-dimensional structural elements, such as discrete general springs-dashpots or beams, the orientation of the $y'$ axis is defined with the help of an auxiliary reference vector $\mathbf{y}'_\mathrm{ref}$, see Figure \ref{fig:local_axes_yref_1d}, where the final $y'$ axis is located on the plane defined by $\mathbf{y}'_\mathrm{ref}$ and the $x'$ axis. Note that the $x'$ axis is defined by the tangent direction of the element mid-line. In the case of two-dimensional structural elements, i.e. plates and shells, the procedure is similar, see Figure \ref{fig:local_axes_yref_2d}, but in this case the $x'$ axis is defined by using an auxiliary reference vector $\mathbf{x}'_\mathrm{ref}$, being the final $x'$ axis on the tangent plane defined by the $z'$ axis (coincident with the normal vector at the point) and the plane defined by $\mathbf{x}'_\mathrm{ref}$ and the $z'$ axis.
+
+\begin{figure}[p]
+\input{figures/local_axes_yref.pdf_tex}
+\caption{Steps for constructing the local cartesian basis $x'y'z'$ of one-dimensional structural elements from a $y'$ axis reference vector $\mathbf{y}'_\mathrm{ref}$}
+\label{fig:local_axes_yref_1d}
+\end{figure}
+
+\begin{figure}[p]
+\input{figures/local_axes_yref_2d.pdf_tex}
+\caption{Steps for constructing the local cartesian basis $x'y'z'$ of two-dimensional structural elements from a $x'$ axis reference vector $\mathbf{x}'_\mathrm{ref}$}
+\label{fig:local_axes_yref_2d}
+\end{figure}
+
+\subsubsection{Discrete axial spring-dashpot (\texttt{spring-dashpot})}
+
+This type of structural finite element is a conventional axial spring-dashpot element between two nodes, and it is denoted as \texttt{spring-dashpot} in the data section. It is a particular case of \texttt{distra} element type, and much more common. The data introduction is also simpler. Taking into account that \texttt{<\# FE subregions> <list of FE subregions ids.>} is here denoted as \texttt{<FE subregions>}, the syntax to describe this type of elements is:
+\begin{itemize}
+\item In static analysis, $k_{x'}$ is the spring stiffness:
+\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for spring-dashpot elements}]
+[cross sections]
+...
+spring-dashpot <FE subregions> <kx'>
+...
 \end{Verbatim} 
 
-\subsection{Discrete translational springs/dashpots (distra)}
+\item In time harmonic analysis, the stiffness $k_{x'}$ must be introduced as a complex number to take into account a possible hysteretic damping, and $c_{x'}$ is the viscous damping coefficient:
+\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for spring-dashpot elements}]
+[cross sections]
+...
+spring-dashpot <FE subregions> <kx'> <cx'>
+...
+\end{Verbatim} 
+\end{itemize}
 
-This type of finite elements are defined in the case input file as \texttt{distra}. Discrete translational springs and dashpots (the latter only appearing in time harmonic analysis in parallel to the spring) are introduced in the mesh via 2-node elements. Each element node have 2 or 3 translational degrees freedom respectively for two- and three-dimensional analyses. Instead of introducing a simple spring/dashpot in the direction of the element, a generalized spring/dashpot relating relative displacements of both nodes is used. It comes in two flavors:
+\subsubsection{General discrete translational spring/dashpot (\texttt{distra})}
+
+This type of structural finite element introduces a generalized translational spring-dashpot between two nodes, and it is denoted as \texttt{distra} in the data section. It requires defining a 2-node line element. Each element node has 2 or 3 translational degrees of freedom respectively for two- and three-dimensional analyses, see Figure \ref{fig:distra}. For static analysis, stiffnesses in global or local axes are required. For time harmonic analysis, it is required to use complex stiffnesses to introduce stiffnesses (real part) and hysteretic damping (imaginary part), and also viscous damping coefficients.
+
+\begin{figure}[h]
+\input{figures/distra.pdf_tex}
+\caption{Degrees of freedom and local axis definition of discrete translational springs/dashpots (\textbf{distra})}
+\label{fig:distra}
+\end{figure}
+
+Mechanical properties can be defined in local or global axes:
 \begin{itemize}
-    \item \textbf{Local coordinates}. It allows to establish the stiffnesses and viscous damping coeficients in local coordinates, i.e. axial spring/dashpot in $x'$ direction ($k_{x'}$, $c_{x'}$) and lateral springs in $y'$ and $z'$ directions ($k_{y'}$, $c_{y'}$, $k_{z'}$, $c_{z'}$). In two-dimensional analysis, the local stiffness and damping coefficient matrices are:
+    \item \textbf{Local axes}. It allows to establish the stiffnesses and viscous damping coefficients in local axes, i.e. axial spring-dashpot in $x'$ direction ($k_{x'}$, $c_{x'}$) and lateral spring-dashpots in $y'$ and $z'$ directions ($k_{y'}$, $c_{y'}$, $k_{z'}$, $c_{z'}$). In two-dimensional analysis, the local stiffness and damping coefficient matrices are:
     \begin{equation}
     \mathbf{K}'
     =
@@ -1069,163 +1115,726 @@ This type of finite elements are defined in the case input file as \texttt{distr
     \end{array}
     \right]
     \end{equation}
-    In this latter case, in order to uniquely define the local axis, a reference vector $\mathbf{v}_\mathrm{2ref}$ is required for establishing the local $y'$ axis. With all these information, we can define a coordinate transformation matrix to build the definitive global stiffness and viscous damping matrix.
+    In this latter case, in order to uniquely define the local axis, a reference vector $\mathbf{y}'_\mathrm{ref}$ is required for establishing the local $y'$ axis, see Figures \ref{fig:local_axes_yref_2d} and \ref{fig:distra} for more details.
     
-    \item \textbf{Global coordinates}. It allows to establish the stiffnesses and viscous damping coeficients directly in global coordinates, i.e. springs and dashpots in $x$, $y$ and $z$ directions: $k_{x}$, $c_{x}$, $k_{y}$, $c_{y}$, $k_{z}$ and, $c_{z}$. In two-dimensional analysis, the global stiffness and damping coefficient matrices are:
-    \begin{equation}
-    \mathbf{K}
-    =
-    \left[
-    \begin{array}{cccc}
-    k_{x} & 0      & -k_{x} &       0 \\
-    0      & k_{y} &       0 & -k_{y} \\
-    -k_{x} &  0    & k_{x} &      0 \\
-        0 & -k_{y} &      0 & k_{y}
-    \end{array}
-    \right],
-    \quad
-    \mathbf{C}
-    =
-    \left[
-    \begin{array}{cccc}
-    c_{x} & 0      & -c_{x} &       0 \\
-    0      & c_{y} &       0 & -c_{y} \\
-    -c_{x} &  0    & c_{x} &      0 \\
-        0 & -c_{y} &      0 & c_{y}
-    \end{array}
-    \right]
-    \end{equation}
-    In three-dimensional analysis:
-    \begin{equation}
-    \mathbf{K}
-    =
-    \left[
-    \begin{array}{cccccc}
-    k_{x} & 0      & 0      & -k_{x} &       0 & 0 \\
-    0      & k_{y} & 0      &       0 & -k_{y} & 0 \\
-    0      & 0      & k_{z} &       0 &       0 & -k_{z} \\
-    -k_{x} &       0 & 0       & k_{x} &      0 & 0 \\
-        0 & -k_{y} & 0       &      0 & k_{y} & 0 \\
-        0 &       0 & -k_{z} &      0 &      0 & k_{z}
-    \end{array}
-    \right],
-    \quad
-    \mathbf{C}
-    =
-    \left[
-    \begin{array}{cccccc}
-    c_{x} & 0      & 0      & -c_{x} &       0 & 0 \\
-    0      & c_{y} & 0      &       0 & -c_{y} & 0 \\
-    0      & 0      & c_{z} &       0 &       0 & -c_{z} \\
-    -c_{x} &       0 & 0       & c_{x} &      0 & 0 \\
-        0 & -c_{y} & 0       &      0 & c_{y} & 0 \\
-        0 &       0 & -c_{z} &      0 &      0 & c_{z}
-    \end{array}
-    \right]
-    \end{equation}
+    \item \textbf{Global axes}. It allows to establish the stiffnesses and viscous damping coeficients directly in global axes, i.e. springs and dashpots in $x$, $y$ and $z$ directions: $k_{x}$, $c_{x}$, $k_{y}$, $c_{y}$, $k_{z}$ and, $c_{z}$. Therefore, the relative position of element nodes are unimportant.
     
 \end{itemize}
 
-The syntax for such type of finite element is (\texttt{<FE subregions>} includes \texttt{<m = n. of FE subregions> <subr. 1 id> <subr. 2 id> ... <subr. m id>}):
+Taking into account that \texttt{<\# FE subregions> <list of FE subregions ids.>} is here denoted as \texttt{<FE subregions>}, the syntax to describe this type of elements is:
 \begin{itemize}
 
-\item 2D static analysis, distra elements in local coordinates:
+\item In a 2D static analysis, this type of elements can be introduced in local or in global axes as follows:
 \begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for distra elements}]
 [cross sections]
 ...
 distra <FE subregions> local <kx'> <ky'>
-...
-\end{Verbatim} 
-
-\item 2D static analysis, distra elements in global coordinates:
-\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for distra elements}]
-[cross sections]
-...
 distra <FE subregions> global <kx> <ky>
 ...
-\end{Verbatim} 
+\end{Verbatim}  
 
-\item 3D static analysis, distra elements in local coordinates:
+\item In a 3D static analysis, this type of elements can be introduced in local (requires $\mathbf{y}'_\mathrm{ref}$) or in global axes as follows:
 \begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for distra elements}]
 [cross sections]
 ...
-distra <FE subregions> local <kx'> <ky'> <kz'> <v2r_x> <v2r_y> <v2r_z>
-...
-\end{Verbatim}
-
-\item 3D static analysis, distra elements in global coordinates:
-\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for distra elements}]
-[cross sections]
-...
+distra <FE subregions> local <kx'> <ky'> <kz'> <y'refx> <y'refy> <y'refz>
 distra <FE subregions> global <kx> <ky> <kz>
 ...
 \end{Verbatim}
 
-\item 2D time harmonic analysis, distra elements in local coordinates ($k_{x'}$ and $k_{y'}$ as complex numbers):
+\item In a 2D time harmonic analysis, this type of elements can be introduced in local or in global axes as follows (note that $k_{x'}$ and $k_{y'}$ must be complex numbers):
 \begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for distra elements}]
 [cross sections]
 ...
 distra <FE subregions> local <kx'> <ky'> <cx'> <cy'>
+distra <FE subregions> global <kx> <ky> <cx> <cy>
 ...
 \end{Verbatim} 
 
-\item 2D time harmonic analysis, distra elements in global coordinates ($k_{x}$ and $k_{y}$ as complex numbers):
-\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for distra elements}]
+\item In a 3D time harmonic analysis, this type of elements elements can be introduced in local (requires $\mathbf{y}'_\mathrm{ref}$) or in global axes as follows (note that $k_{x'}$, $k_{y'}$ and $k_{z'}$ must be complex numbers):
+\begin{Verbatim}[frame=single, fontsize=\footnotesize, label={format of section [cross sections] for distra elements}]
 [cross sections]
 ...
-distra <FE subregions> global <kx> <ky> <cx> <cy>
-...
-\end{Verbatim}
-
-\item 3D time harmonic analysis, distra elements in local coordinates ($k_{x'}$, $k_{y'}$ and $k_{z'}$ as complex numbers):
-\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for distra elements}]
-[cross sections]
-...
-distra <FE subregions> local <kx'> <ky'> <kz'> <cx'> <cy'> <cz'> <v2r_x> <v2r_y> <v2r_z>
-...
-\end{Verbatim}
-
-\item 3D time harmonic analysis, distra elements in global coordinates ($k_{x}$, $k_{y}$ and $k_{z}$ as complex numbers):
-\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for distra elements}]
-[cross sections]
-...
+distra <FE subregions> local <kx'> <ky'> <kz'> <cx'> <cy'> <cz'> <y'refx> <y'refy> <y'refz>
 distra <FE subregions> global <kx> <ky> <kz> <cx> <cy> <cz>
+
 ...
 \end{Verbatim}
 
 \end{itemize}
 
-\subsection{Discrete rotational/translational springs/dashpots (disrotra)}
+\subsubsection{General discrete rotational/translational spring-dashpot (\texttt{disrotra})}
+
+This type of structural finite element introduces a generalized translational/rotational spring-dashpot between two nodes, and it is denoted as \texttt{disrotra} in the data section. It requires defining a 2-node line element. Each element node has 3 or 6 degrees of freedom respectively for two- and three-dimensional analyses, see Figure \ref{fig:disrotra}. For static analysis, stiffnesses in global or local axes are required. For time harmonic analysis, it is required to use complex stiffnesses to introduce stiffnesses (real part) and hysteretic damping (imaginary part), and also viscous damping coefficients. This type of element allows modelling a customized beam, a simple spring-dashpo model of the soil-foundation interaction, etcetera.
+
+\begin{figure}[h]
+\input{figures/disrotra.pdf_tex}
+\caption{Degrees of freedom and local axis definition of discrete translational/rotational springs/dashpots (\textbf{disrotra})}
+\label{fig:disrotra}
+\end{figure}
+
+Mechanical properties can be defined in local or global axes:
+\begin{itemize}
+    \item \textbf{Local axes}. It allows to establish the stiffnesses and viscous damping coefficients in local axes:
+    \begin{itemize}
+      \item Axial ($x'$ translation): $k_{x'}$, $c_{x'}$.
+      \item Torsional ($x'$ rotation): $k_{rx'}$, $c_{rx'}$.
+      \item Bending on $x'y'$ plane ($y'$ translation -- $z'$ rotation): $k_{y'}$, $c_{y'}$, $k_{rz'}$, $c_{rz'}$, $k_{y'rz'}$, $c_{y'rz'}$.
+      \item Bending on $x'z'$ plane ($z'$ translation -- $y'$ rotation): $k_{z'}$, $c_{z'}$, $k_{ry'}$, $c_{ry'}$, $k_{z'ry'}$, $c_{z'ry'}$
+    \end{itemize}
+    In two-dimensional analysis, the local stiffness and damping coefficient matrices are:
+    \begin{equation}
+    \mathbf{K}'
+    =
+    \left[
+    \begin{array}{ccc|ccc}
+    k_{x'} &   0      &         0 & -k_{x'} &       0 &        0  \\
+    0      &   k_{y'} & k_{y'rz'} &       0 & -k_{y'} & k_{y'rz'}\\
+    0      & k_{y'rz} &   k_{rz'} &       0 & -k_{y'rz} & 2\dfrac{k_{y'rz'}^2}{k_{y'}}-k_{rz'} \\
+    \hline
+   -k_{x'} &   0      &         0 &  k_{x'} &      0 &        0    \\
+        0  & -k_{y'}  &-k_{y'rz'} &       0 & k_{y'} & -k_{y'rz'}  \\
+        0  & k_{y'rz'} & 2\dfrac{k_{y'rz'}^2}{k_{y'}}-k_{rz'} & 0 & -k_{y'rz'} & k_{rz'}
+    \end{array}
+    \right]
+    \end{equation}
+    \begin{equation}
+    \mathbf{C}'
+    =
+    \left[
+    \begin{array}{ccc|ccc}
+    c_{x'} &   0      &         0 & -c_{x'} &       0 &        0  \\
+    0      &   c_{y'} & c_{y'rz'} &       0 & -c_{y'} & c_{y'rz'}\\
+    0      & c_{y'rz} &   c_{rz'} &       0 & -c_{y'rz} & 2\dfrac{c_{y'rz'}^2}{c_{y'}}-c_{rz'} \\
+    \hline
+   -c_{x'} &   0      &         0 &  c_{x'} &      0 &        0    \\
+        0  & -c_{y'}  &-c_{y'rz'} &       0 & c_{y'} & -c_{y'rz'}  \\
+        0  & c_{y'rz'} & 2\dfrac{c_{y'rz'}^2}{c_{y'}}-c_{rz'} & 0 & -c_{y'rz'} & c_{rz'}
+    \end{array}
+    \right]
+    \end{equation}    
+    In three-dimensional analysis:
+    \begin{equation}
+    \footnotesize
+    \mathbf{K}'
+    =
+    \left[
+    \begin{array}{cccccc|cccccc}
+k_{x'} & 0 & 0 & 0 & 0 & 0 & -k_{x'} & 0 & 0 & 0 & 0 & 0 \\
+ & k_{y'} & 0 & 0 & 0 & k_{y'rz'} & 0 & -k_{y'} & 0 & 0 & 0 & k_{y'rz'} \\    
+ &  & k_{z'} & 0 & k_{z'ry'} & 0 & 0 & 0 & -k_{z'} & 0 & -k_{z'ry'} & 0 \\    
+ &  &  & k_{rx'} & 0 & 0 & 0 & 0 & 0 & -k_{rx'} & 0 & 0 \\    
+ & \mathrm{sym} &  &  & k_{ry'} & 0 & 0 & 0 & k_{z'ry'} & 0 & 2\dfrac{k_{z'ry'}^2}{k_{z'}}-k_{ry'} & 0 \\
+ &  &  &  &  & k_{rz'} & 0 & -k_{y'rz'} & 0 & 0 & 0 & 2\dfrac{k_{y'rz'}^2}{k_{y'}}-k_{rz'} \\ 
+\hline
+ &  &  &  &  &  & k_{x'} & 0 & 0 & 0 & 0 & 0 \\  
+ &  &  &  &  &  &  & k_{y'} & 0 & 0 & 0 & k_{y'rz'} \\  
+ &  &  &  &  &  &  &  & k_{z'} & 0 & k_{z'ry'} & 0 \\
+ &  &  &  &  &  &  &  &  & k_{rx'} & 0 & 0 \\
+ & \mathrm{sym} &  &  &  &  &  & \mathrm{sym} &  &  & k_{ry'} & 0 \\
+ &  &  &  &  &  &  &  &  &  &  & k_{rz'} \\
+    \end{array}
+    \right]
+    \end{equation}
+    An similarly for $\mathbf{C}'$.
+    
+    In order to uniquely define the local axis, for three-dimensional analysis a reference vector $\mathbf{y}'_\mathrm{ref}$ is required for establishing the local $y'$ axis, see Figures \ref{fig:local_axes_yref_2d} and \ref{fig:distra} for more details.
+    
+    \item \textbf{Global axes}. It allows to establish the stiffnesses and viscous damping coeficients directly in global axes, and thus the relative position of element nodes are unimportant.
+    
+\end{itemize}
+
+Taking into account that \texttt{<\# FE subregions> <list of FE subregions ids.>} is here denoted as \texttt{<FE subregions>}, the syntax to describe this type of elements is:
+\begin{itemize}
+\item In a 2D static analysis, this type of elements can be introduced in local or in global axes as follows:
+\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for disrotra elements}]
+[cross sections]
+...
+distra <FE subregions> local <kx'> <ky'> <krz'> <ky'rz'>
+distra <FE subregions> global <kx> <ky> <krz> <kyrz>
+...
+\end{Verbatim}  
+
+\item In a 3D static analysis, this type of elements can be introduced in local (requires $\mathbf{y}'_\mathrm{ref}$) or in global axes as follows:
+\begin{Verbatim}[frame=single, fontsize=\footnotesize, label={format of section [cross sections] for disrotra elements}]
+[cross sections]
+...
+distra <FE subregions> local <kx'> <ky'> <kz'> <krx'> <kry'> <krz'> <ky'rz'> <kz'ry'> 
+(continuation of previous line) <y'refx> <y'refy> <y'refz> 
+distra <FE subregions> global <kx> <ky> <kz> <krx> <kry> <krz> <kyrz> <kzry>
+...
+\end{Verbatim}
+
+\item In a 2D time harmonic analysis, this type of elements can be introduced in local or in global axes as follows (note that all stiffnesses $k_\square$ must be complex numbers):
+\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for disrotra elements}]
+[cross sections]
+...
+distra <FE subregions> local <kx'> <ky'> <krz'> <ky'rz'> <cx'> <cy'> <crz'> <cy'rz'>
+distra <FE subregions> global <kx> <ky> <krz> <kyrz> <cx> <cy> <crz> <cyrz>
+...
+\end{Verbatim} 
+
+\item In a 3D time harmonic analysis, this type of elements elements can be introduced in local (requires $\mathbf{x}'_\mathrm{ref}$) or in global axes as follows (note that all stiffnesses $k_\square$ must be complex numbers):
+\begin{Verbatim}[frame=single, fontsize=\footnotesize, label={format of section [cross sections] for disrotra elements}]
+[cross sections]
+...
+distra <FE subregions> local <kx'> <ky'> <kz'> <krx'> <kry'> <krz'> <ky'rz'> <kz'ry'> 
+(continuation of previous line) <cx'> <cy'> <cz'> <crx'> <cry'> <crz'> <cy'rz'> <cz'ry'> 
+(continuation of previous line) <y'refx> <y'refy> <y'refz>
+distra <FE subregions> global <kx> <ky> <kz> <krx> <kry> <krz> <kyrz> <kzry> 
+(continuation of previous line) <cx> <cy> <cz> <crx> <cry> <crz> <cyrz> <czry>
+...
+\end{Verbatim}
+
+\end{itemize}
+
+
+\subsubsection{Discrete point mass (\texttt{pmass})}
+
+A point mass element can be used for simplifying the interaction between a given body and a supporting structure to the body inertial forces reduced to the contact point. Therefore, the reduced body is considered rigid. It is important to note that it is used only in time harmonic analysis, as it represents the inertial forces and not the body weight, which must be introduced as a load.
+
+This type of structural element requires defining a 0-dimensional element in the mesh, i.e. 1-node element. For three-dimensional analysis, it is introduced in the model by adding the corresponding inertial forces of the body $e$ to a given node $i$ as:
+\begin{equation}
+\mathbf{F}_\mathrm{inertial}^{(e)}
+=
+-
+\mathbf{M}^{(e)}
+\cdot
+\ddot{\mathbf{a}}^{(i)}
+=
+\left[
+\begin{array}{cc}
+\mathbf{M}_0^{(e)} & \mathbf{M}_1^{(e)} \\
+\left(\mathbf{M}_1^{(e)}\right)^T & \mathbf{M}_2^{(e)}
+\end{array}
+\right]
+\cdot
+\left[
+\begin{array}{cccccc}
+u_x^{(i)} & u_y^{(i)} & u_z^{(i)} & \theta_x^{(i)} & \theta_y^{(i)} & \theta_z^{(i)}
+\end{array}
+\right]^T
+\end{equation}
+where $\mathbf{M}^{(e)}$ is the generalized mass matrix, which can be divided into three matrices:
+\begin{align}
+\mathbf{M}_0^{(e)} &= \mathbf{I} \int\limits_{\Omega}\rho\,\mathrm{d}\Omega = 
+\left[
+\begin{array}{ccc}
+M^{(e)} & 0 & 0 \\
+0 & M^{(e)} & 0 \\
+0 & 0 & M^{(e)}
+\end{array}
+\right]
+\\
+\mathbf{M}_1^{(e)} &= 
+\int\limits_{\Omega}
+\rho
+\left[
+\begin{array}{ccc}
+0 & r_3 & -r_2 \\
+-r_3 & 0 & r_1 \\
+r_2 & -r_1 & 0
+\end{array}
+\right]
+\,\mathrm{d}\Omega
+=
+\left[
+\begin{array}{ccc}
+0 & B_{xy}^{(e)} & -B_{xz}^{(e)} \\
+-B_{xy}^{(e)} & 0 & B_{yz}^{(e)} \\
+B_{xz}^{(e)} & -B_{yz}^{(e)} & 0
+\end{array}
+\right]
+\\
+\mathbf{M}_2^{(e)} &= 
+\int\limits_{\Omega}
+\rho
+\left[
+\begin{array}{ccc}
+r_2^2+r_3^2 & -r_1r_2 & -r_1r_3 \\
+-r_2r_1 & r_1^2+r_3^2 & -r_2r_3 \\
+-r_3r_1 & -r_3r_2 & r_1^2+r_2^2
+\end{array}
+\right]
+\,\mathrm{d}\Omega
+=\left[
+\begin{array}{ccc}
+J_{xx}^{(e)} & -J_{xy}^{(e)} & -J_{xz}^{(e)} \\
+-J_{xy}^{(e)} & J_{yy}^{(e)} & -J_{yz}^{(e)} \\
+-J_{xz}^{(e)} & -J_{yz}^{(e)} & J_{zz}^{(e)}
+\end{array}
+\right]
+\end{align}
+where $\Omega$ is the domain of the body $e$, $\rho$ is its the density distribution,  and $r_j=x_j-x_j^{(i)}$ is the position vector of each body point with respect to the reduction point/node $i$. $\mathbf{M}_0$ is the translational inertia (zero moment of mass), $\mathbf{M}_1$ represents the inertia forces and moments due to the mass imbalance (first moments of mass), and $\mathbf{M}_2$ represents the rotational inertia (second moments of mass). If the node $i$ coincides with the center of mass of the body, then $\mathbf{M}_1^{(e)}$ is a zero matrix. If additionally the body has three symmetry planes or if its principal axes coincides with the global axes, then $\mathbf{M}_2^{(e)}$ is a diagonal matrix. For time harmonic analyses with time factor $e^{i\omega t}$, the generalized displacements acceleration becomes:
+\begin{equation}
+\mathbf{F}_\mathrm{inertial}^{(e)}
+=
+-
+\mathbf{M}^{(e)}
+\cdot
+\ddot{\mathbf{a}}^{(i)}
+=
+\omega^2
+\mathbf{M}^{(e)}
+\cdot
+\mathbf{a}^{(i)}
+\end{equation}
+
+In the data input, each mass matrix term $M_{jk}$ have to be defined. In 2D analysis, the mass matrix is a $3\times3$ matrix because of the degrees of freedom involved:
+\begin{align}
+\mathbf{F}_\mathrm{inertial}^{(e)}
+=
+\omega^2
+\mathbf{M}^{(e)}
+\cdot
+\mathbf{a}^{(i)}
+=
+\omega^2
+\left[
+\begin{array}{ccc}
+M_{11} & M_{12} & M_{13} \\
+M_{21} & M_{22} & M_{23} \\
+M_{31} & M_{32} & M_{33}
+\end{array}
+\right]
+\cdot
+\left[
+\begin{array}{c}
+u_x^{(i)} \\ u_y^{(i)} \\ \theta_z^{(i)}
+\end{array}
+\right]
+\end{align}
+In 3D analysis, the mass matrix is a $6\times6$ matrix:
+\begin{align}
+\mathbf{F}_\mathrm{inertial}^{(e)}
+=
+\omega^2
+\mathbf{M}^{(e)}
+\cdot
+\mathbf{a}^{(i)}
+=
+\omega^2
+\left[
+\begin{array}{cccccc}
+M_{11} & M_{12} & M_{13} & M_{14} & M_{15} & M_{16} \\
+M_{21} & M_{22} & M_{23} & M_{24} & M_{25} & M_{26} \\
+M_{31} & M_{32} & M_{33} & M_{34} & M_{35} & M_{36} \\
+M_{41} & M_{42} & M_{43} & M_{44} & M_{45} & M_{46} \\
+M_{51} & M_{52} & M_{53} & M_{54} & M_{55} & M_{56} \\
+M_{61} & M_{62} & M_{63} & M_{64} & M_{65} & M_{66} 
+\end{array}
+\right]
+\cdot
+\left[
+\begin{array}{c}
+u_x^{(i)} \\ u_y^{(i)} \\ u_z^{(i)} \\ \theta_x^{(i)} \\ \theta_y^{(i)} \\ \theta_z^{(i)}
+\end{array}
+\right]
+\end{align}
+In order to simplify the data introduction, when a balanced condition can be assumed only the $M_{kk}$ non-zero entries have to be defined. Otherwise, a general nonbalanced condition requires defining all matrix entries. Therefore, the data introduction can be summarized as follows:
+\begin{itemize}
+ \item In a \textbf{2D analysis}, you can introduce only the $3$ non-zero diagonal terms for a balanced mass condition, or the full $3\times3$ matrix for a general unbalanced condition:
+\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for pmass elements}]
+[cross sections]
+...
+pmass <FE subregions> unbalanced <M11> <M21> <M31> <M21> <M22> <M23> <M13> <M23> <M33>
+pmass <FE subregions> balanced <M11> <M22> <M33>
+...
+\end{Verbatim}
+
+ \item In a \textbf{3D analysis}, you can introduce only the $6$ non-zero diagonal terms for a balanced mass condition, or the full $6\times6$ matrix for a general unbalanced condition:
+\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for pmass elements}]
+[cross sections]
+...
+pmass <FE subregions> unbalanced <M11> <M21> <M31> <M41> <M51> <M61> <M12> <M22> ... <M66>
+pmass <FE subregions> balanced <M11> <M22> <M33> <M44> <M55> <M66>
+...
+\end{Verbatim}
+
+\end{itemize}
+
+\subsubsection{Bar finite element (\texttt{bar})}
+
+This type of structural finite element is a simple tension/compression member \cite{onate2013} between two nodes, and it is denoted as \texttt{bar} in the data section. It requires using a 2-node line element in the mesh. Each element node has 2 or 3 translational degrees of freedom respectively for two- and three-dimensional analyses, and the only stress resultant is the axial force $N_{x'}^{(e)}$, see Figure \ref{fig:bar}. For time harmonic analysis,  a consistent mass matrix is used, and its density is taken from the \textbf{material} defined for the corresponding \textbf{fe subregion} and \textbf{region}.
+
+The only required cross section parameter is the area, and it can be introduced in several ways:
+\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for bar elements}]
+[cross sections]
+...
+bar <FE subregions> generic <area>
+bar <FE subregions> circle <diameter>
+bar <FE subregions> hollow_circle <outer diameter> <inner diameter>
+bar <FE subregions> rectangle <width> <height>
+...
+\end{Verbatim}
+
+\begin{figure}[h]
+\input{figures/bar.pdf_tex}
+\caption{Bar finite element description (\texttt{bar})}
+\label{fig:bar}
+\end{figure}
+
+\subsubsection{Straight beam finite element (\texttt{strbeam})}
+
+This type of structural finite element is a conventional straight beam finite element, and it is denoted as \texttt{strbeam} in the data section. By default, Timoshenko kinematic assumption (plane cross section after deformation) is assummed for bending, but the simpler Euler-Bernoulli theory is also available (cross section remains plane and perpendicular to the mid-line after deformation). It can be chosen by using as the type of structural element:
+\begin{itemize}
+ \item Timoshenko beam theory: \texttt{strbeam} or \texttt{strbeam\_t}
+ \item Euler-Bernoulli beam theory: \texttt{strbeam\_eb}.
+\end{itemize}
+The formulation is based on locking-free Timoshenko beam finite element of Friedman \& Kostmatka \cite{friedman1993}, and Euler-Bernoulli assumptions are simply obtained by nullifying the transverse shear strain factor ($\phi=0$). The element is built by superposition of axial, torsional and bending behaviour. Line elements of 2 or 3 nodes can be used in the mesh. For time harmonic analysis, a consistent mass matrix including rotational inertia is used, and its density is taken from the \textbf{material} defined for the corresponding \textbf{fe subregion} and \textbf{region}.
+
+A symmetric cross section is assumed, and the required cross section parameters are:
+\begin{itemize}
+  \item Area: $A$.
+  \item Area moments of inertia: $I_{x'}$, $I_{y'}$, $I_{z'}$.
+  \item Shear correction factors: $\kappa_{x'}$, $\kappa_{y'}$, $\kappa_{z'}$. They are used to calculate the effective shear stiffnesses by correcting the cross section parameters: $\kappa_{x'}I_{x'}$ (torsional constant), $\kappa_{y'}A$ ($y'$ transverse shear area), $\kappa_{z'}A$ ($z'$ transverse shear area).
+\end{itemize}
+In two-dimensional analysis, each node has 3 DOFs ($u_x$, $u_y$, $\theta_z$), whereas in three-dimensional analysis each node has 6 DOFs ($u_x$, $u_y$, $u_z$, $\theta_x$, $\theta_y$, and $\theta_z$), see Figure \ref{fig:strbeam}.
+
+\begin{figure}[h]
+\input{figures/strbeam.pdf_tex}
+\caption{Degrees of freedom and local axis definition of straight beam finite elements (\textbf{strbeam}). Element with 2 node shown.}
+\label{fig:strbeam}
+\end{figure}
+
+The data introduction can be summarized as follows:
+\begin{itemize}
+  \item In a \textbf{2D analysis} under plane strain, a beam can be used to model an infinitely long ($h_{z'}=1$) wall/plate/shell of thickness $h_{y'}$, or an equivalent structural system. It is required the cross section area $A$ (usual application requires $A = h_{y'}\cdot 1$), the inertia $I_{z'}$ (usual application requires $I_{z'} = 1\cdot h_{y'}^3/12$), and the shear correction factor $\kappa_{y'}$ (usual application requires $\kappa_{y'}=5/6$):
+\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for strbeam elements}]
+[cross sections]
+...
+strbeam <FE subregions> <A> <I_z'> <kappa_y'>
+...
+\end{Verbatim}
+  \item  In a \textbf{3D analysis}, you can introduce a generic cross section, or a pre-defined cross section shape via its dimensions. The reference vector $\mathbf{y}'_\mathrm{ref}$ for defining the $y'$ axis is required (see Figure \ref{fig:local_axes_yref_1d} for more details). Therefore, it can be introduced as follows:
+\begin{Verbatim}[frame=single, fontsize=\footnotesize, label={format of section [cross sections] for strbeam elements}]
+[cross sections]
+...
+strbeam <FE subregions> generic <A> <Ix'> <Iy'> <Iz'> <kax'> <kay'> <kaz'> <y'refx> <y'refy> <y'refz>
+strbeam <FE subregions> circle <diameter> <y'refx> <y'refy> <y'refz>
+strbeam <FE subregions> hollow_circle <outer diam> <inner diam> <y'refx> <y'refy> <y'refz>
+strbeam <FE subregions> rectangle <width y'> <height z'> <y'refx> <y'refy> <y'refz>
+...
+\end{Verbatim}
+\end{itemize}
+
+For stress resultants definition, see Figure \ref{fig:stress_resultants_beam} and section about \texttt{degbeam}.
+
+\subsubsection{Beam finite element obtained from the degeneration of the solid (\texttt{degbeam})}
+
+This type of structural finite element is a beam finite element obtained from the degeneration of the solid via Timoshenko kinematic assumption (plane cross section after deformation), and it is denoted as \texttt{degbeam} in the data section. A rectangular cross section of $h_{y'} \times h_{z'}$ is assumed. It requires using a 2, 3 or 4 node line element in the mesh. In order to avoid locking, a selective integration is used by default, but it can be changed in \texttt{element options} data section. For time harmonic analysis,  a consistent mass matrix is used, and its density is taken from the \textbf{material} defined for the corresponding \textbf{fe subregion} and \textbf{region}.
+
+Similarly to \texttt{strbeam}, in two-dimensional analysis each node has 3 DOFs ($u_x$, $u_y$, $\theta_z$), and in three-dimensional analysis each node has 6 DOFs ($u_x$, $u_y$, $u_z$, $\theta_x$, $\theta_y$, and $\theta_z$), see Figure \ref{fig:degbeam}.
+
+\begin{figure}[h]
+\input{figures/degbeam.pdf_tex}
+\caption{Degrees of freedom and local axis definition of beam finite elements degenerated from solid (\textbf{degbeam}). Element with 3 node shown.}
+\label{fig:degbeam}
+\end{figure}
+
+The data introduction can be summarized as follows:
+\begin{itemize}
+  \item In a \textbf{2D analysis}, a plain strain condition is assumed (width is unitary), being the $x'$ and $y'$ axes contained in the plane and only the cross section height $h_{y'}$ is required:
+\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for degbeam elements}]
+[cross sections]
+...
+degbeam <FE subregions> <hy'>
+...
+\end{Verbatim}
+  \item  In a \textbf{3D analysis}, the cross section dimensions $h_{y'}$ and $h_{z'}$ are required together with the reference vector $\mathbf{y}'_\mathrm{ref}$ for the $y'$ axis (see Figure \ref{fig:local_axes_yref_1d} for more details):
+\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for degbeam elements}]
+[cross sections]
+...
+degbeam <FE subregions> <hy'> <hz'> <y'ref x> <y'ref y> <y'ref z>
+...
+\end{Verbatim}
+\end{itemize}
+
+The stress resultants are defined as follows:
+\begin{equation}
+\left\{
+\begin{array}{c}
+N_{x'} \\
+V_{y'} \\
+V_{z'} \\
+T_{x'} \\
+M_{y'} \\
+M_{z'}
+\end{array}
+\right\}
+=
+\int_{A}
+\left\{
+\begin{array}{c}
+\sigma_{x'x'} \\
+\tau_{x'y'} \\
+\tau_{x'z'} \\
+-z'\cdot\tau_{x'y'}+y'\cdot\tau_{x'z'} \\
+z'\cdot\sigma_{x'x'} \\
+-y'\cdot\tau_{x'x'} \\
+\end{array}
+\right\}
+\,\mathrm{d}A
+\end{equation}
+and they are shown in Figure \ref{fig:stress_resultants_beam}.
+
+\begin{figure}[p]
+\input{figures/stress_resultants_beam.pdf_tex}
+\caption{Beam stress resultants: $N_{x'}$, $V_{y'}$, $V_{z'}$, $T_{x'}$, $M_{y'}$, $M_{z'}$}
+\label{fig:stress_resultants_beam}
+\end{figure}
+
+\subsubsection{Shell finite element obtained from the degeneration of the solid (\texttt{degshell})}
+
+This type of structural finite element is a shell finite element obtained from the degeneration of the solid via Reissner-Mindlin kinematic assumption, and it is denoted as \texttt{degshell} in the data section. It requires using a triangular element (3 or 6 nodes) or a quadrilateral element (4, 8 or 9 nodes) in the mesh. By default, the locking-free MITC family of elements of Bathe and co-workers \cite{dvorkin1984,Bathe1986,Bucalem1993,lee2004} with full integration is used: MITC3, MITC4, MITC6a, MITC8*, MITC9. 
+
+Each element node $i$ has 3 translational DOF ($u_x^{(i)}$, $u_y^{(i)}$, $u_z^{(i)}$), and 2 local rotational DOFs ($\alpha^{(i)}$ and $\beta^{(i)}$ local rotations related to shell bending) or 3 global rotational DOFs ($\theta_x^{(i)}$, $\theta_y^{(i)}$ and $\theta_z^{(i)}$ global rotations). This shell model does not have rotational stiffness in the normal direction, the so called ``drilling'' stiffness, thus an artificial stiffness is added when using 6 DOF \cite{bathe1996} in order to avoid any singularity. There are three situations where 6 DOFs are mandatory: 
+\begin{enumerate}
+  \item When imposing certain boundary conditions (for example symmetry conditions).
+  \item Along edges or joints between two shells with incompatible orientations.
+  \item Along joints between more than two shells, at beam-shell joints, and similar singular joints.
+\end{enumerate}
+% ¿Añadir una figura para explicar esto?
+Therefore, in practical problems most element nodes can be 5 DOFs. Although we could have implemented only 6 DOFs element nodes (more homogeneous treatment), we have decided to reduce as much as possible the number of DOF since we do not use a sparse solver (it is not appropriate for boundary element matrices which are dense). Internally, an automatic procedure for selecting 5 DOFs or 6 DOFs is implemented based on the conditions stated above. 
+% Falta enlazar con la seccion [fem node options] para asignar manualmente el tipo de nodo (5 o 6 DOF)
+For time harmonic analysis,  a consistent mass matrix is used, and its density is taken from the \textbf{material} defined for the corresponding \textbf{fe subregion} and \textbf{region}.
+
+When defining \texttt{degshell} FE subregions, the data format of the cross section definition only requires the shell thickness and the $\mathbf{x}'_\mathrm{ref}$ reference vector for establising the $x'$ local axis (see Figure \ref{fig:local_axes_yref_2d} for more details):
+\begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for degshell elements}]
+[cross sections]
+...
+degshell <FE subregions> <thickness> <x'ref x> <x'ref y> <x'ref z>
+...
+\end{Verbatim}
+
+The stress resultants are defined as follows:
+\begin{equation}
+\renewcommand{\arraystretch}{1.5}
+\left\{
+\begin{array}{c}
+N_{x'} \\
+N_{y'} \\
+N_{x'y'} \\
+M_{x'} \\
+M_{y'} \\
+M_{x'y'} \\
+V_{x'} \\
+V_{x'} 
+\end{array}
+\right\}
+=
+\left\{
+\begin{array}{c}
+\left[\int_{-t/2}^{t/2}\int_{-\mathrm{d}y'/2}^{\mathrm{d}y'/2}\sigma_{x'x'} \,\mathrm{d}y'\mathrm{d}z'\right]/\mathrm{d}y' \\
+\left[\int_{-t/2}^{t/2}\int_{-\mathrm{d}x'/2}^{\mathrm{d}x'/2}\sigma_{y'y'} \,\mathrm{d}x'\mathrm{d}z'\right]/\mathrm{d}x'\\
+\left[\int_{-t/2}^{t/2}\int_{-\mathrm{d}y'/2}^{\mathrm{d}y'/2} \tau_{x'y'}\,\mathrm{d}y'\mathrm{d}z'\right]/\mathrm{d}y' \\
+\left[\int_{-t/2}^{t/2}\int_{-\mathrm{d}y'/2}^{\mathrm{d}y'/2}\left(-z'\right)\cdot\sigma_{x'x'}\,\mathrm{d}y'\mathrm{d}z'\right]/\mathrm{d}y' \\
+\left[\int_{-t/2}^{t/2}\int_{-\mathrm{d}x'/2}^{\mathrm{d}x'/2}\left(-z'\right)\cdot\sigma_{y'y'} \,\mathrm{d}x'\mathrm{d}z'\right]/\mathrm{d}x' \\
+\left[\int_{-t/2}^{t/2}\int_{-\mathrm{d}y'/2}^{\mathrm{d}y'/2}\left(-z'\right)\cdot\tau_{x'y'} \,\mathrm{d}y'\mathrm{d}z'\right]/\mathrm{d}y'\\
+\left[\int_{-t/2}^{t/2}\int_{-\mathrm{d}y'/2}^{\mathrm{d}y'/2}\tau_{x'z'} \,\mathrm{d}y'\mathrm{d}z'\right]/\mathrm{d}y' \\
+\left[\int_{-t/2}^{t/2}\int_{-\mathrm{d}x'/2}^{\mathrm{d}x'/2}\tau_{y'z'}\,\mathrm{d}x'\mathrm{d}z'\right]/\mathrm{d}x'
+\end{array}
+\right\}
+=
+\int_{-t/2}^{t/2}
+\left\{
+\begin{array}{c}
+\sigma_{x'x'} \\
+\sigma_{y'y'} \\
+\tau_{x'y'} \\
+-z'\cdot\sigma_{x'x'} \\
+-z'\cdot\sigma_{y'y'} \\
+-z'\cdot\tau_{x'y'} \\
+\tau_{x'z'} \\
+\tau_{y'z'}
+\end{array}
+\right\}
+\,\mathrm{d}z'
+\end{equation}
+and they are shown in Figure \ref{fig:stress_resultants_shell}.
+
+\begin{figure}[p]
+\footnotesize
+\input{figures/stress_resultants_shell.pdf_tex}
+\caption{Shell stress resultants: $N_{x'}$, $N_{y'}$, $N_{x'y'}$, $M_{x'}$, $M_{y'}$, $M_{x'y'}$, $V_{x'}$, $V_{y'}$}
+\label{fig:stress_resultants_shell}
+\end{figure}
+
+\subsection{Section \texttt{regions}}
+\label{sec:regions}
+
+In a $n$-dimensional problem, a region (or subdomain) $\Omega$ is a $n$-dimensional entity that is a part or the whole domain of the problem. In MultiFEBE, a region $\Omega$ can be discretized by one of two different methods:
+\begin{itemize}
+  \item \textbf{BEM (BE region).} The region is treated by the BEM. Its discretization is defined by its boundary $\partial\Omega$, which in general is built using a set of boundaries, which in turn is associated with mesh parts and hence with boundary elements.
+  \item \textbf{FEM (FE region).} The region is treated by the FEM. Its discretization is defined by a set of FE subregions, which in turn is associated with parts and hence with finite elements. FE region can only be made of elastic solid materials, i.e. finite elements for fluid or poroelastic medium are not availabe.
+\end{itemize}
+The interaction (coupling) between BE regions is done through their shared boundaries, which must have opposite orientation for each region, see Figure \ref{fig:ordinary_boundary_interface}. The interaction between FE regions is done through their shared nodes as usual. The interaction between BE boundaries and FE regions is done through the BE boundaries and the boundary of the FE elements that shares the same position. The interaction between BE and FE elements is automatically detected.
+
+The format of this section is explained in the following. The first line indicates the number of regions. Then, for each region there must be a block of data consisting of several lines of data. The first one is the region identifier and the region class (discretization method: ``fe'' or ``be''). If the region is a BE region, then the second line indicates the number of boundaries and a list of boundaries (with their orientation signs). If the region is a FE region, then the second line indicates the number of FE subregions and a list of fe subregions. The third line defines the material. Then, only if the region is a BE region, the fourth line defines the number and a list of BE body loads. Also, only if the region is a BE region and the analysis is time harmonic, the fifth line defines the number and a list of incident fields. The general format of the section is:
+\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [regions]}]
+[regions]
+<n = number of regions>
+
+<region 1 identifier> <region class (discretization method): be or fe> 
+<number of boundaries or fe subregions> <list of boundaries or fe subregions identifiers>
+material <list of materials>
+[<if be: number of be body loads> <list of be body loads>]
+[<if be and analysis=harmonic: number of incident fields> <list of incident fields>]
+
+...
+
+<region n identifier> <region class (discretization method): be or fe> 
+<number of boundaries or fe subregions> <list of boundaries or fe subregions identifiers>
+material <list of materials>
+[<if be: number of be body loads> <list of be body loads>]
+[<if be and analysis=harmonic: number of incident fields> <list of incident fields>]
+\end{Verbatim} 
+
+\subsection{Section \texttt{fe subregions}}
+\label{sec:fe_subregions}
+
+A FE subregion is a partition of a FE region. A FE subregion is associated with a part of the mesh. The general format of the section is:
+\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [fe subregions]}]
+[fe subregions]
+<n = number of FE subregions>
+<FE subregion 1 identifier> <part identifier> 0 0
+<FE subregion 2 identifier> <part identifier> 0 0
+...
+<FE subregion n identifier> <part identifier> 0 0
+\end{Verbatim}
+where the last two zeros at the end of the each line are mandatory, and they are going to be used in the future for additional features.
+
+\subsection{Section \texttt{boundaries}}
+\label{sec:boundaries}
+
+In a $n$-dimensional problem, a boundary $\Gamma$ is a $(n-1)$-dimensional oriented entity that is a part or the whole boundary of a region. The whole boundary $\partial\Omega$ of a region $\Omega$ treated by the Boundary Element Method, BE region in the following, is defined as a set of boundaries:
+\begin{equation}
+\partial\Omega = \left\{\ldots,\Gamma_j,\ldots\right\}
+\end{equation}
+whose orientation must be outwards from the BE region. A minus sign before $\Gamma_j$ can be used to indicate the reversion of the orientation of $\Gamma_j$ in order to get a compatible $\partial\Omega$. 
+
+There are two main classes of boundaries:
+\begin{itemize}
+  \item \textbf{Ordinary.} An ordinary boundary is a boundary in the classical sense. It can be connected with one or two BE regions. In both cases, the boundary can be connected with FE elements.
+
+  \begin{minipage}[b]{\linewidth}
+    \centering
+    \begin{minipage}[t]{0.28\linewidth}
+      \begin{figure}[H]
+      \centering
+      \input{figures/ordinary_boundary_exterior.ps_tex}
+      \caption{Ordinary boundary connected with one region}
+      \end{figure}
+    \end{minipage}
+    \begin{minipage}[t]{0.71\linewidth}
+      \begin{figure}[H]
+      \centering
+      \input{figures/ordinary_boundary_interface.ps_tex}
+      \caption{Ordinary boundary connected with two regions. Right: exploded view.}
+      \label{fig:ordinary_boundary_interface}
+      \end{figure}
+    \end{minipage}
+  \end{minipage}
+
+  \item \textbf{Crack-like.} A special boundary that lies inside a BE region and is composed by two crack-like sub-boundaries ($\Gamma^+$ and $\Gamma^-$) of opposite orientations. Thus, a crack-like boundary can be connected only with one BE region. Generally speaking, it is the condensed geometric description of a null thickness inclusion or void. Its orientation defines the orientation of the positive sub-boundary $\Gamma^+$, i.e. it defines which face is $\Gamma^+$ and which face is $\Gamma^-$.
+  
+  \begin{minipage}[b]{\linewidth}
+    \centering
+    \begin{figure}[H]
+      \centering
+      \input{figures/coincident_boundary.ps_tex}
+      \caption{Crack-like boundary. Right: exploded view.}
+    \end{figure}
+  \end{minipage}
+\end{itemize}
+
+Each boundary is build up with unique boundary elements and nodes, which are defined by a ``part'' of the mesh. Thus, all boundaries must be connected with one and only one mesh part. The orientation of all boundary elements in that part must be the same, i.e. be compatible, which defines the orientation of the boundary.
+
+The first line indicates the number of boundaries. Then, one line per boundary indicating the boundary identifier, the identifier of the part that discretize it, and finally the boundary class (\texttt{ordinary} or \texttt{crack-like}). The general format of the section is:
+\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [boundaries]}]
+[boundaries]
+<n = number of boundaries>
+<boundary 1 identifier> <part identifier> <boundary class: ordinary or crack-like>
+<boundary 2 identifier> <part identifier> <boundary class: ordinary or crack-like>
+...
+<boundary n identifier> <part identifier> <boundary class: ordinary or crack-like>
+\end{Verbatim} 
+Next, it is shown an example with 4 boundaries, where boundary 1 is the part 1 of the mesh and is an ordinary boundary, boundary 3 is the part 6 of the mesh and is an ordinary boundary, boundary 4 is the part 2 of the mesh and is a crack-like boundary, and boundary 2 is the part 3 of the mesh and is an ordinary boundary:
+\begin{Verbatim}[frame=single, fontsize=\small, label=input.dat]
+...
+
+[boundaries]
+4
+1 1 ordinary 
+3 6 ordinary
+4 2 crack-like
+2 3 ordinary
+
+...
+\end{Verbatim} 
+
+It is important to highlight that, in case of adjacent boundaries with different boundary conditions or with geometries such that a discontinuity in tractions will arrive, it is necessary to double (duplicate) the nodes in the boundaries of such BEM boundaries. A non-nodal collocation strategy is followed by default in all these boundary nodes.
+
+\subsection{Section \texttt{be bodyloads}}
+\label{sec:be_bodyloads}
+
+Body loads in BE regions are defined in this section. The general format follows a simpler pattern as the previous section. The first line contains the number of BE body loads to be defined, next as many lines are BE body loads. Each line contains first the BE body load identifier, and last the mesh part which contains the elements associated with it. The general format can be written as:
+\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [fe subregions]}]
+[be bodyloads]
+<n = number of BE body loads>
+<BE bodyload 1 identifier> <part identifier>
+<BE bodyload 2 identifier> <part identifier>
+...
+<BE bodyload n identifier> <part identifier>
+\end{Verbatim}
+where the last two zeros at the end of the each line are mandatory, and they are going to be used in the future for additional features.
+
+\section{Auxiliary entities of the model}
+
+\subsection{Internal points}
+\label{sec:internal_points}
+
+Internal points are points within a BE region where field values (displacements, pressures, stresses, ...) are requested. They must not lie at any boundary. They are obtained at post-processing stage after boundary values are obtained.
+
+There are two ways of requesting the calculation of fields at internal points:
+\begin{itemize}
+\item List of internal points defined by identifiers, region which contains each one, and point coordinates. 
+\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [internal points]}]
+[internal points]
+<# internal points>
+<internal point id> <region id> <x coord.> <y coord> <z coord.> 
+...
+\end{Verbatim}
+\item From the nodes defined in a mesh (see \ref{sec:settings} for details about mesh file format):
+\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [internal points from mesh]}]
+[internal points from mesh]
+mesh_file = <mesh file format> <path to mesh files>
+region_association : <# selected mesh parts>
+<selected mesh part id> <region id>
+...
+\end{Verbatim}
+\end{itemize}
+The program does not check if each internal point is indeed inside the specified region, so the user is responsible of the coherence between these data.
+
+\subsection{Internal elements}
+\label{sec:internal_elements}
 
 To be documented.
 
-\subsection{Point mass (pmass)}
+\subsection{Groups}
+\label{sec:groups}
 
 To be documented.
 
-\subsection{Bar finite element (bar)}
-
-To be documented.
-
-\subsection{Beam finite element obtained from the degeneration of the solid (degbeam)}
-
-To be documented.
-
-\subsection{Straight beam finite element (strbeam)}
-
-To be documented.
-
-\subsection{Shell finite element obtained from the degeneration of the solid (degshell)}
-
-To be documented.
-
-\section{Conditions of the model}
+\section{Model conditions}
 
 In this section, the data sections related to the conditions (boundary and interface conditions, loads, symmetry planes) of the model are explained. 
 
 This part of the manual is incomplete as it only deals with conditions for elastic solids.
 
 \subsection{Section \texttt{symmetry planes}}
+\label{sec:symmetry_planes}
+
 If present, in this section the symmetry planes of the problem are defined. All symmetry planes are assumed to be at the origin of coordinates. By using symmetry planes, only a half, quarter or octant of the model has to be discretized. For BE regions, no additional boundary conditions are required since influence matrices are built taking symmetry planes into account. For FE regions, the corresponding boundary conditions are applied to nodes at symmetry planes.
 
 In order to indicate the existence and the nature of the symmetry, it is necessary to define up to three of the symmetry planes implemented: plane with unit normal $\mathbf{n}=\mathbf{e}_1=(1,0,0)$ (plane $yz$), plane with unit normal $\mathbf{n}=\mathbf{e}_2=(0,1,0)$ (plane $zx$), or plane with unit normal $\mathbf{n}=\mathbf{e}_3=(0,0,1)$ (plane $xy$); where each of one can be either of symmetry or antisymmetry. The general format for the section is:
@@ -1293,9 +1902,11 @@ plane_n1: symmetry
 % \end{figure}
 
 \subsection{Section \texttt{conditions over be boundaries}}
+\label{sec:conditions_be_boundaries}
+
 In this section, the boundary conditions applied on the boundary elements boundaries are defined. All boundaries except the interfaces and the boundaries that are coupled with finite elements need to specify their boundary conditions. If not defined, a traction-free boundary is assumed by default. Here, boundary conditions for viscoelastic solids are explained.
 
-There are available four boundary conditions for \textbf{ordinary boundaries}, two on global coordinates, and two in local coordinates, see Table \ref{tab:bc_ordinary_viscoelastic}. The two boundary conditions of each group are known displacement and known traction. For each boundary, the user must specify the boundary condition for each coordinate in local coordinates or in global coordinates, but not mixed.
+There are available four boundary conditions for \textbf{ordinary boundaries}, two on global axes, and two in local axes, see Table \ref{tab:bc_ordinary_viscoelastic}. The two boundary conditions of each group are known displacement and known traction. For each boundary, the user must specify the boundary condition for each coordinate in local axes or in global axes, but not mixed.
 
 \begin{table}
 \centering
@@ -1391,7 +2002,14 @@ boundary 3: 1 0.
 \end{Verbatim} 
 Note that if the analysis is time harmonic, the values of the boundary conditions must be introduced as complex numbers, e.g.\texttt{(0.,0.)}.
 
+\subsection{Section \texttt{conditions over fe elements}}
+\label{sec:conditions_fe_elements}
+
+To be documented.
+
 \subsection{Section \texttt{conditions over nodes}}
+\label{sec:conditions_nodes}
+
 In this section, the boundary conditions over nodes are applied. For nodes of boundary elements, this boundary condition over nodes overrides the boundary conditions applied over their boundaries, and the Tables \ref{tab:bc_ordinary_viscoelastic} and \ref{tab:bc_crack_viscoelastic} remains valid. For nodes of finite elements, the boundary conditions are applied to the displacements and the rotation, the type of boundary conditions are \texttt{0} for known displacement, and \texttt{1} for known force (or moment).
 
 The general format for the section is similar to the conditions over boundaries:
@@ -1418,90 +2036,9 @@ node 41: 0 0.
          1 0.
 \end{Verbatim} 
 
-\subsection{Section \texttt{bem formulation over boundaries}}
-
-In this section, the user can modify the BEM formulation, i.e. the type of Boundary Integral Equations (BIEs) to be used when building the BEM equations and the collocation strategy to be used. The default formulations (BIEs and collocation strategies) work for almost all cases, and any change done here should be done with care and only when necessary, see below. 
-
-There are two fundamental types of BIEs used in MultiFEBE:
-\begin{description}
-    
-    \item[Singular BIE (SBIE)] It is also called the displacement or pressure BIE, since this equation relates the primary field variable (displacements in elasticity, pressure in acoustics, ...) at the collocation point with the the primary and secondary (tractions in elasticity, fluxes, ...) field variables over the boundaries and the body loads. This BIE can be collocated everywhere (the collocation point is the location of the Dirac delta of the Green's function). However, the nodal collocation (collocation at the boundary element nodes) is the ideal since it leads to the best conditioning of the system. Non-nodal collocation is also possible, but it should be used only where nodal collocation turns problematic. 
-    
-    \item[Hypersingular BIE (HBIE)] It is also called the traction or flux BIE, since it relates the secondary field variable with the the primary and secondary field variables over the boundaries and body loads. This BIE can be collocated only where the discretization has $\mathcal{C}^1$ displacement continuity. Since MultiFEBE only considers $\mathcal{C}^0$ continuous elements, this means that HBIE must have non-nodal collocation (except at element interior nodes).
-    
-\end{description}
-
-The non-nodal collocation strategy implemented here is the so-called Multiple Collocation Approach\footnote{J. Dom\'inguez \& M.P. Ariza. A direct traction BIE for three-dimensional
-crack problems. Engng Anal Bound Elem 2000;24:727–38.} (MCA). When building the BIE associated with a given node, the MCA consists on building the equation by adding up as many BIEs as the number of elements sharing the node, being each BIE collocated near the node but shifted towards inside the element. For a given element, the local coordinates of the collocation point $(\xi^i_k,\eta^i_k)$ contributing to the node $k$ located at $(\xi_k,\eta_k)$ is controlled by the dimensionless distance $\delta$, which is a measure of the separation between the collocation point and the corresponding node such that:
-\begin{align}
-\textnormal{Line elements:}\quad\xi^i_k &= \left(1-\delta\right)\xi_k,\;\xi_k\in\left[-1,1\right] \\
-\textnormal{Quadrilateral elements:}\quad\xi^i_k &= \left(1-\delta\right)\xi_k,\;\xi_k\in\left[-1,1\right] \\
-\quad\eta^i_k &= \left(1-\delta\right)\eta_k,\;\eta_k\in\left[-1,1\right] \\
-\textnormal{Triangular elements:}\quad\xi^i_k &= \left(1-\delta\right)\xi_k+\delta/3,\;\xi_k\in\left[0,1\right] \\
-\quad\eta^i_k &= \left(1-\delta\right)\eta_k+\delta/3,\;\eta_k\in\left[0,1\right],\;\xi_k+\eta_k\leq1
-\end{align}
-This way $\delta\rightarrow0$ means that the collocation point is approaching the node, and $\delta\rightarrow1$ means that the collocation point is approaching the element's centroid in local coordinates. Formally $0<\delta<1$, but in practice it should be $0.01<\delta<0.6$. By default, we use is $\delta=0.42$ for linear elements, $\delta=0.23$ for quadratic elements and $\delta=0.14$ for cubic elements.
-
-% Falta documentar la entrada via groups of nodes y parts. Falta implementar la entrada para opciones de formulacion de body loads.
-
-\noindent The general format for this data section is:
-\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [bem formulation over boundaries]}]
-[bem formulation over boundaries]
-boundary <boundary id>: <keyword: type of formulation> <values>
-\end{Verbatim} 
-\noindent where the available formulations and their options are given in Table~\ref{tab:bem_formulation_boundaries}. 
-
-For instance, in a problem with six boundaries, where the collocation strategy in all boundaries must be nodal, with the exception of boundary 6, where a non-nodal collocation strategy is prefered for all the nodes along its boundaries, with a displacement towards inside each element of 10\% the width of the element, one should write:
-\begin{Verbatim}[frame=single, fontsize=\small, label={input.dat}]
-...
-
-[bem formulation over boundaries]
-boundary 1: sbie
-boundary 2: sbie
-boundary 3: sbie
-boundary 4: sbie
-boundary 5: sbie
-boundary 6: sbie_boundary_mca 0.1
-\end{Verbatim} 
-
-
-\begin{table}
-\centering
-{\footnotesize
-\begin{tabular}{lcL{10cm}}
-\textbf{Keyword} & \textbf{Values} & \textbf{Description} \\
-\midrule
-\multicolumn{3}{c}{\textit{Ordinary boundaries}} \\
-\midrule
-\texttt{sbie} & none & SBIE with nodal collocation strategy for all nodes of the boundary. This is unsafe since at doubled nodes, depending on the boundary conditions, it can lead to a singular linear system of equations. This option can not be used in truncated boundaries, such as those for surfaces of unbounded regions. \\
-\texttt{sbie\_boundary\_mca} & $\delta$ & \textbf{This is the default formulation for ordinary boundaries.} SBIE with nodal collocation strategy for all nodes of the boundary except for the nodes at the boundary of the boundary, where MCA is used. The default value is $\delta=0.05$.  \\
-\texttt{sbie\_mca} & $\delta$ & SBIE with MCA for all nodes of the boundary. The default value is indicated by Note 1. \\
-\texttt{hbie} & $\delta$ & HBIE with MCA for all nodes. For using default values (see Note 1), the user must write a value $\delta\leq0$. Other values  \\
-\texttt{dual\_bm\_same} & $\delta$ & Burton and Miller formulation (SBIE$+i/k$HBIE) for eliminating spurious frequencies when solving some exterior problems. SBIE and HBIE with MCA (same $\delta$) for all nodes. The default value is indicated by Note 1. \\
-\texttt{dual\_bm\_mixed} & $\delta_\mathrm{S}$ $\delta_\mathrm{H}$ & Burton and Miller formulation (SBIE$+i/k$HBIE) for eliminating spurious frequencies when solving some exterior problems. SBIE with nodal collocation for all nodes of the boundary except for the nodes at the boundary of the boundary where MCA is used ($\delta_\mathrm{S}$), and HBIE with MCA ($\delta_\mathrm{H}$) for all nodes. For SBIE, the default value $\delta_\mathrm{S}=0.05$. For HBIE, the default value $\delta_\mathrm{H}$ is indicated by Note 1. \\
-\midrule
-\multicolumn{3}{c}{\textit{Crack-like boundaries}} \\
-\midrule
-\texttt{same} & $\delta$ & \textbf{This is the default formulation for crack-like boundaries.} Dual BEM (SBIE/HBIE) formulation for crack boundary elements with MCA for all nodes. The default value $\delta$ is indicated by Note 1. \\
-\texttt{mixed} & $\delta_\mathrm{S}$ $\delta_\mathrm{H}$ & Dual BEM (SBIE/HBIE) formulation for crack boundary elements. SBIE with nodal collocation for all nodes of the boundary except for the nodes at the boundary of the boundary where MCA is used ($\delta_\mathrm{S}$), and HBIE with MCA ($\delta_\mathrm{H}$) for all nodes. For SBIE, the default value $\delta_\mathrm{S}=0.05$. For HBIE, the default value $\delta_\mathrm{H}$ is indicated by Note 1. \\
-\end{tabular}
-\begin{flushleft}
-\begin{itemize}
-\item General note 1: Formally $0<\delta<1$, but in practice it should be $0.01<\delta<0.6$.
-\item General note 2: If the user assigns a value $\delta\leq0$, default values are considered.
-\item Note 1: By default, $\delta=0.42$ for linear elements, $\delta=0.23$ for quadratic elements, and $\delta=0.14$ for cubic elements. 
-\end{itemize}
-\end{flushleft}
-
-
-
-\caption{List of options and values in section \texttt{bem formulation boundaries}}
-\label{tab:bem_formulation_boundaries}
-}
-\end{table}
-
-
 \subsection{Section \texttt{incident waves}}
+\label{sec:incident_waves}
+
 In this section, the incoming waves are defined. The incidence angles are shown in Figure \ref{fig:incidence}.
 
 \begin{figure}[h]
@@ -1833,6 +2370,8 @@ For 3D problems in a time harmonic analysis, where each node variable is written
 \$18-\$33 & float & Membrane forces ($N_{x'}$, $N_{y'}$, $N_{x'y'}$), bending moments ($M_{x'}$, $M_{y'}$), twisting moment ($M_{x'y'}$) and shear forces ($V_{x'}$, $V_{y'}$).
 \end{longtable}
 
+The definition of the local cartesian basis and the stress resultants sign criteria for beams and shells are established according to Section \ref{subsec:cross_sections} (see Figures \ref{fig:local_axes_yref_1d}, \ref{fig:local_axes_yref_2d}, \ref{fig:stress_resultants_beam} and \ref{fig:stress_resultants_shell}).
+
 %\section{Resultant solutions file (\texttt{*.tot})}
 
 \section{Gmsh results file (\texttt{*.pos})}
@@ -1847,10 +2386,10 @@ The Gmsh output file (\texttt{*.pos}) contains the case mesh and results (MSH fi
     \item Solid total tractions (negative faces). Only boundary elements.
     \item FE nodal forces/reactions. Only finite elements.
     \item Beam stress resultants. Only finite elements.
-    \item Beam stress resultants local axis $x'$, $y'$ and $z'$. Only finite elements.
+    \item Beam stress resultants local axes $x'$, $y'$ and $z'$. Only finite elements.
     \item Bar stress resultants. Only finite elements.
     \item Shell stress resultants. Only finite elements.
-    \item Shell stress resultants local axis $x'$, $y'$ and $z'$. Only finite elements.
+    \item Shell stress resultants local axes $x'$, $y'$ and $z'$. Only finite elements.
 \end{itemize}
 
 %

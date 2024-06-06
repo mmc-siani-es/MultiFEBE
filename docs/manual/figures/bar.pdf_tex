@@ -1,0 +1,92 @@
+%% Creator: Inkscape 1.3.2 (1:1.3.2+202311252150+091e20ef0f), www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'bar.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{453.54330709bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.375)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0.12500001,0.1625){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$u_y^{(i)}$\end{tabular}}}}%
+    \put(0.18750001,0.00625){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}(a) 2D analysis\end{tabular}}}}%
+    \put(0.1125,0.125){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}node $i$\end{tabular}}}}%
+    \put(0.23749999,0.30625005){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}node $j$\end{tabular}}}}%
+    \put(0.28749999,0.30625005){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$u_x^{(j)}$\end{tabular}}}}%
+    \put(0.16250002,0.11875002){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$u_x^{(i)}$\end{tabular}}}}%
+    \put(0.25000004,0.35){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$u_y^{(j)}$\end{tabular}}}}%
+    \put(0.85000004,0.125){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$N_{x'}^{(e)}$\end{tabular}}}}%
+    \put(0.90000004,0.2375){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$N_{x'}^{(e)}$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{bar.pdf}}%
+    \put(0.03124999,0.1125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y$\end{tabular}}}}%
+    \put(0.08125018,0.05625001){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$x$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{bar.pdf}}%
+    \put(0.45624999,0.18125){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}node $i$\end{tabular}}}}%
+    \put(0.64374999,0.25625){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}node $j$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{bar.pdf}}%
+    \put(0.40625009,0.1125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$z$\end{tabular}}}}%
+    \put(0.43750009,0.08750001){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$y$\end{tabular}}}}%
+    \put(0.45625009,0.05625001){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$x$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{bar.pdf}}%
+    \put(0.69374999,0.24375){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$u_x^{(j)}$\end{tabular}}}}%
+    \put(0.67499999,0.27499998){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$u_y^{(j)}$\end{tabular}}}}%
+    \put(0.65624999,0.28749998){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$u_z^{(j)}$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{bar.pdf}}%
+    \put(0.50624994,0.18125){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$u_x^{(i)}$\end{tabular}}}}%
+    \put(0.48749999,0.21249998){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$u_y^{(i)}$\end{tabular}}}}%
+    \put(0.46874994,0.225){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$u_z^{(i)}$\end{tabular}}}}%
+    \put(0.56249999,0.00625){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}(b) 3D analysis\end{tabular}}}}%
+    \put(0.87500004,0.00625){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}(c) Axial force\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{bar.pdf}}%
+    \put(0.19375002,0.25){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
+    \put(0.58124999,0.23124998){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{bar.pdf}}%
+    \put(0.86875004,0.1875){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$x'$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{bar.pdf}}%
+  \end{picture}%
+\endgroup%

@@ -1,0 +1,90 @@
+%% Creator: Inkscape 1.3.2 (1:1.3.2+202311252150+091e20ef0f), www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'local_axes_yref_2d.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{453.54330709bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.5)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{local_axes_yref_2d.pdf}}%
+    \put(0.50624999,0.2625){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$y'$, \\$\mathbf{e}'_{2}=\dfrac{\mathbf{e}'_{3}\times\mathbf{x}'_\mathrm{ref}}{|\mathbf{e}'_{3}\times\mathbf{x}'_\mathrm{ref}|}$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{local_axes_yref_2d.pdf}}%
+    \put(0.03125011,0.14375){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$z$\end{tabular}}}}%
+    \put(0.0625001,0.11875){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$y$\end{tabular}}}}%
+    \put(0.0812501,0.0875){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$x$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{local_axes_yref_2d.pdf}}%
+    \put(0.15271222,0.27292545){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$\xi_1$\end{tabular}}}}%
+    \put(0.12551938,0.34751873){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$\xi_2$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{local_axes_yref_2d.pdf}}%
+    \put(0.19375,0.31875){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$z'$, $\mathbf{e}'_{3}$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{local_axes_yref_2d.pdf}}%
+    \put(0.34375009,0.14375){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$z$\end{tabular}}}}%
+    \put(0.37500009,0.11875){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$y$\end{tabular}}}}%
+    \put(0.39375009,0.0875){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$x$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{local_axes_yref_2d.pdf}}%
+    \put(0.50624999,0.31875){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$z'$, $\mathbf{e}'_{3}$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{local_axes_yref_2d.pdf}}%
+    \put(0.30625001,0.4125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$\mathbf{x}'_\mathrm{ref}$ (free vector)\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{local_axes_yref_2d.pdf}}%
+    \put(0.81875004,0.2625){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$y'$, $\mathbf{e}'_{2}$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{local_axes_yref_2d.pdf}}%
+    \put(0.65625013,0.14374995){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$z$\end{tabular}}}}%
+    \put(0.68750013,0.11874995){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$y$\end{tabular}}}}%
+    \put(0.70625018,0.08749995){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$x$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=10]{local_axes_yref_2d.pdf}}%
+    \put(0.81875004,0.31875){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$z'$, $\mathbf{e}'_{3}$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=11]{local_axes_yref_2d.pdf}}%
+    \put(0.83750004,0.19999999){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$x'$, $\mathbf{e}'_{1}=\mathbf{e}'_{2}\times\mathbf{e}'_{3}$\end{tabular}}}}%
+    \put(0.16250001,0.0125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}(a) $\mathbf{e}'_3$ from element\end{tabular}}}}%
+    \put(0.48750003,0.0125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}(b) $\mathbf{e}'_2$ from $\mathbf{e}'_{3}\times\mathbf{x}'_\mathrm{ref}$\end{tabular}}}}%
+    \put(0.82500003,0.0125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}(c) $\mathbf{e}'_1$ from $\mathbf{e}'_{2}\times\mathbf{e}'_{3}$\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=12]{local_axes_yref_2d.pdf}}%
+  \end{picture}%
+\endgroup%
