@@ -125,12 +125,6 @@ subroutine read_commands(fileunit)
         deallocate(sp)
       end if
 
-
-
-
-
-
-
       !
       ! Check if the command is not recognized
       !
