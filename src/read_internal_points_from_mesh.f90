@@ -72,7 +72,7 @@ subroutine read_internal_points_from_mesh(input_fileunit)
     ! -----------------------
 
     !
-    ! TO-DO: save mesh location in order to export de results to a *.pos there
+    ! TO-DO: save mesh location in order to export the results to a *.pos there
     !
 
     call fbem_search_section(input_fileunit,section_name,found)

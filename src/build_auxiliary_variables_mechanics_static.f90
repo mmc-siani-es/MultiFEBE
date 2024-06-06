@@ -712,13 +712,13 @@ subroutine build_auxiliary_variables_mechanics_static
                   case (4)
 
                     !---------------------------------------------------------------------------------------------------------------
-                    ! DISCRETE TRANSLATIONAL SPRING FINITE ELEMENTS
+                    ! DISCRETE TRANSLATIONAL SPRING/DASHPOT (DISTRA), SPRING AND DASHPOT FINITE ELEMENTS
                     !
                     !
                     ! Values to store
                     !
-                    ! Spring forces                     : value_r(k,n,1): NX,NY,NZ
-                    ! Equilibrating loads (nodal axes)  : value_r(k,n,2): FX,FY,FZ
+                    ! Spring forces                     : value_c(k,n,1): NX,NY,NZ
+                    ! Equilibrating loads (nodal axes)  : value_c(k,n,2): FX,FY,FZ
                     !
                     allocate (element(se)%value_r(problem%n,2,2))
                     element(se)%value_r=0
@@ -732,9 +732,6 @@ subroutine build_auxiliary_variables_mechanics_static
                       case default
                         call fbem_error_message(error_unit,0,'element',element(se)%id,'distra element only available for line2 mesh element')
                     end select
-!                    allocate(element(se)%node_n_dof(element(se)%n_nodes))
-!                    element(se)%node_n_dof=0
-!                    element(se)%node_n_dof(1:2)=problem%n
                     !
                     !---------------------------------------------------------------------------------------------------------------
 
@@ -766,6 +763,33 @@ subroutine build_auxiliary_variables_mechanics_static
 !                    element(se)%node_n_dof(1:2)=3*(problem%n-1)
                     !
                     !---------------------------------------------------------------------------------------------------------------
+
+                  case (6)
+
+                    !---------------------------------------------------------------------------------------------------------------
+                    ! DISCRETE SPRING-DASHPOT
+                    !
+                    !
+                    ! Values to store
+                    !
+                    ! Stress resultants                  : value_r(k,n,1): NX
+                    ! Equilibrating loads (global axes)  : value_r(k,n,2): FX,FY,FZ
+                    !
+                    allocate (element(se)%value_r(problem%n,element(se)%n_nodes,2))
+                    element(se)%value_r=0
+                    !
+                    ! DOF handling
+                    !
+                    allocate(element(se)%node_n_dof(element(se)%n_nodes))
+                    select case (element(se)%type)
+                      case (fbem_line2)
+                        element(se)%node_n_dof=problem%n
+                      case default
+                        call fbem_error_message(error_unit,0,'element',element(se)%id,'spring-dashpot element only available for line2 mesh element')
+                    end select
+                    !
+                    !---------------------------------------------------------------------------------------------------------------
+
 
                   case default
 

@@ -623,7 +623,37 @@ subroutine export_solution_mechanics_static_gmsh(output_fileunit)
                                           exp_n_elements,exp_element_eid,exp_element_n_nodes,exp_element_node_value)
   end if
 
+  ! ================================================================================================================================
+  ! Discrete spring-dashpot stress resultants (as scalar)
+  ! ================================================================================================================================
 
+  exp_n_elements=0
+  exp_element_eid=0
+  exp_element_n_nodes=0
+  exp_element_node_value=0
+  do kr=1,n_regions
+    if (region(kr)%class.eq.fbem_fe) then
+      do ks=1,region(kr)%n_fe_subregions
+        ss=region(kr)%fe_subregion(ks)
+        do ke=1,part(fe_subregion(ss)%part)%n_elements
+          se=part(fe_subregion(ss)%part)%element(ke)
+            if ((element(se)%n_dimension.eq.1).and.(element(se)%fe_type.eq.6)) then
+              exp_n_elements=exp_n_elements+1
+              exp_element_eid(exp_n_elements)=element(se)%id
+              exp_element_n_nodes(exp_n_elements)=element(se)%n_nodes
+              do kn=1,element(se)%n_nodes
+                exp_element_node_value(1,kn,exp_n_elements)=element(se)%value_r(1,kn,1)
+              end do
+            end if
+        end do
+      end do
+    end if
+  end do
+  if (exp_n_elements.gt.1) then
+    call fbem_export_gmsh_ElementNodeData(output_fileunit,'Spring-dashpot NX',0.d0,0,1,&
+                                          n_elements,maxval(fbem_n_nodes),&
+                                          exp_n_elements,exp_element_eid,exp_element_n_nodes,exp_element_node_value)
+  end if
 
 
 

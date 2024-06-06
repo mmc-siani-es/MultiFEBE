@@ -101,7 +101,7 @@ subroutine read_internal_points(input_fileunit)
       end if
     end do
 
-    ! Export them by default
+    ! Export all of them by default
     do i=1,n_internalpoints
       internalpoint(i)%export=.true.
     end do

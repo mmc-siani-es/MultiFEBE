@@ -98,10 +98,27 @@ module fbem_fem_beams
   public :: fbem_fem_bar_M
   public :: fbem_fem_bar_K_static
   public :: fbem_fem_bar_K_harmonic
-  public :: fbem_fem_bar_DB
-  public :: fbem_fem_bar_stress_resultants
+  public :: fbem_fem_bar_KLT_static
+  public :: fbem_fem_bar_KLT_harmonic
   !
   !public :: fbem_fem_bar_test
+  ! ================================================================================================================================
+
+  ! ================================================================================================================================
+  ! SPRING/DASHPOT
+  !
+  ! TYPE OF MESH ELEMENT:
+  !
+  ! LINE2: (1)---------------(2)
+  !
+  ! DOF per node:
+  !   2D: (u1,u2)'
+  !   3D: (u1,u2,u3)'
+  !
+  public :: fbem_fem_springdashpot_K_static
+  public :: fbem_fem_springdashpot_K_harmonic
+  public :: fbem_fem_springdashpot_KLT_static
+  public :: fbem_fem_springdashpot_KLT_harmonic
   ! ================================================================================================================================
 
   ! ================================================================================================================================
@@ -325,7 +342,7 @@ contains
     real(kind=real64) :: local_axis(rn,rn)   !! Local axes where springs and dashpots are defined
     real(kind=real64) :: nodal_axes(rn,rn,2) !! Axes for each node DOFs nodal_axes(component,axis,node)
     real(kind=real64) :: Kval(8)             !! Springs stiffnesses
-    real(kind=real64) :: KLT(2*rn,2*rn)        !! Stiffness matrix
+    real(kind=real64) :: KLT(2*rn,2*rn)      !! Matrix
     ! Local
     real(kind=real64) :: L(2*rn,2*rn)
     real(kind=real64) :: Kl(2*rn,2*rn)
@@ -343,7 +360,7 @@ contains
     real(kind=real64)    :: local_axis(rn,rn)   !! Local axes where springs and dashpots are defined
     real(kind=real64)    :: nodal_axes(rn,rn,2) !! Axes for each node DOFs nodal_axes(component,axis,node)
     complex(kind=real64) :: Kval(8)             !! Springs stiffnesses
-    complex(kind=real64) :: KLT(2*rn,2*rn)      !! Stiffness matrix
+    complex(kind=real64) :: KLT(2*rn,2*rn)      !! Matrix
     ! Local
     real(kind=real64) :: L(2*rn,2*rn)
     complex(kind=real64) :: Kl(2*rn,2*rn)
@@ -625,7 +642,7 @@ contains
     real(kind=real64) :: local_axis(rn,rn)          !! Local axes where springs and dashpots are defined
     real(kind=real64) :: nodal_axes(rn,rn,2)        !! Axes for each node DOFs nodal_axes(component,axis,node)
     real(kind=real64) :: Kval(8)                    !! Springs stiffnesses: 2D (k1,k2,kr3,k2r3), 3D (k1,k2,k3,kr1,kr2,kr3,k2r3,k3r2)
-    real(kind=real64) :: KLT(2*3*(rn-1),2*3*(rn-1)) !! Stiffness matrix
+    real(kind=real64) :: KLT(2*3*(rn-1),2*3*(rn-1)) !! Matrix
     ! Local
     real(kind=real64) :: L(2*3*(rn-1),2*3*(rn-1))
     real(kind=real64) :: Kl(2*3*(rn-1),2*3*(rn-1))
@@ -643,7 +660,7 @@ contains
     real(kind=real64)    :: local_axis(rn,rn)          !! Local axes where springs and dashpots are defined
     real(kind=real64)    :: nodal_axes(rn,rn,2)        !! Axes for each node DOFs nodal_axes(component,axis,node)
     complex(kind=real64) :: Kval(8)                    !! Springs stiffnesses: 2D (k1,k2,kr3,k2r3), 3D (k1,k2,k3,kr1,kr2,kr3,k2r3,k3r2)
-    complex(kind=real64) :: KLT(2*3*(rn-1),2*3*(rn-1)) !! Complex stiffness matrix
+    complex(kind=real64) :: KLT(2*3*(rn-1),2*3*(rn-1)) !! Matrix
     ! Local
     real(kind=real64)    :: L(2*3*(rn-1),2*3*(rn-1))
     complex(kind=real64) :: Kl(2*3*(rn-1),2*3*(rn-1))
@@ -809,81 +826,56 @@ contains
     K=matmul(L,matmul(Kl,transpose(L)))
   end subroutine fbem_fem_bar_K_harmonic
 
- !! D*B product for stress resultant calculation
-  function fbem_fem_bar_DB(etype,L,A,E,xi)
-    implicit none
-    integer           :: etype               !! Type of element
-    real(kind=real64) :: L                   !! Length
-    real(kind=real64) :: A                   !! Cross section area
-    real(kind=real64) :: E                   !! oung' modulus
-    real(kind=real64) :: xi                  !! Reference coordinate (0<=xi<=1)
-    real(kind=real64) :: fbem_fem_bar_DB(fbem_n_nodes(etype))
-    fbem_fem_bar_DB=0
-    select case (etype)
-      case (fbem_line2)
-        fbem_fem_bar_DB(1)=-1
-        fbem_fem_bar_DB(2)= 1
-      case (fbem_line3)
-        fbem_fem_bar_DB(1)=-3+4*xi
-        fbem_fem_bar_DB(2)=-1+4*xi
-        fbem_fem_bar_DB(3)=4-8*xi
-      case default
-        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid type of bar')
-    end select
-    fbem_fem_bar_DB=E*A/L*fbem_fem_bar_DB
-  end function fbem_fem_bar_DB
-
-  ! Stress resultants extrapolated from Gauss points. Remember Fsigma must be later multiplied by E (Young modulus)
-  subroutine fbem_fem_bar_stress_resultants(rn,x,A,nodal_axes,setype,sedelta,Fsigma)
+  !! Calculation of matrix for bar force calculation
+  subroutine fbem_fem_bar_KLT_static(rn,x,A,nodal_axes,E,KLT)
     implicit none
     ! I/O
-    integer           :: rn                          !! Number of dimensions of the ambient space
-    real(kind=real64) :: x(rn,2)                     !! Coordinates of the nodes
-    real(kind=real64) :: A                           !! Length
-    real(kind=real64) :: nodal_axes(rn,rn,2)         !! Axes for each node DOFs nodal_axes(component,axis,node)
-    integer           :: setype                      !! Stress interpolation: type of interpolation
-    real(kind=real64) :: sedelta                     !! Stress interpolation: delta of type of interpolation
-    real(kind=real64), allocatable :: Fsigma(:,:,:)  !! Stress resultants matrix at interpolation points (without multiplying by E)
+    integer           :: rn                  !! Number of dimensions of the ambient space
+    real(kind=real64) :: x(rn,2)             !! Coordinates of the nodes
+    real(kind=real64) :: A                   !! Cross section area
+    real(kind=real64) :: nodal_axes(rn,rn,2) !! Axes for each node DOFs nodal_axes(component,axis,node)
+    real(kind=real64) :: E                   !! Young' modulus
+    real(kind=real64) :: KLT(2,2*rn)         !! Matrix
     ! Local
-    integer           :: ksp
+    real(kind=real64) :: L(2*rn,2)
     real(kind=real64) :: Le, local_axis(rn)
-    real(kind=real64) :: L(2*rn,2), DB(1,2)
-    real(kind=real64) :: xi
-    !
-    ! Initialization
-    !
+    real(kind=real64) :: Kl(2,2)
+    ! Auxiliary calculations
     local_axis=x(:,2)-x(:,1)
     Le=sqrt(dot_product(local_axis,local_axis))
     local_axis=local_axis/Le
-    ! Coordinate transformation matrix
+    ! Calculation of matrices
     L=fbem_fem_bar_L(rn,local_axis,nodal_axes)
-    ! Select the stress interpolation scheme
-    setype=fbem_line1
-    sedelta=0
-    ! Local stress resultants matrix at interpolation points
-    allocate(Fsigma(1,2*rn,fbem_n_nodes(setype)))
-    Fsigma=0
-    !
-    ! Loops through sampling points
-    !
-    do ksp=1,fbem_n_nodes(setype)
-      !
-      ! Sampling point coordinate
-      !
-#     define node ksp
-#     define etype setype
-#     define delta sedelta
-#     include <xi_1d_at_node.rc>
-#     undef node
-#     undef etype
-#     undef delta
-      !
-      ! Convert -1<=xi<=1 to 0<=xi<=1
-      !
-      DB(1,:)=fbem_fem_bar_DB(fbem_line2,Le,A,1.d0,xi)
-      Fsigma(:,:,ksp)=matmul(DB,transpose(L))
-    end do
-  end subroutine fbem_fem_bar_stress_resultants
+    Kl=fbem_fem_bar_K(Le,A,E)
+    KLT=matmul(Kl,transpose(L))
+  end subroutine fbem_fem_bar_KLT_static
+
+  !! Calculation of matrix for bar force calculation
+  subroutine fbem_fem_bar_KLT_harmonic(rn,omega,x,A,nodal_axes,E,KLT)
+    implicit none
+    ! I/O
+    integer              :: rn                  !! Number of dimensions of the ambient space
+    real(kind=real64)    :: omega               !! Circular frequency
+    real(kind=real64)    :: x(rn,2)             !! Coordinates of the nodes
+    real(kind=real64)    :: A                   !! Cross section area
+    real(kind=real64)    :: nodal_axes(rn,rn,2) !! Axes for each node DOFs nodal_axes(component,axis,node)
+    complex(kind=real64) :: E                   !! Young' modulus
+    complex(kind=real64) :: KLT(2,2*rn)      !! Matrix
+    ! Local
+    real(kind=real64)    :: L(2*rn,2)
+    real(kind=real64)    :: Le, local_axis(rn)
+    complex(kind=real64) :: Kl(2,2)
+    real(kind=real64)    :: Ml(2,2)
+    ! Auxiliary calculations
+    local_axis=x(:,2)-x(:,1)
+    Le=sqrt(dot_product(local_axis,local_axis))
+    local_axis=local_axis/Le
+    ! Calculation of matrices
+    L=fbem_fem_bar_L(rn,local_axis,nodal_axes)
+    Kl=fbem_fem_bar_K(Le,A,1.d0)
+    Kl=E*Kl
+    KLT=matmul(L,matmul(Kl,transpose(L)))
+  end subroutine fbem_fem_bar_KLT_harmonic
 
 !~   ! Tests
 !~   subroutine fbem_fem_bar_test()
@@ -923,6 +915,140 @@ contains
 !~       write(*,*) dreal(Kc(kn,:))
 !~     end do
 !~   end subroutine fbem_fem_bar_test
+
+  ! ================================================================================================================================
+  ! SPRING/DASHPOT ELEMENT
+  ! ================================================================================================================================
+
+  !! Calculation of all matrices needed for static analysis
+  subroutine fbem_fem_springdashpot_K_static(rn,x,kxp,nodal_axes,K)
+    implicit none
+    ! I/O
+    integer           :: rn                  !! Number of dimensions of the ambient space
+    real(kind=real64) :: x(rn,2)             !! Coordinates of the nodes
+    real(kind=real64) :: kxp                 !! Stiffness: kx'
+    real(kind=real64) :: nodal_axes(rn,rn,2) !! Axes for each node DOFs nodal_axes(component,axis,node)
+    real(kind=real64) :: K(2*rn,2*rn)        !! Stiffness matrix
+    ! Local
+    real(kind=real64) :: L(2*rn,2)
+    real(kind=real64) :: Le, local_axis(rn)
+    real(kind=real64) :: Kl(2,2)
+    ! Auxiliary calculations
+    local_axis=x(:,2)-x(:,1)
+    Le=sqrt(dot_product(local_axis,local_axis))
+    local_axis=local_axis/Le
+    ! Calculation of matrices
+    L=fbem_fem_bar_L(rn,local_axis,nodal_axes)
+    ! Local stiffness matrix
+    Kl(1,1)=kxp
+    Kl(1,2)=-kxp
+    Kl(2,1)=-kxp
+    Kl(2,2)=kxp
+    K=matmul(L,matmul(Kl,transpose(L)))
+  end subroutine fbem_fem_springdashpot_K_static
+
+  !! Calculation of all matrices needed for time harmonic analysis
+  subroutine fbem_fem_springdashpot_K_harmonic(rn,omega,x,kxp,cxp,nodal_axes,K)
+    implicit none
+    ! I/O
+    integer              :: rn                  !! Number of dimensions of the ambient space
+    real(kind=real64)    :: omega               !! Circular frequency
+    real(kind=real64)    :: x(rn,2)             !! Coordinates of the nodes
+    complex(kind=real64) :: kxp                 !! Stiffness: kx'
+    real(kind=real64)    :: cxp                 !! Viscous damping coefficient: cx'
+    real(kind=real64)    :: nodal_axes(rn,rn,2) !! Axes for each node DOFs nodal_axes(component,axis,node)
+    complex(kind=real64) :: K(2*rn,2*rn)        !! Stiffness matrix
+    ! Local
+    real(kind=real64)    :: L(2*rn,2)
+    real(kind=real64)    :: Le, local_axis(rn)
+    complex(kind=real64) :: Kl(2,2)
+    real(kind=real64)    :: Cl(2,2)
+    ! Auxiliary calculations
+    local_axis=x(:,2)-x(:,1)
+    Le=sqrt(dot_product(local_axis,local_axis))
+    local_axis=local_axis/Le
+    ! Calculation of matrices
+    L=fbem_fem_bar_L(rn,local_axis,nodal_axes)
+    ! Local stiffness matrix
+    Kl(1,1)=kxp
+    Kl(1,2)=-kxp
+    Kl(2,1)=-kxp
+    Kl(2,2)=kxp
+    ! Local viscous damping matrix
+    Cl(1,1)=cxp
+    Cl(1,2)=-cxp
+    Cl(2,1)=-cxp
+    Cl(2,2)=cxp
+    ! Local time harmonic stiffness matrix
+    Kl=Kl+c_im*omega*Cl
+    K=matmul(L,matmul(Kl,transpose(L)))
+  end subroutine fbem_fem_springdashpot_K_harmonic
+
+  !! Calculation of matrix for spring/dashpot force calculation
+  subroutine fbem_fem_springdashpot_KLT_static(rn,x,kxp,nodal_axes,KLT)
+    implicit none
+    ! I/O
+    integer           :: rn                  !! Number of dimensions of the ambient space
+    real(kind=real64) :: x(rn,2)             !! Coordinates of the nodes
+    real(kind=real64) :: kxp                 !! Stiffness: kx'
+    real(kind=real64) :: nodal_axes(rn,rn,2) !! Axes for each node DOFs nodal_axes(component,axis,node)
+    real(kind=real64) :: KLT(2,2*rn)         !! Matrix
+    ! Local
+    real(kind=real64) :: L(2*rn,2)
+    real(kind=real64) :: Le, local_axis(rn)
+    real(kind=real64) :: Kl(2,2)
+    ! Auxiliary calculations
+    local_axis=x(:,2)-x(:,1)
+    Le=sqrt(dot_product(local_axis,local_axis))
+    local_axis=local_axis/Le
+    ! Calculation of matrices
+    L=fbem_fem_bar_L(rn,local_axis,nodal_axes)
+    ! Local stiffness matrix
+    Kl(1,1)=kxp
+    Kl(1,2)=-kxp
+    Kl(2,1)=-kxp
+    Kl(2,2)=kxp
+    ! Final K·L^T
+    KLT=matmul(Kl,transpose(L))
+  end subroutine fbem_fem_springdashpot_KLT_static
+
+  !! Calculation of matrix for spring/dashpot force calculation
+  subroutine fbem_fem_springdashpot_KLT_harmonic(rn,omega,x,kxp,cxp,nodal_axes,KLT)
+    implicit none
+    ! I/O
+    integer              :: rn                  !! Number of dimensions of the ambient space
+    real(kind=real64)    :: omega               !! Circular frequency
+    real(kind=real64)    :: x(rn,2)             !! Coordinates of the nodes
+    complex(kind=real64) :: kxp                 !! Stiffness: kx'
+    real(kind=real64)    :: cxp                 !! Viscous damping coefficient: cx'
+    real(kind=real64)    :: nodal_axes(rn,rn,2) !! Axes for each node DOFs nodal_axes(component,axis,node)
+    complex(kind=real64) :: KLT(2,2*rn)      !! Matrix
+    ! Local
+    real(kind=real64)    :: L(2*rn,2)
+    real(kind=real64)    :: Le, local_axis(rn)
+    complex(kind=real64) :: Kl(2,2)
+    real(kind=real64)    :: Cl(2,2)
+    ! Auxiliary calculations
+    local_axis=x(:,2)-x(:,1)
+    Le=sqrt(dot_product(local_axis,local_axis))
+    local_axis=local_axis/Le
+    ! Calculation of matrices
+    L=fbem_fem_bar_L(rn,local_axis,nodal_axes)
+    ! Local stiffness matrix
+    Kl(1,1)=kxp
+    Kl(1,2)=-kxp
+    Kl(2,1)=-kxp
+    Kl(2,2)=kxp
+    ! Local viscous damping matrix
+    Cl(1,1)=cxp
+    Cl(1,2)=-cxp
+    Cl(2,1)=-cxp
+    Cl(2,2)=cxp
+    ! Local time harmonic stiffness matrix
+    Kl=Kl+c_im*omega*Cl
+    ! Final K·L^T
+    KLT=matmul(Kl,transpose(L))
+  end subroutine fbem_fem_springdashpot_KLT_harmonic
 
   ! ================================================================================================================================
   ! STRAIGHT EULER-BERNOULLI AND TIMOSHENKO BEAM ELEMENTS
@@ -1473,7 +1599,7 @@ contains
     integer           :: esubtype            !! Subtype (for line3)
     integer           :: theory              !! 1: Euler-Bernoulli, 2: Timoshenko
     real(kind=real64) :: L                   !! Length
-    real(kind=real64) :: A                   !! Length
+    real(kind=real64) :: A                   !! Area
     real(kind=real64) :: I(3)                !! Moments of inertia:       I(1)=I11, I(2)=I22, I(3)=I33 (2D analysis).
     real(kind=real64) :: k(3)                !! Shear correction factors: k(1)=kt , k(2)=k2 (2D analysis), k(3)=k3 .
     real(kind=real64) :: E                   !! Young' modulus
@@ -1917,12 +2043,25 @@ contains
     real(kind=real64)    :: nodal_axes(rn,rn,fbem_n_nodes(etype))                        !! Axes for each node DOFs nodal_axes(component,axis,node)
     complex(kind=real64) :: K(3*(rn-1)*fbem_n_nodes(etype),3*(rn-1)*fbem_n_nodes(etype)) !! Stiffness matrix
     ! Local
-    real(kind=real64) :: Le
+    real(kind=real64) :: Le, x12(rn), x13(rn)
     real(kind=real64) :: L(3*(rn-1)*fbem_n_nodes(etype),3*(rn-1)*fbem_n_nodes(etype))
     real(kind=real64) :: Kl(3*(rn-1)*fbem_n_nodes(etype),3*(rn-1)*fbem_n_nodes(etype))
     real(kind=real64) :: Ml(3*(rn-1)*fbem_n_nodes(etype),3*(rn-1)*fbem_n_nodes(etype))
     ! Auxiliary calculations
     Le=sqrt(dot_product(x(:,2)-x(:,1),x(:,2)-x(:,1)))
+    ! Element checking
+    select case (etype)
+      case (fbem_line2)
+        ! Nothing to do
+      case (fbem_line3)
+        x12 = x(:,2)-x(:,1)
+        x13 = x(:,3)-x(:,1)
+        if (sqrt(dot_product(x13-0.5d0*x12,x13-0.5d0*x12))/Le.gt.1.d-6) then
+          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'mid node of strbeam is not at the centroid (tolerance <= 1e-6)')
+        end if
+      case default
+        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid type of strbeam')
+    end select
     ! Calculation of matrices
     L=fbem_fem_strbeam_L_element(rn,etype,local_axis,nodal_axes)
     Kl=fbem_fem_strbeam_K(rn,etype,esubtype,theory,Le,A,I,ksh,1.d0,nu)

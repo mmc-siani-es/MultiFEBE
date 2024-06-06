@@ -282,6 +282,31 @@ subroutine export_solution_mechanics_harmonic_eso(kf,output_fileunit)
                     !
                     !-------------------------------------------------------------------------------------------------------------
 
+                  case (6)
+
+                    !-------------------------------------------------------------------------------------------------------------
+                    ! DISCRETE SPRING-DASHPOT
+                    !
+                    do kn=1,element(se)%n_nodes
+                      sn=element(se)%node(kn)
+                      write(output_fileunit,fmt1,advance='no') kf, omega, &
+                                                               region(kr)%id, region(kr)%class, region(kr)%type, &
+                                                               fe_subregion(ss)%id, element(se)%n_dimension, element(se)%fe_type, &
+                                                               element(se)%id, element(se)%n_dimension, element(se)%fe_type,&
+                                                               kn, element(se)%node_n_dof(kn), node(sn)%id, node(sn)%x
+                      !
+                      ! Stress resultants                      : value_c(k,n,1): NX
+                      ! Equilibrating loads (global axes)      : value_c(k,n,2): FX,FY OR FX,FY,FZ
+                      !
+                      write(output_fileunit,fmt2,advance='no') element(se)%value_c(1,kn,1)
+!                      do k=1,element(se)%node_n_dof(kn)
+!                        write(output_fileunit,fmt2,advance='no') element(se)%value_c(k,kn,2)
+!                      end do
+                      write(output_fileunit,*)
+                    end do
+                    !
+                    !-------------------------------------------------------------------------------------------------------------
+
                   case default
 
                     !-------------------------------------------------------------------------------------------------------------

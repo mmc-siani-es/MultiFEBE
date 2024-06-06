@@ -337,9 +337,9 @@ subroutine calculate_stresses_mechanics_harmonic(kf)
                   ! BAR FINITE ELEMENTS
                   !
                   ! Build the element DOF vector
-                  allocate (a(problem%n*element(se_int)%n_nodes))
+                  allocate (a(problem%n*2))
                   kdof=1
-                  do kn=1,element(se_int)%n_nodes
+                  do kn=1,2
                     sn=element(se_int)%node(kn)
                     a((kdof):(kdof-1+element(se_int)%node_n_dof(kn)))=node(sn)%value_c(1:element(se_int)%node_n_dof(kn),1)
                     kdof=kdof+element(se_int)%node_n_dof(kn)
@@ -347,49 +347,22 @@ subroutine calculate_stresses_mechanics_harmonic(kf)
                   !
                   ! TO-DO: Los ejes nodales habría que guardarlos para cada nodo y construirlos para cada elemento
                   !
-                  allocate(nodal_axes(problem%n,problem%n,element(se_int)%n_nodes))
+                  allocate(nodal_axes(problem%n,problem%n,2))
                   nodal_axes=0
-                  do kn=1,element(se_int)%n_nodes
+                  do kn=1,2
                     do kc=1,problem%n
                       nodal_axes(kc,kc,kn)=1
                     end do
                   end do
                   !
-                  ! Calculate the STRESS RESULTANTS INTERPOLATION SCHEME
+                  ! Calculate the SPRINGS FORCES
                   !
-                  call fbem_fem_bar_stress_resultants(problem%n,element(se_int)%x_gn,element(se_int)%A,nodal_axes,setype,sedelta,Fsigma)
-                  allocate (F(1,fbem_n_nodes(setype)))
-                  ! Calculate at Gauss points
-                  do kn=1,fbem_n_nodes(setype)
-                    F(:,kn)=E*matmul(FSigma(:,:,kn),a)
-                  end do
-                  ! Extrapolate to nodes
-                  se_int_type=element(se_int)%type
-                  allocate (phi(fbem_n_nodes(setype)))
-                  element(se_int)%value_c=0.d0
-                  do kn=1,element(se_int)%n_nodes
-                    ! Local coordinates at node kn
-#                   define xi xi1d
-#                   define etype se_int_type
-#                   define node kn
-#                   define delta 0.d0
-#                   include <xi_1d_at_node.rc>
-#                   undef etype
-#                   undef node
-#                   undef delta
-                    ! Shape functions of stress resultants at node kn
-#                   define etype setype
-#                   define delta sedelta
-#                   include <phi_1d.rc>
-#                   undef etype
-#                   undef delta
-#                   undef xi
-                    ! Calculate
-                    do kn2=1,fbem_n_nodes(setype)
-                      element(se_int)%value_c(1,kn,1)=element(se_int)%value_c(1,kn,1)+phi(kn2)*F(1,kn2)
-                    end do
-                  end do
-                  deallocate (a,nodal_axes,F,Fsigma,phi)
+                  allocate (f_e(2*problem%n),KLT(2,2*problem%n))
+                  call fbem_fem_bar_KLT_harmonic(problem%n,omega,element(se_int)%x_gn,element(se_int)%A,nodal_axes,E,KLT)
+                  f_e=matmul(KLT,a)
+                  element(se_int)%value_c(1,1,1)=-f_e(1)
+                  element(se_int)%value_c(1,2,1)= f_e(2)
+                  deallocate (a,nodal_axes,f_e,KLT)
                   !
                   !-----------------------------------------------------------------------------------------------------------------
 
@@ -464,6 +437,44 @@ subroutine calculate_stresses_mechanics_harmonic(kf)
                   deallocate (a,nodal_axes,f_e,KLT)
                   !
                   !-----------------------------------------------------------------------------------------------------------------
+
+                case (6)
+
+                  !-----------------------------------------------------------------------------------------------------------------
+                  ! DISCRETE SPRING-DASHPOT
+                  !
+                  ! Build the element DOF vector
+                  allocate (a(problem%n*2))
+                  kdof=1
+                  do kn=1,2
+                    sn=element(se_int)%node(kn)
+                    a((kdof):(kdof-1+element(se_int)%node_n_dof(kn)))=node(sn)%value_c(1:element(se_int)%node_n_dof(kn),1)
+                    kdof=kdof+element(se_int)%node_n_dof(kn)
+                  end do
+                  !
+                  ! TO-DO: Los ejes nodales habría que guardarlos para cada nodo y construirlos para cada elemento
+                  !
+                  allocate(nodal_axes(problem%n,problem%n,2))
+                  nodal_axes=0
+                  do kn=1,2
+                    do kc=1,problem%n
+                      nodal_axes(kc,kc,kn)=1
+                    end do
+                  end do
+                  !
+                  ! Calculate the SPRINGS FORCES
+                  !
+                  allocate (f_e(2*problem%n),KLT(2,2*problem%n))
+
+                  call fbem_fem_springdashpot_KLT_harmonic(problem%n,omega,element(se_int)%x_gn,&
+                                                           element(se_int)%k_c(1),element(se_int)%c(1),nodal_axes,KLT)
+                  f_e=matmul(KLT,a)
+                  element(se_int)%value_c(1,1,1)=-f_e(1)
+                  element(se_int)%value_c(1,2,1)= f_e(2)
+                  deallocate (a,nodal_axes,f_e,KLT)
+                  !
+                  !-----------------------------------------------------------------------------------------------------------------
+
 
                 case default
 

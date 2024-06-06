@@ -223,7 +223,7 @@ subroutine build_fem_K_harmonic(kf,se,ndof_Kinout,Kinout)
           !-------------------------------------------------------------------------------------------------------------------------
           ! BAR FINITE ELEMENTS
           !
-          ndof_K=problem%n*element(se)%n_nodes
+          ndof_K=problem%n*2
           allocate (K(ndof_K,ndof_K))
           K=0
           !
@@ -231,7 +231,7 @@ subroutine build_fem_K_harmonic(kf,se,ndof_Kinout,Kinout)
           !
           allocate(nodal_axes(problem%n,problem%n,element(se)%n_nodes))
           nodal_axes=0
-          do kn=1,element(se)%n_nodes
+          do kn=1,2
             do kc=1,problem%n
               nodal_axes(kc,kc,kn)=1
             end do
@@ -294,6 +294,30 @@ subroutine build_fem_K_harmonic(kf,se,ndof_Kinout,Kinout)
           call fbem_fem_disrotra_K_harmonic(problem%n,element(se)%ep,nodal_axes,element(se)%k_c+c_im*omega*element(se)%c+k_em_add,K)
           !
           !---------------------------------------------------------------------------------------------------------------
+
+        case (6)
+
+          !-------------------------------------------------------------------------------------------------------------------------
+          ! DISCRETE SPRING-DASHPOT
+          !
+          ndof_K=problem%n*2
+          allocate (K(ndof_K,ndof_K))
+          K=0
+          !
+          ! TO-DO: Los ejes nodales habría que guardarlos para cada nodo y construirlos para cada elemento
+          !
+          allocate(nodal_axes(problem%n,problem%n,element(se)%n_nodes))
+          nodal_axes=0
+          do kn=1,2
+            do kc=1,problem%n
+              nodal_axes(kc,kc,kn)=1
+            end do
+          end do
+          !
+          call fbem_fem_springdashpot_K_harmonic(problem%n,omega,element(se)%x_gn,element(se)%k_c(1),element(se)%c(1),nodal_axes,K)
+          !
+          !-------------------------------------------------------------------------------------------------------------------------
+
 
         case default
 

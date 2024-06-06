@@ -99,8 +99,7 @@ subroutine export_solution_mechanics_harmonic_ier(kf,output_fileunit)
   !
   ! Ojo!: esto no valido porque ahora
   !
-
-    ! 'ojo: esto no valido porque ahora se utilizan elementos internos BEM discontinuos para....'
+  ! 'ojo: esto no valido porque ahora se utilizan elementos internos BEM discontinuos para....'
 
 
   ! ------------------

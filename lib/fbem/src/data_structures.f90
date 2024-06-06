@@ -469,6 +469,7 @@ module fbem_data_structures
                                                                         !!   (3) Bar (bar)
                                                                         !!   (4) Discrete translational spring-dashpot (distra)
                                                                         !!   (5) Discrete rotational/translational spring-dashpot (disrotra)
+                                                                        !!   (6) Discrete spring-dashpot (spring-dashpot)
                                                                         !!
                                                                         !! For 2D FE in 3D:
                                                                         !!   (0) Degenerated shell

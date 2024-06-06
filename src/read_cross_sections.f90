@@ -48,12 +48,15 @@ subroutine read_cross_sections(fileunit)
   character(len=fbem_stdcharlen) :: section_name           ! Name of the section
   logical                        :: found
   integer                        :: i, j                   ! Counters
+  character(len=fbem_file_record_length) :: line, word
+  integer                        :: nw
   integer                        :: n_cross_sections
   character(len=fbem_stdcharlen) :: tmp_class, tmp_cross_section    ! Class of structural element
   integer                        :: tmp_n_fe_subregions
   integer, allocatable           :: tmp_fe_subregion(:)
+  real(kind=real64)              :: x12(problem%n), x13(problem%n)
   real(kind=real64)              :: area, inertia(6), tmp_fd1(3), ksh(3)
-  real(kind=real64)              :: thickness(3), v2ref(3), auxr(10), nu, m, n
+  real(kind=real64)              :: thickness(3), xp_ref(3), yp_ref(3), auxr(10), nu, m, n
   real(kind=real64)              :: mass_matrix(6,6), rho_add, zmin, zmax, zc
   complex(kind=real64)           :: auxc(10)
   complex(kind=real64)           :: Usource
@@ -88,19 +91,20 @@ subroutine read_cross_sections(fileunit)
       area=0
       inertia=0
       ksh=0
-      v2ref=0
+      auxr=0
+      auxc=0
+      yp_ref=0
       thickness=0
       tmp_fd1=0
 
       ! Read
       read(fileunit,*) tmp_class, tmp_n_fe_subregions
+      if (tmp_n_fe_subregions.le.0) then
+        call fbem_error_message(error_unit,0,section_name,i,'invalid number of FE subregions')
+      end if
       allocate (tmp_fe_subregion(tmp_n_fe_subregions))
       backspace (fileunit)
 
-
-      !
-      ! Masa puntual como elemento
-      !
       !
       ! PMASS
       !
@@ -124,7 +128,7 @@ subroutine read_cross_sections(fileunit)
       ! DEGBEAM
       !
       !
-      ! Falta leer factor de correccion de cortante customizado
+      ! To-do: read the shear correction factor
       !
       if ((trim(tmp_class).eq.'degenerated_beam').or.(trim(tmp_class).eq.'degbeam')) then
         valid=.true.
@@ -133,18 +137,19 @@ subroutine read_cross_sections(fileunit)
             read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), thickness(2)
             thickness(3)=1. ! Plane strain assumption, if plane stress the other option must be activated
           case (3)
-            read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), thickness(2:3), v2ref
+            read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), thickness(2:3), yp_ref
         end select
       end if
 
       !
       ! STRBEAM
       !
-      if ((trim(tmp_class).eq.'strbeam_eb').or.(trim(tmp_class).eq.'strbeam_t')) then
+      if ((trim(tmp_class).eq.'strbeam').or.(trim(tmp_class).eq.'strbeam_t').or.(trim(tmp_class).eq.'strbeam_eb')) then
         valid=.true.
         ! By default
         select case (problem%n)
           case (2)
+            !
             ! area and inertia must take into account if plane strain or plane stress
             !
             ! lo suyo seria asumir rectangle, y introducir canto, y luego el espesor ponerlo automaticamente 1, o el espesor
@@ -156,13 +161,13 @@ subroutine read_cross_sections(fileunit)
             read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section
             backspace (fileunit)
             if (trim(tmp_cross_section).eq.'circle') then
-              read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(  1), v2ref ! Diameter
+              read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(  1), yp_ref ! Diameter
             else if (trim(tmp_cross_section).eq.'hollow_circle') then
-              read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:2), v2ref ! Outer and inner diameter
+              read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:2), yp_ref ! Outer and inner diameter
             else if (trim(tmp_cross_section).eq.'rectangle') then
-              read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:2), v2ref ! Width (y') and height (z')
+              read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:2), yp_ref ! Width (y') and height (z')
             else if (trim(tmp_cross_section).eq.'generic') then
-              read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, area, (inertia(j),j=1,3), (ksh(j),j=1,3), v2ref
+              read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, area, (inertia(j),j=1,3), (ksh(j),j=1,3), yp_ref
             else
               call fbem_error_message(error_unit,0,section_name,0,'invalid type of cross section for a 3D strbeam_eb')
             end if
@@ -205,12 +210,27 @@ subroutine read_cross_sections(fileunit)
         else if (trim(tmp_cross_section).eq.'hollow_circle') then
           read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:2) ! Outer and inner diameter
         else if (trim(tmp_cross_section).eq.'rectangle') then
-          read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:2) ! Width (y') and height (z')
+          read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:2) ! Width and height
         else if (trim(tmp_cross_section).eq.'generic') then
           read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, area
         else
           call fbem_error_message(error_unit,0,section_name,0,'invalid type of cross section for a 3D strbeam_eb')
         end if
+      end if
+
+      !
+      ! SPRING-DASHPOT
+      !
+      if (trim(tmp_class).eq.'spring-dashpot') then
+        valid=.true.
+        select case (problem%analysis)
+          case (fbem_static)
+            read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), auxr(1)
+          case (fbem_harmonic)
+            read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), auxc(1), auxr(1)
+          case default
+            call fbem_error_message(error_unit,0,section_name,0,'spring-dashpot: unknown problem%analysis')
+        end select
       end if
 
       !
@@ -231,7 +251,7 @@ subroutine read_cross_sections(fileunit)
                 case (2)
                   read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:2)
                 case (3)
-                  read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:3), v2ref
+                  read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:3), yp_ref
               end select
             else
               call fbem_error_message(error_unit,0,section_name,0,'invalid type of axes for distra')
@@ -246,13 +266,13 @@ subroutine read_cross_sections(fileunit)
                 case (2)
                   read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxc(1:2), auxr(1:2)
                 case (3)
-                  read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxc(1:3), auxr(1:3), v2ref
+                  read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxc(1:3), auxr(1:3), yp_ref
               end select
             else
               call fbem_error_message(error_unit,0,section_name,0,'invalid type of axes for distra')
             end if
           case default
-            stop 'not yet 123'
+            call fbem_error_message(error_unit,0,section_name,0,'distra: unknown problem%analysis')
         end select
       end if
 
@@ -271,7 +291,7 @@ subroutine read_cross_sections(fileunit)
               case (2)
                 read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), auxc(1:2), auxr(1:2), em_pars, Usource
               case (3)
-                read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), auxc(1:3), auxr(1:3), v2ref, em_pars, Usource
+                read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), auxc(1:3), auxr(1:3), yp_ref, em_pars, Usource
             end select
           case default
             stop 'Error : unknown analysis'
@@ -301,7 +321,7 @@ subroutine read_cross_sections(fileunit)
                 case (2)
                   read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:4)
                 case (3)
-                  read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:8), v2ref
+                  read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxr(1:8), yp_ref
               end select
             else
               call fbem_error_message(error_unit,0,section_name,0,'invalid type of axes for distra')
@@ -321,7 +341,7 @@ subroutine read_cross_sections(fileunit)
                 case (2)
                   read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxc(1:4), auxr(1:4)
                 case (3)
-                  read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxc(1:8), auxr(1:8), v2ref
+                  read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), tmp_cross_section, auxc(1:8), auxr(1:8), yp_ref
               end select
             else
               call fbem_error_message(error_unit,0,section_name,0,'invalid type of axes for disrotra')
@@ -346,7 +366,7 @@ subroutine read_cross_sections(fileunit)
               case (2)
                 read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), auxc(1:4), auxr(1:4), em_pars, Usource
               case (3)
-                read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), auxc(1:8), auxr(1:8), v2ref, em_pars, Usource
+                read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), auxc(1:8), auxr(1:8), yp_ref, em_pars, Usource
             end select
           case default
             stop 'Error : unknown analysis'
@@ -358,13 +378,32 @@ subroutine read_cross_sections(fileunit)
       !
       !
       ! Falta leer factor de correccion de cortante customizado
+      ! Meter aqui tambien la lectura del vector de referencia para el eje x'
       !
       if ((trim(tmp_class).eq.'shell').or.(trim(tmp_class).eq.'degshell')) then
         valid=.true.
-        if (problem%n.eq.2) then
-          call fbem_error_message(error_unit,0,section_name,0,'invalid class of cross section for a 2D problem')
+        if (problem%n.ne.3) then
+          call fbem_error_message(error_unit,0,section_name,0,'degshell can only be used for 3D analysis')
         end if
         read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), thickness(3)
+        backspace (fileunit)
+        read(fileunit,'(a)') line
+        call fbem_trim2b(line)
+        nw=fbem_count_words(line)
+        if (nw.eq.(3+tmp_n_fe_subregions)) then
+          xp_ref=0
+          call fbem_warning_message(error_unit,0,section_name,i,'this is an old file format, it may be deprecated in the future.')
+          call fbem_warning_message(error_unit,0,section_name,i,'undefined xp_ref for degshell, it will be automatically defined.')
+        elseif (nw.eq.(3+tmp_n_fe_subregions+3)) then
+          word=fbem_extract_word(line,3+tmp_n_fe_subregions+1)
+          read(word,*) xp_ref(1)
+          word=fbem_extract_word(line,3+tmp_n_fe_subregions+2)
+          read(word,*) xp_ref(2)
+          word=fbem_extract_word(line,3+tmp_n_fe_subregions+3)
+          read(word,*) xp_ref(3)
+        else
+          call fbem_error_message(error_unit,0,section_name,i,'incorrect number of arguments')
+        end if
       end if
 
       !
@@ -449,9 +488,9 @@ subroutine read_cross_sections(fileunit)
               allocate (element(se)%tn_midnode(3,element(se)%n_nodes))
               element(se)%tn_midnode=0
             end if
-            element(se)%v_midnode(1,2,:)=v2ref(1)
-            element(se)%v_midnode(2,2,:)=v2ref(2)
-            element(se)%v_midnode(3,2,:)=v2ref(3)
+            element(se)%v_midnode(1,2,:)=yp_ref(1)
+            element(se)%v_midnode(2,2,:)=yp_ref(2)
+            element(se)%v_midnode(3,2,:)=yp_ref(3)
             element(se)%tn_midnode(2,:)=thickness(2)
             element(se)%tn_midnode(3,:)=thickness(3)
             element(se)%cs_type=3
@@ -480,6 +519,19 @@ subroutine read_cross_sections(fileunit)
           ! STRBEAM
           !
           if (((trim(tmp_class).eq.'strbeam_eb').or.(trim(tmp_class).eq.'strbeam_t')).and.(element(se)%n_dimension.eq.1)) then
+            ! Element checking
+            select case (element(se)%type)
+              case (fbem_line2)
+                ! Nothing to do
+              case (fbem_line3)
+                x12 = node(element(se)%node(2))%x-node(element(se)%node(1))%x
+                x13 = node(element(se)%node(3))%x-node(element(se)%node(1))%x
+                if (dot_product(x13-0.5d0*x12,x13-0.5d0*x12)/dot_product(x12,x12).gt.1.d-6) then
+                  call fbem_error_message(error_unit,0,'element',element(se)%id,'mid node of strbeam is not at the centroid (tolerance <= 1e-6)')
+                end if
+              case default
+                call fbem_error_message(error_unit,0,section_name,0,'strbeam elements can only be line2 or line3')
+            end select
             if (.not.allocated(element(se)%ep)) then
               allocate (element(se)%ep(problem%n,problem%n))
               element(se)%ep=0.d0
@@ -489,6 +541,7 @@ subroutine read_cross_sections(fileunit)
             else
               element(se)%fe_type=2
             end if
+            element(se)%fe_options(1)=1 ! By default, mid-node with rotations.
             if (trim(tmp_cross_section).eq.'circle') then
               element(se)%cs_type=1
               element(se)%cs_param(1)=auxr(1)
@@ -549,7 +602,7 @@ subroutine read_cross_sections(fileunit)
               element(se)%r_integration=sqrt(element(se)%A/c_pi)
             end if
             ! Reference vector for y' axis
-            element(se)%ep(:,2)=v2ref(1:problem%n)
+            element(se)%ep(:,2)=yp_ref(1:problem%n)
           end if
 
           !
@@ -602,6 +655,9 @@ subroutine read_cross_sections(fileunit)
           ! BAR
           !
           if (trim(tmp_class).eq.'bar'.and.(element(se)%n_dimension.eq.1)) then
+            if (element(se)%type.ne.fbem_line2) then
+              call fbem_error_message(error_unit,0,section_name,0,'bar elements can be only of mesh element type line2')
+            end if
             element(se)%fe_type=3
             if (trim(tmp_cross_section).eq.'circle') then
               element(se)%cs_type=1
@@ -621,15 +677,37 @@ subroutine read_cross_sections(fileunit)
               element(se)%cs_type=0
               element(se)%A=area
             end if
+          end if
+
+          !
+          ! SPRING/DASHPOT
+          !
+          if ((trim(tmp_class).eq.'spring-dashpot').and.(element(se)%n_dimension.eq.1)) then
             if (element(se)%type.ne.fbem_line2) then
-              call fbem_error_message(error_unit,0,section_name,0,'bar elements can be only of mesh element type line2')
+              call fbem_error_message(error_unit,0,section_name,0,'spring-dashpot elements can be only of mesh element type line2')
             end if
+            element(se)%fe_type=6
+            element(se)%k_r=0
+            element(se)%k_c=0
+            element(se)%c=0
+            select case (problem%analysis)
+              case (fbem_static)
+                element(se)%k_r(1:problem%n)=auxr(1)
+              case (fbem_harmonic)
+                element(se)%k_c(1:problem%n)=auxc(1)
+                element(se)%c  (1:problem%n)=auxr(1)
+              case default
+                call fbem_error_message(error_unit,0,section_name,0,'problem%analysis not available for spring-dashpot')
+            end select
           end if
 
           !
           ! DISTRA
           !
           if ((trim(tmp_class).eq.'distra').and.(element(se)%n_dimension.eq.1)) then
+            if (element(se)%type.ne.fbem_line2) then
+              call fbem_error_message(error_unit,0,section_name,0,'distra elements can be only of mesh element type line2')
+            end if
             element(se)%fe_type=4
             if (.not.allocated(element(se)%ep)) then
               allocate (element(se)%ep(problem%n,problem%n))
@@ -645,23 +723,23 @@ subroutine read_cross_sections(fileunit)
                 element(se)%k_c(1:problem%n)=auxc(1:problem%n)
                 element(se)%c  (1:problem%n)=auxr(1:problem%n)
               case default
-                stop 'not yet 123'
+                call fbem_error_message(error_unit,0,section_name,0,'distra: unknown problem%analysis')
             end select
             if (trim(tmp_cross_section).eq.'global') then
               element(se)%ep(1,1)=1
             else
               ! Reference vector for y' axis
-              element(se)%ep(:,2)=v2ref(1:problem%n)
+              element(se)%ep(:,2)=yp_ref(1:problem%n)
             end if
-            !if (element(se)%type.ne.fbem_line2) then
-            !  call fbem_error_message(error_unit,0,section_name,0,'distra elements can be only of mesh element type line2')
-            !end if
           end if
 
           !
           ! DISTRA_EM
           !
           if ((trim(tmp_class).eq.'distra_em').and.(element(se)%n_dimension.eq.1)) then
+            if (element(se)%type.ne.fbem_line2) then
+              call fbem_error_message(error_unit,0,section_name,0,'distra_em elements can be only of mesh element type line2')
+            end if
             element(se)%fe_type=4
             element(se)%fe_options(1)=1
             if (.not.allocated(element(se)%ep)) then
@@ -678,24 +756,24 @@ subroutine read_cross_sections(fileunit)
                 element(se)%k_c(1:problem%n)=auxc(1:problem%n)
                 element(se)%c  (1:problem%n)=auxr(1:problem%n)
               case default
-                stop 'not yet 123'
+                call fbem_error_message(error_unit,0,section_name,0,'distra_em: unknown problem%analysis')
             end select
             ! Reference vector for y' axis
-            element(se)%ep(:,2)=v2ref(1:problem%n)
+            element(se)%ep(:,2)=yp_ref(1:problem%n)
             ! Electromagnetic parameters
             element(se)%em_U=Usource
             element(se)%em_Bl=em_pars(1)
             element(se)%em_R=em_pars(2)
             element(se)%em_L=em_pars(3)
-            !if (element(se)%type.ne.fbem_line2) then
-            !  call fbem_error_message(error_unit,0,section_name,0,'distra elements can be only of mesh element type line2')
-            !end if
           end if
 
           !
           ! DISROTRA
           !
           if ((trim(tmp_class).eq.'disrotra').and.(element(se)%n_dimension.eq.1)) then
+            if (element(se)%type.ne.fbem_line2) then
+              call fbem_error_message(error_unit,0,section_name,0,'disrotra elements can be only of mesh element type line2')
+            end if
             element(se)%fe_type=5
             if (.not.allocated(element(se)%ep)) then
               allocate (element(se)%ep(problem%n,problem%n))
@@ -723,17 +801,14 @@ subroutine read_cross_sections(fileunit)
                 end select
 
               case default
-                stop 'not yet 123'
+                call fbem_error_message(error_unit,0,section_name,0,'disrotra: unknown problem%analysis')
             end select
             if (trim(tmp_cross_section).eq.'global') then
               element(se)%ep(1,1)=1
             else
               ! Reference vector for y' axis
-              element(se)%ep(:,2)=v2ref(1:problem%n)
+              element(se)%ep(:,2)=yp_ref(1:problem%n)
             end if
-            !if (element(se)%type.ne.fbem_line2) then
-            !  call fbem_error_message(error_unit,0,section_name,0,'disrotra elements can be only of mesh element type line2')
-            !end if
           end if
 
 
@@ -741,6 +816,9 @@ subroutine read_cross_sections(fileunit)
           ! DISROTRA_EM
           !
           if ((trim(tmp_class).eq.'disrotra_em').and.(element(se)%n_dimension.eq.1)) then
+            if (element(se)%type.ne.fbem_line2) then
+              call fbem_error_message(error_unit,0,section_name,0,'disrotra elements can be only of mesh element type line2')
+            end if
             element(se)%fe_type=5
             element(se)%fe_options(1)=1
             if (.not.allocated(element(se)%ep)) then
@@ -769,18 +847,15 @@ subroutine read_cross_sections(fileunit)
                 end select
 
               case default
-                stop 'not yet 123'
+                call fbem_error_message(error_unit,0,section_name,0,'disrotra_em: unknown problem%analysis')
             end select
             ! Reference vector for y' axis
-            element(se)%ep(:,2)=v2ref(1:problem%n)
+            element(se)%ep(:,2)=yp_ref(1:problem%n)
             ! Electromagnetic parameters
             element(se)%em_U=Usource
             element(se)%em_Bl=em_pars(1)
             element(se)%em_R=em_pars(2)
             element(se)%em_L=em_pars(3)
-            !if (element(se)%type.ne.fbem_line2) then
-            !  call fbem_error_message(error_unit,0,section_name,0,'disrotra elements can be only of mesh element type line2')
-            !end if
           end if
 
 
@@ -789,11 +864,16 @@ subroutine read_cross_sections(fileunit)
           !
           if (((trim(tmp_class).eq.'shell').or.(trim(tmp_class).eq.'degshell')).and.(element(se)%n_dimension.eq.2)) then
             element(se)%fe_type=0
-            if (allocated(element(se)%tn_midnode).eqv.(.false.)) then
+            if (.not.allocated(element(se)%tn_midnode)) then
               allocate (element(se)%tn_midnode(3,element(se)%n_nodes))
-              element(se)%tn_midnode=0.
+              element(se)%tn_midnode=0
+            end if
+            if (.not.allocated(element(se)%ep)) then
+              allocate(element(se)%ep(3,3))
+              element(se)%ep=0
             end if
             element(se)%tn_midnode(3,:)=thickness(3)
+            element(se)%ep(:,1)=xp_ref
             element(se)%ksh(1)=5.d0/6.d0
             element(se)%ksh(2)=5.d0/6.d0
             element(se)%ksh(3)=0.d0
