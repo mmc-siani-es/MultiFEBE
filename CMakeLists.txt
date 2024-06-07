@@ -67,6 +67,7 @@ install(TARGETS multifebe RUNTIME COMPONENT applications)
 install(FILES "${CMAKE_SOURCE_DIR}/docs/manual.pdf" TYPE DOC COMPONENT documentation)
 install(FILES "${CMAKE_SOURCE_DIR}/docs/gid/multifebe_unix.bas" TYPE DOC COMPONENT documentation)
 install(FILES "${CMAKE_SOURCE_DIR}/docs/gid/multifebe_win.bas" TYPE DOC COMPONENT documentation)
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/docs/examples/" TYPE DOC COMPONENT documentation)
 
 #
 # For generating an installer on GNU/Linux (debian)
@@ -111,7 +112,7 @@ if (WIN32)
   set(CPACK_NSIS_MUI_UNICON "${CMAKE_CURRENT_SOURCE_DIR}/docs/img\\\\logo.ico")
   set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
   set(CPACK_NSIS_MENU_LINKS "bin/multifebe" "MultiFEBE"
-						                "doc/manual.pdf" "Manual")
+						                "docs/manual.pdf" "Manual")
   set(CPACK_NSIS_MODIFY_PATH ON)
   set(CPACK_GENERATOR NSIS64)
 endif (WIN32)
