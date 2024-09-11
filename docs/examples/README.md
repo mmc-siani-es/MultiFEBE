@@ -1,5 +1,8 @@
-MultiFEBE - Examples
-====================
+---
+title: |
+    MultiFEBE\
+    Examples
+---
 
 This document lists all the included examples for users, and it also
 describes the guidelines for developing and including new examples.
@@ -59,7 +62,8 @@ List of examples for users
 
         -   `AC` Acoustics (continuum)
 
-            -   `none`
+            -   `001` [\[TUTORIAL\] Pressure waves in a room (BEM
+                model)](ME-TH-AC-001/).
 
         -   `CO` Coupled
 
