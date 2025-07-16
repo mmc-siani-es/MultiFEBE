@@ -38,7 +38,7 @@
   \newcommand*\fsize{\dimexpr\f@size pt\relax}%
   \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
   \ifx\svgwidth\undefined%
-    \setlength{\unitlength}{453.54330709bp}%
+    \setlength{\unitlength}{477.49012864bp}%
     \ifx\svgscale\undefined%
       \relax%
     \else%
@@ -50,73 +50,76 @@
   \global\let\svgwidth\undefined%
   \global\let\svgscale\undefined%
   \makeatother%
-  \begin{picture}(1,0.90625)%
+  \begin{picture}(1,0.94984819)%
     \lineheight{1}%
     \setlength\tabcolsep{0pt}%
     \put(0,0){\includegraphics[width=\unitlength,page=1]{stress_resultants_shell.pdf}}%
-    \put(0.56874994,0.0812501){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
-    \put(0.52499994,0.0750001){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
-    \put(0.52499994,0.11875005){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
-    \put(0.46249994,0.01874995){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$M_{x'y'}$\end{tabular}}}}%
-    \put(0.87500004,0.28125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Transverse  shear force\\$V_{x'}$\end{tabular}}}}%
-    \put(0.18750001,0.28125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Membrane extensional forces\\$N_{x'}$ and $N_{y'}$\end{tabular}}}}%
-    \put(0.11438618,0.76543207){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}local cartesian axes\end{tabular}}}}%
-    \put(0.53124994,0.28125002){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Bending moments\\$M_{x'}$ and $M_{y'}$\end{tabular}}}}%
-    \put(0.67499995,0.075){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$M_{x'y'}$\end{tabular}}}}%
-    \put(0.58749995,0.1625){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$M_{x'y'}$\end{tabular}}}}%
-    \put(0.38124999,0.1125){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$M_{x'y'}$\end{tabular}}}}%
+    \put(0.5553668,0.16622322){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
+    \put(0.51381093,0.16028667){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
+    \put(0.51381093,0.2018425){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
+    \put(0.45444544,0.10685755){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$M_{x'y'}$\end{tabular}}}}%
+    \put(0.84625802,0.35619284){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Transverse  shear force\\$V_{x'}$\end{tabular}}}}%
+    \put(0.19323709,0.35619284){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Membrane extensional forces\\$N_{x'}$ and $N_{y'}$\end{tabular}}}}%
+    \put(0.12379003,0.81609248){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}local cartesian axes\end{tabular}}}}%
+    \put(0.51974748,0.35619287){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Bending moments\\$M_{x'}$ and $M_{y'}$\end{tabular}}}}%
+    \put(0.51974748,0.05936522){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Twisting moment\\$M_{x'y'}$\end{tabular}}}}%
+    \put(0.65628822,0.16028658){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$M_{x'y'}$\end{tabular}}}}%
+    \put(0.57317647,0.24339833){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$M_{x'y'}$\end{tabular}}}}%
+    \put(0.37727025,0.1959059){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$M_{x'y'}$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=2]{stress_resultants_shell.pdf}}%
-    \put(0.13125,0.03125005){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$N_{x'y'}$\end{tabular}}}}%
-    \put(0.08125,0.09375){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$N_{x'y'}$\end{tabular}}}}%
-    \put(0.23749999,0.15625005){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$N_{x'y'}$\end{tabular}}}}%
-    \put(0.28124999,0.09375){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$N_{x'y'}$\end{tabular}}}}%
+    \put(0.13980811,0.11873075){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$N_{x'y'}$\end{tabular}}}}%
+    \put(0.09231568,0.17809624){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$N_{x'y'}$\end{tabular}}}}%
+    \put(0.24072952,0.23746182){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$N_{x'y'}$\end{tabular}}}}%
+    \put(0.28228539,0.17809624){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$N_{x'y'}$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=3]{stress_resultants_shell.pdf}}%
-    \put(0.1125,0.33125){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$N_{x'}$\end{tabular}}}}%
-    \put(0.24374999,0.47500001){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$N_{x'}$\end{tabular}}}}%
-    \put(0.33124999,0.38125001){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$N_{y'}$\end{tabular}}}}%
-    \put(0.0375,0.42500001){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$N_{y'}$\end{tabular}}}}%
+    \put(0.12199845,0.40368527){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$N_{x'}$\end{tabular}}}}%
+    \put(0.24666607,0.54022601){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$N_{x'}$\end{tabular}}}}%
+    \put(0.32977782,0.45117771){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$N_{y'}$\end{tabular}}}}%
+    \put(0.05075981,0.49273358){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$N_{y'}$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=4]{stress_resultants_shell.pdf}}%
-    \put(0.22499999,0.39375){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
-    \put(0.18125,0.38750001){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
-    \put(0.18125,0.43125001){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
+    \put(0.22885641,0.46305081){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
+    \put(0.18730053,0.45711426){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
+    \put(0.18730053,0.49867014){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=5]{stress_resultants_shell.pdf}}%
-    \put(0.22499999,0.0812501){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
-    \put(0.18125,0.0750001){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
-    \put(0.18125,0.11875005){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
-    \put(0.81875004,0.33125){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$V_{x'}$\end{tabular}}}}%
-    \put(0.91250004,0.48125001){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$V_{x'}$\end{tabular}}}}%
+    \put(0.22885641,0.16622322){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
+    \put(0.18730053,0.16028667){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
+    \put(0.18730053,0.2018425){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
+    \put(0.79282903,0.40368527){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$V_{x'}$\end{tabular}}}}%
+    \put(0.88187734,0.54616256){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$V_{x'}$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=6]{stress_resultants_shell.pdf}}%
-    \put(0.91250013,0.39374999){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
-    \put(0.86875013,0.38749999){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
-    \put(0.86875013,0.43124998){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
+    \put(0.88187744,0.4630508){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
+    \put(0.84032155,0.45711425){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
+    \put(0.84032155,0.49867011){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
+    \put(0.84625811,0.05936513){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Transverse  shear force\\$V_{y'}$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=7]{stress_resultants_shell.pdf}}%
-    \put(0.95625013,0.06875){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$V_{y'}$\end{tabular}}}}%
-    \put(0.78749994,0.11875002){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$V_{y'}$\end{tabular}}}}%
+    \put(0.92343331,0.15435003){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$V_{y'}$\end{tabular}}}}%
+    \put(0.76314617,0.20184248){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$V_{y'}$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=8]{stress_resultants_shell.pdf}}%
-    \put(0.91250023,0.08125){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
-    \put(0.86875023,0.075){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
-    \put(0.86875023,0.11874998){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
-    \put(0.78125023,0.6875001){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}infinitesimal side length shell\end{tabular}}}}%
-    \put(0.03125,0.56250001){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}global cartesian axes\end{tabular}}}}%
+    \put(0.88187753,0.16622313){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
+    \put(0.84032164,0.16028658){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
+    \put(0.84032164,0.20184243){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
+    \put(0.75720989,0.74206891){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}infinitesimal side length shell\end{tabular}}}}%
+    \put(0.04482325,0.62333776){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}global cartesian axes\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=9]{stress_resultants_shell.pdf}}%
-    \put(0.81875033,0.79375){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
-    \put(0.77500028,0.7875){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
-    \put(0.77500028,0.83125002){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
+    \put(0.7928293,0.84299023){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
+    \put(0.75127338,0.83705367){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
+    \put(0.75127338,0.87860957){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=10]{stress_resultants_shell.pdf}}%
-    \put(0.61249994,0.36874999){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$M_{y'}$\end{tabular}}}}%
-    \put(0.46249994,0.45000001){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$M_{y'}$\end{tabular}}}}%
+    \put(0.59692268,0.43930459){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$M_{y'}$\end{tabular}}}}%
+    \put(0.45444544,0.51647979){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$M_{y'}$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=11]{stress_resultants_shell.pdf}}%
-    \put(0.56874994,0.39375002){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
-    \put(0.52499994,0.38750001){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
-    \put(0.52499994,0.43125003){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
-    \put(0.48124994,0.3375){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$M_{x'}$\end{tabular}}}}%
-    \put(0.56249999,0.46875001){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$M_{x'}$\end{tabular}}}}%
+    \put(0.5553668,0.46305082){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$y'$\end{tabular}}}}%
+    \put(0.51381093,0.45711426){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$x'$\end{tabular}}}}%
+    \put(0.51381093,0.49867016){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$z'$\end{tabular}}}}%
+    \put(0.47225505,0.40962183){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$M_{x'}$\end{tabular}}}}%
+    \put(0.54943029,0.53428945){\makebox(0,0)[rt]{\lineheight{1.25}\smash{\begin{tabular}[t]{r}$M_{x'}$\end{tabular}}}}%
+    \put(0.19323709,0.05936522){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Membrane shear force\\$N_{x'y'}$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=12]{stress_resultants_shell.pdf}}%
-    \put(0.0312501,0.64375){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$z$\end{tabular}}}}%
-    \put(0.06250009,0.61875001){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$y$\end{tabular}}}}%
-    \put(0.08125009,0.58750001){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$x$\end{tabular}}}}%
+    \put(0.04482334,0.70051294){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$z$\end{tabular}}}}%
+    \put(0.07450611,0.67676674){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$y$\end{tabular}}}}%
+    \put(0.09231577,0.64708397){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}$x$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=13]{stress_resultants_shell.pdf}}%
-    \put(0.27099723,0.80712793){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$\mathbf{n}$\end{tabular}}}}%
+    \put(0.27254682,0.85569723){\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}$\mathbf{n}$\end{tabular}}}}%
     \put(0,0){\includegraphics[width=\unitlength,page=14]{stress_resultants_shell.pdf}}%
   \end{picture}%
 \endgroup%

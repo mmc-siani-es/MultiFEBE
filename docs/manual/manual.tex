@@ -3834,16 +3834,19 @@ $ sudo apt-get install libopenblas-base libopenblas-dev
 $ mkdir -p build
 $ cd build
 \end{Verbatim}
-    \item Execute cmake taking into account that the CMake configuration file is in the parent folder:
+    \item Execute cmake taking into account that the CMake configuration file is in the parent folder. The basic command is:
 \begin{Verbatim}[frame=single, fontsize=\small]
 $ cmake -G "Unix Makefiles" ..
 \end{Verbatim}
-or
+If you want to compile an executable which uses OpenMP (shared-memory parallelization) and uses all possible compiler optimizations, you should use the Release build:
+\begin{Verbatim}[frame=single, fontsize=\small]
+$ cmake -D CMAKE_BUILD_TYPE=Release -G "Unix Makefiles" ..
+\end{Verbatim}
+If you want to compile for debugging, you should use the Debug build:
 \begin{Verbatim}[frame=single, fontsize=\small]
 $ cmake -D CMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" ..
 \end{Verbatim}
-for compilation for debugging.
-    During the process, if any tool or dependency is missing, then CMake is going to notify you.
+During the process, if any tool or dependency is missing, then CMake is going to notify you.
     \item Once CMake correctly finishes, you can now execute GNU Make:
 \begin{Verbatim}[frame=single, fontsize=\small]
 $ make

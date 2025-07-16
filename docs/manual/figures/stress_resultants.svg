@@ -28,10 +28,10 @@
      inkscape:document-units="mm"
      showgrid="true"
      inkscape:zoom="0.72693605"
-     inkscape:cx="570.88928"
-     inkscape:cy="251.74154"
-     inkscape:window-width="1920"
-     inkscape:window-height="1016"
+     inkscape:cx="-376.92449"
+     inkscape:cy="389.30522"
+     inkscape:window-width="1680"
+     inkscape:window-height="986"
      inkscape:window-x="0"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
@@ -2524,7 +2524,10 @@
        width="160"
        height="159.99994"
        x="-175.58385"
-       y="-75" />
+       y="-75"
+       inkscape:export-filename="stress_resultants_shell.pdf"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96" />
     <path
        style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#DartArrow-9-0-10-8-0-9-7-0)"
        d="M -28.583847,-7.1381821 V 0.26317806"
