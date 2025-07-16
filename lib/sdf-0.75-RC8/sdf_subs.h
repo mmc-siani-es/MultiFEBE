@@ -70,7 +70,8 @@
 
 /* following defines library for "ftruncate" or "SetEndOfFIle" (in MS win): */
 
-#ifdef WIN32
+/*Original line 74: #ifdef WIN32*/
+#if defined(WIN32) && !defined(__MINGW32__)
 #include <windows.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -83,7 +84,8 @@
 
 /* START of function prototypes: */
 
-#ifdef WIN32
+/*Original line 74: #ifdef WIN32*/
+#if defined(WIN32) && !defined(__MINGW32__)
 	typedef struct _stati64 sdf_stat;
 	typedef fpos_t pos; /* in mswin (xp at least) fpos_t is 8-byte int */
 	pos ftello(FILE *fd); /* fake ftello */

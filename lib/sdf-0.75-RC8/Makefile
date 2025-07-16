@@ -192,11 +192,13 @@ sdf_browse : sdf_browse.c libsdf.a libsdf_if64.a
 fflag-extra.inc : testvers.f
 	echo "compiling xforttest"
 	$(F95) -cpp testvers.f -o xforttest
+	# Depends on Win or GNU/Linux
 	./xforttest
 
 xforttest : testvers.f
 	echo "compiling xforttest"
 	$(F95) -cpp testvers.f -o xforttest
+	# Depends on Win or GNU/Linux	
 	./xforttest
 
 libsdf.a : sdf_subs.o

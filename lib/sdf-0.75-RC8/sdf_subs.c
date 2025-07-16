@@ -6948,8 +6948,8 @@ if (intfsize != sizeof(double)/2)
 
 }
 
-
-#ifdef WIN32
+/*Original line 6952: #ifdef WIN32*/
+#if defined(WIN32) && !defined(__MINGW32__)
 
 
 /* define strtok_r in terms of strtok; 
