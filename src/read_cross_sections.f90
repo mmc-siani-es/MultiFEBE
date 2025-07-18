@@ -518,7 +518,7 @@ subroutine read_cross_sections(fileunit)
           !
           ! STRBEAM
           !
-          if (((trim(tmp_class).eq.'strbeam_eb').or.(trim(tmp_class).eq.'strbeam_t')).and.(element(se)%n_dimension.eq.1)) then
+          if (((trim(tmp_class).eq.'strbeam').or.(trim(tmp_class).eq.'strbeam_eb').or.(trim(tmp_class).eq.'strbeam_t')).and.(element(se)%n_dimension.eq.1)) then
             ! Element checking
             select case (element(se)%type)
               case (fbem_line2)
