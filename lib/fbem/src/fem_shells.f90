@@ -5369,7 +5369,6 @@ contains
     do ki=1,fbem_n_nodes(setype)
       Ssigma_i=Ssigma_i+phi(ki)*varphi(1)*Ssigma(:,:,ki,1)+phi(ki)*varphi(2)*Ssigma(:,:,ki,2)
     end do
-
   end subroutine fbem_fem_degshell_stress_tensor
 
 end module fbem_fem_shells
