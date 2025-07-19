@@ -1556,8 +1556,8 @@ contains
 
   !
   ! 2D line:
-  ! M=(v1_1 n_1')
-  !   (v1_2 n_2')
+  ! M=(v1_1 n_1)
+  !   (v1_2 n_2)
   !
   ! 3D surface:
   ! M=(v1_1 v2_1 n_1)
@@ -3366,6 +3366,11 @@ contains
     real(kind=real64)              :: l(fbem_n_edges(etype))
     real(kind=real64), allocatable :: x_nodes_aux(:,:)
     integer                        :: edge, n
+    ! Check
+    if (fbem_n_dimension(etype).eq.0) then
+      fbem_characteristic_length=0
+      return
+    end if
     ! Loop through the edges of the element
     do edge=1,fbem_n_edges(etype)
       allocate (x_nodes_aux(rn,fbem_n_nodes(fbem_edge_type(edge,etype))))
@@ -3400,6 +3405,11 @@ contains
     real(kind=real64)              :: xise1(1,2)                             !! xi coordinates of the subdivision (temporary)
     real(kind=real64)              :: xise3(2,3)                             !! xi coordinates of the subdivision (temporary)
     integer                        :: n
+    ! Check
+    if (fbem_n_dimension(etype).eq.0) then
+      fbem_characteristic_length_subdivision=0
+      return
+    end if
     ! Obtain the local coordinates of the nodes of the original type of element
     xie=fbem_xi_hybrid(etype,0.d0)
     ! Depending on the type of element
@@ -3643,6 +3653,10 @@ contains
       write(error_unit,*) 'rerror = ',rerror
       call fbem_error_message(error_unit,0,'fbem_element_centroid',0,'relative error must be >0')
     end if
+    if (fbem_n_dimension(type_g).eq.0) then
+      fbem_element_centroid = x_nodes(:,1)
+      return
+    end if
     ! Iterative procedure
     glp=1
     centroid_old=fbem_element_centroid_ngp(rn,type_g,x_nodes,esize,glp)
@@ -3686,6 +3700,10 @@ contains
     if (rerror.le.0.d0) then
       write(error_unit,*) 'rerror = ',rerror
       call fbem_error_message(error_unit,0,'fbem_element_centroid',0,'relative error must be >0')
+    end if
+    if (fbem_n_dimension(type_g).eq.0) then
+      fbem_element_size = 0
+      return
     end if
     ! Iterative procedure
     glp=1
@@ -3922,6 +3940,13 @@ contains
     xmoment=0.d0
     ! Switch depending on the number of dimensions of the element
     select case (fbem_n_dimension(type_g))
+      !
+      ! POINT ELEMENT
+      !
+      case (0)
+        centre=x_nodes(:,1)
+        radius=0
+        return
       !
       ! LINE ELEMENTS
       !
