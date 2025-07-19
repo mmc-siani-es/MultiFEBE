@@ -6,12 +6,21 @@ project(multifebe VERSION 2.0.1) # The version number must be changed here for e
 
 enable_language(Fortran)
 
-if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-    set(dialect "-std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -fopenmp -march=core2 -O3 -flto")
-    set(bounds "-std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow -fno-inline -Og")
+# Fails when trying static compilation
+if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+    set(CMAKE_Fortran_FLAGS         "${CMAKE_Fortran_FLAGS} -std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none")
+    set(CMAKE_Fortran_FLAGS_DEBUG   "-g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow -fno-inline -Og")
+    set(CMAKE_Fortran_FLAGS_RELEASE "-fopenmp -lpthread -march=core2 -O3 -flto")
+#    set(CMAKE_Fortran_FLAGS_RELEASE "-static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -fopenmp -march=core2 -O3 -flto")
 endif()
-set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${bounds}")
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${dialect}")
+
+# Works for static compilation
+#if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+    #set(dialect "-std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -fopenmp -march=core2 -O3 -flto")
+    #set(bounds  "-std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow -fno-inline -Og")
+#endif()
+#set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${bounds}")
+#set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${dialect}")
 
 file(GLOB_RECURSE sources  src/*.f90 lib/fbem/src/*.f90)
 
@@ -90,8 +99,6 @@ if (UNIX)
   set(CPACK_GENERATOR "DEB;STGZ")
 endif (UNIX)
 
-
-
 #
 # For generating an installer on Windows (in MSYS2 MINGW64 terminal)
 # cpack -G "NSIS64" ..
@@ -111,8 +118,8 @@ if (WIN32)
   set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/docs/img\\\\logo.ico")
   set(CPACK_NSIS_MUI_UNICON "${CMAKE_CURRENT_SOURCE_DIR}/docs/img\\\\logo.ico")
   set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
-  set(CPACK_NSIS_MENU_LINKS "bin/multifebe" "MultiFEBE"
-						                "docs/manual.pdf" "Manual")
+  set(CPACK_NSIS_MENU_LINKS "${CMAKE_INSTALL_BINDIR}/multifebe" "MultiFEBE"
+						                "${CMAKE_INSTALL_DOCDIR}/manual.pdf" "Manual")
   set(CPACK_NSIS_MODIFY_PATH ON)
   set(CPACK_GENERATOR NSIS64)
 endif (WIN32)
