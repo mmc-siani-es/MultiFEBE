@@ -1,5 +1,5 @@
 ! ---------------------------------------------------------------------
-! Copyright (C) 2014-2022 Universidad de Las Palmas de Gran Canaria:
+! Copyright (C) 2014-2024 Universidad de Las Palmas de Gran Canaria:
 !                         Jacob D.R. Bordon
 !                         Guillermo M. Alamo
 !                         Juan J. Aznarez
@@ -204,9 +204,9 @@ subroutine export_solution_mechanics_static_gmsh(output_fileunit)
   if (exp_n_nodes.gt.0) then
     select case (problem%n)
       case (2)
-        call fbem_export_gmsh_NodeData(output_fileunit,'Nodal displacements UX,UY (FE, BE +n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
+        call fbem_export_gmsh_NodeData(output_fileunit,'Solid UX,UY (FE, BE +n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
       case (3)
-        call fbem_export_gmsh_NodeData(output_fileunit,'Nodal displacements UX,UY,UZ (FE, BE +n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
+        call fbem_export_gmsh_NodeData(output_fileunit,'Solid UX,UY,UZ (FE, BE +n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
       case default
         stop 'not valid problem%n'
     end select
@@ -316,12 +316,393 @@ subroutine export_solution_mechanics_static_gmsh(output_fileunit)
   if (exp_n_nodes.gt.0) then
     select case (problem%n)
       case (2)
-        call fbem_export_gmsh_NodeData(output_fileunit,'Nodal displacements UX,UY (BE -n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
+        call fbem_export_gmsh_NodeData(output_fileunit,'Solid UX,UY (BE -n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
       case (3)
-        call fbem_export_gmsh_NodeData(output_fileunit,'Nodal displacements UX,UY,UZ (BE -n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
+        call fbem_export_gmsh_NodeData(output_fileunit,'Solid UX,UY,UZ (BE -n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
       case default
         stop 'not valid problem%n'
     end select
+  end if
+
+  ! ================================================================================================================================
+  ! Tractions (positive faces)
+  ! ================================================================================================================================
+
+  exp_n_nodes=0
+  exp_node_eid=0
+  exp_node_value=0
+  ! Loop through REGIONS
+  do kr=1,n_regions
+    select case (region(kr)%class)
+
+      ! ============================================================================================================================
+      ! BE REGION
+      !
+      case (fbem_be)
+
+        ! +----------------+
+        ! | BOUNDARY NODES |
+        ! +----------------+
+
+        k_start=problem%n+1
+        k_end  =2*problem%n
+
+        ! Loop through boundaries
+        do kb=1,region(kr)%n_boundaries
+          sb=region(kr)%boundary(kb)
+          ! Initialize
+          node_used=.false.
+          ! Loop through elements and nodes
+          do ke=1,part(boundary(sb)%part)%n_elements
+            se=part(boundary(sb)%part)%element(ke)
+            do kn=1,element(se)%n_nodes
+              sn=element(se)%node(kn)
+              if (node_used(sn).eqv.(.false.)) then
+                node_used(sn)=.true.
+                select case (boundary(sb)%coupling)
+                  !
+                  ! Uncoupled boundary of BE-FE coupled boundary
+                  !
+                  case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
+                    select case (boundary(sb)%class)
+                      !
+                      ! Ordinary boundary
+                      !
+                      case (fbem_boundary_class_ordinary)
+                        exp_n_nodes=exp_n_nodes+1
+                        exp_node_eid(exp_n_nodes)=node(sn)%id
+                        exp_node_value(1:problem%n,exp_n_nodes)=node(sn)%value_r(k_start:k_end,1)
+                      !
+                      ! Crack-like boundaries
+                      !
+                      case (fbem_boundary_class_cracklike)
+                        exp_n_nodes=exp_n_nodes+1
+                        exp_node_eid(exp_n_nodes)=node(sn)%id
+                        exp_node_value(1:problem%n,exp_n_nodes)=node(sn)%value_r(k_start:k_end,1)
+                    end select
+                  !
+                  ! BE-BE coupled boundary of BE-FE-BE coupled boundary
+                  !
+                  case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
+                    ! The region is the region 1 of the boundary
+                    if (region(kr)%boundary_reversion(kb).eqv.(.false.)) then
+                      exp_n_nodes=exp_n_nodes+1
+                      exp_node_eid(exp_n_nodes)=node(sn)%id
+                      exp_node_value(1:problem%n,exp_n_nodes)=node(sn)%value_r(k_start:k_end,1)
+                    end if
+                end select
+              end if
+            end do
+          end do
+        end do
+
+
+        ! +-----------------+
+        ! | INTERNAL POINTS |
+        ! +-----------------+
+
+        !
+        ! To do ...
+        !
+
+
+      ! ============================================================================================================================
+
+      ! ============================================================================================================================
+      ! FE region
+      !
+      case (fbem_fe)
+
+        !
+        ! Nothing to do...
+        !
+
+      ! ============================================================================================================================
+
+    end select
+  end do ! Loop through REGIONS
+  if (exp_n_nodes.gt.0) then
+    select case (problem%n)
+      case (2)
+        call fbem_export_gmsh_NodeData(output_fileunit,'Solid TX,TY (BE +n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
+      case (3)
+        call fbem_export_gmsh_NodeData(output_fileunit,'Solid TX,TY,TZ (BE +n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
+      case default
+        stop 'not valid problem%n'
+    end select
+  end if
+
+  ! ================================================================================================================================
+  ! Tractions (negative faces)
+  ! ================================================================================================================================
+
+  exp_n_nodes=0
+  exp_node_eid=0
+  exp_node_value=0
+  ! Loop through REGIONS
+  do kr=1,n_regions
+    select case (region(kr)%class)
+
+      ! ============================================================================================================================
+      ! BE REGION
+      !
+      case (fbem_be)
+
+        ! +----------------+
+        ! | BOUNDARY NODES |
+        ! +----------------+
+
+        k_start=problem%n+1
+        k_end  =2*problem%n
+
+        ! Loop through boundaries
+        do kb=1,region(kr)%n_boundaries
+          sb=region(kr)%boundary(kb)
+          ! Initialize
+          node_used=.false.
+          ! Loop through elements and nodes
+          do ke=1,part(boundary(sb)%part)%n_elements
+            se=part(boundary(sb)%part)%element(ke)
+            do kn=1,element(se)%n_nodes
+              sn=element(se)%node(kn)
+              if (node_used(sn).eqv.(.false.)) then
+                node_used(sn)=.true.
+                select case (boundary(sb)%coupling)
+                  !
+                  ! Uncoupled boundary of BE-FE coupled boundary
+                  !
+                  case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
+                    select case (boundary(sb)%class)
+                      !
+                      ! Ordinary boundary
+                      !
+                      case (fbem_boundary_class_ordinary)
+
+                        !
+                        ! Nothing to do
+                        !
+
+                      !
+                      ! Crack-like boundaries
+                      !
+                      case (fbem_boundary_class_cracklike)
+
+                        exp_n_nodes=exp_n_nodes+1
+                        exp_node_eid(exp_n_nodes)=node(sn)%id
+                        exp_node_value(1:problem%n,exp_n_nodes)=node(sn)%value_r(k_start:k_end,2)
+
+                    end select
+                  !
+                  ! BE-BE coupled boundary of BE-FE-BE coupled boundary
+                  !
+                  case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
+                    ! The region is the region 2 of the boundary
+                    if (region(kr)%boundary_reversion(kb)) then
+                      exp_n_nodes=exp_n_nodes+1
+                      exp_node_eid(exp_n_nodes)=node(sn)%id
+                      exp_node_value(1:problem%n,exp_n_nodes)=node(sn)%value_r(k_start:k_end,2)
+                    end if
+                end select
+              end if
+            end do
+          end do
+        end do
+
+
+        ! +-----------------+
+        ! | INTERNAL POINTS |
+        ! +-----------------+
+
+        !
+        ! Nothing to do
+        !
+
+      ! ============================================================================================================================
+
+      ! ============================================================================================================================
+      ! FE region
+      !
+      case (fbem_fe)
+
+        !
+        ! Nothing to do
+        !
+
+      ! ============================================================================================================================
+
+    end select
+  end do ! Loop through REGIONS
+  if (exp_n_nodes.gt.0) then
+    select case (problem%n)
+      case (2)
+        call fbem_export_gmsh_NodeData(output_fileunit,'Solid TX,TY (BE -n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
+      case (3)
+        call fbem_export_gmsh_NodeData(output_fileunit,'Solid TX,TY,TZ (BE -n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
+      case default
+        stop 'not valid problem%n'
+    end select
+  end if
+
+  ! ================================================================================================================================
+  ! Stress tensor (positive faces)
+  ! ================================================================================================================================
+
+  exp_n_elements=0
+  exp_element_eid=0
+  exp_element_n_nodes=0
+  exp_element_node_value=0
+  ! Loop through REGIONS
+  do kr=1,n_regions
+    select case (region(kr)%class)
+
+      ! ============================================================================================================================
+      ! BE REGION
+      !
+      case (fbem_be)
+
+        ! +-------------------+
+        ! | BOUNDARY ELEMENTS |
+        ! +-------------------+
+
+        k_start=1
+        k_end  =9
+
+        ! Loop through boundaries
+        do kb=1,region(kr)%n_boundaries
+          sb=region(kr)%boundary(kb)
+          ! Loop through elements
+          do ke=1,part(boundary(sb)%part)%n_elements
+            se=part(boundary(sb)%part)%element(ke)
+
+            exp_n_elements=exp_n_elements+1
+            exp_element_eid(exp_n_elements)=element(se)%id
+            exp_element_n_nodes(exp_n_elements)=element(se)%n_nodes
+            face=1
+            do kn=1,element(se)%n_nodes
+              exp_element_node_value(k_start:k_end,kn,exp_n_elements)=element(se)%value_r(k_start:k_end,kn,face)
+            end do
+
+          end do
+        end do
+
+        ! +-----------------+
+        ! | INTERNAL POINTS |
+        ! +-----------------+
+
+        ! to be done...
+
+      ! ============================================================================================================================
+
+      ! ============================================================================================================================
+      ! FE region
+      !
+      case (fbem_fe)
+
+        !
+        ! Nothing to do
+        !
+
+      ! ============================================================================================================================
+
+    end select
+  end do ! Loop through REGIONS
+  if (exp_n_elements.gt.0) then
+    call fbem_export_gmsh_ElementNodeData(output_fileunit,'Solid Sij (BE +n)',0.d0,0,9,&
+                                          n_elements,maxval(fbem_n_nodes),&
+                                          exp_n_elements,exp_element_eid,exp_element_n_nodes,exp_element_node_value)
+  end if
+
+  ! ================================================================================================================================
+  ! Stress tensor (negative faces)
+  ! ================================================================================================================================
+
+  exp_n_elements=0
+  exp_element_eid=0
+  exp_element_n_nodes=0
+  exp_element_node_value=0
+  ! Loop through REGIONS
+  do kr=1,n_regions
+    select case (region(kr)%class)
+
+      ! ============================================================================================================================
+      ! BE REGION
+      !
+      case (fbem_be)
+
+        ! +-------------------+
+        ! | BOUNDARY ELEMENTS |
+        ! +-------------------+
+
+        k_start=problem%n+1
+        k_end  =2*problem%n
+
+        ! Loop through boundaries
+        do kb=1,region(kr)%n_boundaries
+          sb=region(kr)%boundary(kb)
+          ! Loop through elements
+          do ke=1,part(boundary(sb)%part)%n_elements
+            se=part(boundary(sb)%part)%element(ke)
+            select case (boundary(sb)%coupling)
+              case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
+                select case (boundary(sb)%class)
+                  case (fbem_boundary_class_ordinary)
+                    !
+                    ! Nothing to do
+                    !
+
+                  case (fbem_boundary_class_cracklike)
+                    exp_n_elements=exp_n_elements+1
+                    exp_element_eid(exp_n_elements)=element(se)%id
+                    exp_element_n_nodes(exp_n_elements)=element(se)%n_nodes
+                    face=2
+                    do kn=1,element(se)%n_nodes
+                      exp_element_node_value(k_start:k_end,kn,exp_n_elements)=element(se)%value_r(k_start:k_end,kn,face)
+                    end do
+
+                end select
+              !
+              ! BE-BE coupled boundary of BE-FE-BE coupled boundary
+              !
+              case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
+                if (region(kr)%boundary_reversion(kb)) then
+                  exp_n_elements=exp_n_elements+1
+                  exp_element_eid(exp_n_elements)=element(se)%id
+                  exp_element_n_nodes(exp_n_elements)=element(se)%n_nodes
+                  face=2
+                  do kn=1,element(se)%n_nodes
+                    exp_element_node_value(k_start:k_end,kn,exp_n_elements)=element(se)%value_r(k_start:k_end,kn,face)
+                  end do
+                end if
+
+            end select
+          end do
+        end do
+
+        ! +-----------------+
+        ! | INTERNAL POINTS |
+        ! +-----------------+
+
+        ! to be done...
+
+      ! ============================================================================================================================
+
+      ! ============================================================================================================================
+      ! FE region
+      !
+      case (fbem_fe)
+
+        !
+        ! Nothing to do
+        !
+
+      ! ============================================================================================================================
+
+    end select
+  end do ! Loop through REGIONS
+  if (exp_n_elements.gt.1) then
+    call fbem_export_gmsh_ElementNodeData(output_fileunit,'Solid Sij (BE -n)',0.d0,0,9,&
+                                          n_elements,maxval(fbem_n_nodes),&
+                                          exp_n_elements,exp_element_eid,exp_element_n_nodes,exp_element_node_value)
   end if
 
   ! ================================================================================================================================
@@ -442,14 +823,9 @@ subroutine export_solution_mechanics_static_gmsh(output_fileunit)
 !~     end select
 !~   end if
 
-
-
   !
   ! Falta solo las cargas equilibrantes (no creo que sean muy necesarias)
   !
-
-
-
 
   ! ================================================================================================================================
   ! Beam stress resultants (as a tensor with 9 components: NX,VY,BZ,0,0,0,0,0,0 or NX,VY,VZ,BX,BY,BZ,0,0,0)
@@ -655,19 +1031,9 @@ subroutine export_solution_mechanics_static_gmsh(output_fileunit)
                                           exp_n_elements,exp_element_eid,exp_element_n_nodes,exp_element_node_value)
   end if
 
-
-
-
-
-
   !
   ! Falta exportar esfuerzos y ejes en distra y disrotra
   !
-
-
-
-
-
 
   ! ================================================================================================================================
   ! Shell stress resultants (as a tensor with 9 components: Nx,Ny,Nxy,Mx,My,Mxy,Vx,Vy,0)
@@ -816,780 +1182,6 @@ subroutine export_solution_mechanics_static_gmsh(output_fileunit)
   if (exp_n_elements.gt.1) then
     call fbem_export_gmsh_ElementData(output_fileunit,'Shell Z axis',0.d0,0,3,&
                                       n_elements,exp_n_elements,exp_element_eid,exp_element_value)
-  end if
-
-  ! ================================================================================================================================
-  ! Tractions (positive faces)
-  ! ================================================================================================================================
-
-  exp_n_nodes=0
-  exp_node_eid=0
-  exp_node_value=0
-  ! Loop through REGIONS
-  do kr=1,n_regions
-    select case (region(kr)%class)
-
-      ! ============================================================================================================================
-      ! BE REGION
-      !
-      case (fbem_be)
-
-        ! +----------------+
-        ! | BOUNDARY NODES |
-        ! +----------------+
-
-        k_start=problem%n+1
-        k_end  =2*problem%n
-
-        ! Loop through boundaries
-        do kb=1,region(kr)%n_boundaries
-          sb=region(kr)%boundary(kb)
-          ! Initialize
-          node_used=.false.
-          ! Loop through elements and nodes
-          do ke=1,part(boundary(sb)%part)%n_elements
-            se=part(boundary(sb)%part)%element(ke)
-            do kn=1,element(se)%n_nodes
-              sn=element(se)%node(kn)
-              if (node_used(sn).eqv.(.false.)) then
-                node_used(sn)=.true.
-                select case (boundary(sb)%coupling)
-                  !
-                  ! Uncoupled boundary of BE-FE coupled boundary
-                  !
-                  case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
-                    select case (boundary(sb)%class)
-                      !
-                      ! Ordinary boundary
-                      !
-                      case (fbem_boundary_class_ordinary)
-                        exp_n_nodes=exp_n_nodes+1
-                        exp_node_eid(exp_n_nodes)=node(sn)%id
-                        exp_node_value(1:problem%n,exp_n_nodes)=node(sn)%value_r(k_start:k_end,1)
-                      !
-                      ! Crack-like boundaries
-                      !
-                      case (fbem_boundary_class_cracklike)
-                        exp_n_nodes=exp_n_nodes+1
-                        exp_node_eid(exp_n_nodes)=node(sn)%id
-                        exp_node_value(1:problem%n,exp_n_nodes)=node(sn)%value_r(k_start:k_end,1)
-                    end select
-                  !
-                  ! BE-BE coupled boundary of BE-FE-BE coupled boundary
-                  !
-                  case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
-                    ! The region is the region 1 of the boundary
-                    if (region(kr)%boundary_reversion(kb).eqv.(.false.)) then
-                      exp_n_nodes=exp_n_nodes+1
-                      exp_node_eid(exp_n_nodes)=node(sn)%id
-                      exp_node_value(1:problem%n,exp_n_nodes)=node(sn)%value_r(k_start:k_end,1)
-                    end if
-                end select
-              end if
-            end do
-          end do
-        end do
-
-
-        ! +-----------------+
-        ! | INTERNAL POINTS |
-        ! +-----------------+
-
-        !
-        ! To do ...
-        !
-
-
-      ! ============================================================================================================================
-
-      ! ============================================================================================================================
-      ! FE region
-      !
-      case (fbem_fe)
-
-        !
-        ! Nothing to do...
-        !
-
-      ! ============================================================================================================================
-
-    end select
-  end do ! Loop through REGIONS
-  if (exp_n_nodes.gt.0) then
-    select case (problem%n)
-      case (2)
-        call fbem_export_gmsh_NodeData(output_fileunit,'Traction TX,TY (BE +n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
-      case (3)
-        call fbem_export_gmsh_NodeData(output_fileunit,'Traction TX,TY,TZ (BE +n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
-      case default
-        stop 'not valid problem%n'
-    end select
-  end if
-
-  ! ================================================================================================================================
-  ! Tractions (negative faces)
-  ! ================================================================================================================================
-
-  exp_n_nodes=0
-  exp_node_eid=0
-  exp_node_value=0
-  ! Loop through REGIONS
-  do kr=1,n_regions
-    select case (region(kr)%class)
-
-      ! ============================================================================================================================
-      ! BE REGION
-      !
-      case (fbem_be)
-
-        ! +----------------+
-        ! | BOUNDARY NODES |
-        ! +----------------+
-
-        k_start=problem%n+1
-        k_end  =2*problem%n
-
-        ! Loop through boundaries
-        do kb=1,region(kr)%n_boundaries
-          sb=region(kr)%boundary(kb)
-          ! Initialize
-          node_used=.false.
-          ! Loop through elements and nodes
-          do ke=1,part(boundary(sb)%part)%n_elements
-            se=part(boundary(sb)%part)%element(ke)
-            do kn=1,element(se)%n_nodes
-              sn=element(se)%node(kn)
-              if (node_used(sn).eqv.(.false.)) then
-                node_used(sn)=.true.
-                select case (boundary(sb)%coupling)
-                  !
-                  ! Uncoupled boundary of BE-FE coupled boundary
-                  !
-                  case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
-                    select case (boundary(sb)%class)
-                      !
-                      ! Ordinary boundary
-                      !
-                      case (fbem_boundary_class_ordinary)
-
-                        !
-                        ! Nothing to do
-                        !
-
-                      !
-                      ! Crack-like boundaries
-                      !
-                      case (fbem_boundary_class_cracklike)
-
-                        exp_n_nodes=exp_n_nodes+1
-                        exp_node_eid(exp_n_nodes)=node(sn)%id
-                        exp_node_value(1:problem%n,exp_n_nodes)=node(sn)%value_r(k_start:k_end,2)
-
-                    end select
-                  !
-                  ! BE-BE coupled boundary of BE-FE-BE coupled boundary
-                  !
-                  case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
-                    ! The region is the region 2 of the boundary
-                    if (region(kr)%boundary_reversion(kb)) then
-                      exp_n_nodes=exp_n_nodes+1
-                      exp_node_eid(exp_n_nodes)=node(sn)%id
-                      exp_node_value(1:problem%n,exp_n_nodes)=node(sn)%value_r(k_start:k_end,2)
-                    end if
-                end select
-              end if
-            end do
-          end do
-        end do
-
-
-        ! +-----------------+
-        ! | INTERNAL POINTS |
-        ! +-----------------+
-
-        !
-        ! Nothing to do
-        !
-
-      ! ============================================================================================================================
-
-      ! ============================================================================================================================
-      ! FE region
-      !
-      case (fbem_fe)
-
-        !
-        ! Nothing to do
-        !
-
-      ! ============================================================================================================================
-
-    end select
-  end do ! Loop through REGIONS
-  if (exp_n_nodes.gt.0) then
-    select case (problem%n)
-      case (2)
-        call fbem_export_gmsh_NodeData(output_fileunit,'Traction TX,TY (BE -n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
-      case (3)
-        call fbem_export_gmsh_NodeData(output_fileunit,'Traction TX,TY,TZ (BE -n)',0.d0,0,3,n_nodes,exp_n_nodes,exp_node_eid,exp_node_value)
-      case default
-        stop 'not valid problem%n'
-    end select
-  end if
-
-  ! ================================================================================================================================
-  ! Stress tensor (positive faces)
-  ! ================================================================================================================================
-
-  ! Stress recovery from displacement gradient taken from pages 203-204 the reference book of Telles, Brebbia and Wrobel (1984).
-
-  exp_n_elements=0
-  exp_element_eid=0
-  exp_element_n_nodes=0
-  exp_element_node_value=0
-  ! Loop through REGIONS
-  do kr=1,n_regions
-    select case (region(kr)%class)
-
-      ! ============================================================================================================================
-      ! BE REGION
-      !
-      case (fbem_be)
-
-        ! +----------------+
-        ! | BOUNDARY NODES |
-        ! +----------------+
-
-        k_start=problem%n+1
-        k_end  =2*problem%n
-        mu=region(kr)%property_r(2)
-        lambda=region(kr)%property_r(6)
-        nu=region(kr)%property_r(3)
-
-        ! Loop through boundaries
-        do kb=1,region(kr)%n_boundaries
-          sb=region(kr)%boundary(kb)
-          ! Loop through elements
-          do ke=1,part(boundary(sb)%part)%n_elements
-            se=part(boundary(sb)%part)%element(ke)
-
-            select case (boundary(sb)%coupling)
-              !
-              ! Uncoupled boundary of BE-FE coupled boundary
-              !
-              case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
-                select case (boundary(sb)%class)
-                  !
-                  ! Ordinary boundary
-                  !
-                  case (fbem_boundary_class_ordinary)
-                    face=1
-                    allocate(psi(element(se)%n_nodes,problem%n),xi(element(se)%n_dimension))
-                    exp_n_elements=exp_n_elements+1
-                    exp_element_eid(exp_n_elements)=element(se)%id
-                    exp_element_n_nodes(exp_n_elements)=element(se)%n_nodes
-                    do kn=1,element(se)%n_nodes
-                      xi=element(se)%xi_fn(:,kn)
-                      psi=fbem_psi(problem%n,element(se)%type_g,element(se)%x_gn,element(se)%type_f1,element(se)%delta_f,xi)
-                      dudx_tangential=0
-                      do kkn=1,element(se)%n_nodes
-                        do kc=1,problem%n
-                          dudx_tangential(kc,:)=dudx_tangential(kc,:)+psi(kkn,:)*node(element(se)%node(kkn))%value_r(kc,face)
-                        end do
-                      end do
-                      ! Local cartesian axes
-                      local_axes=fbem_local_tangential_cartesian_axes(problem%n,element(se)%type_g,element(se)%x_gn,region(kr)%boundary_reversion(kb),xi)
-                      select case (problem%n)
-                        !
-                        ! 2D (plane strain or plane stress)
-                        !
-                        case (2)
-                          sigma_local=0
-                          sigma=0
-                          ! Local stress tensor due to traction at boundary
-                          sigma_local(2,1)=dot_product(node(element(se)%node(kn))%value_r(3:4,face),local_axes(:,1))
-                          sigma_local(2,2)=dot_product(node(element(se)%node(kn))%value_r(3:4,face),local_axes(:,2))
-                          sigma_local(1,2)=sigma_local(2,1)
-                          ! Tangential displacement gradient in local cartesian coordinates
-                          dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
-                          ! Local stress tensor due to traction at boundary and tangential displacement
-                          select case (problem%subtype)
-                            case (fbem_mechanics_plane_strain)
-                              sigma_local(1,1)=1.d0/(1.d0-nu)*(2.d0*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2))
-                            case (fbem_mechanics_plane_stress)
-                              sigma_local(1,1)=2.d0*(1.d0+nu)*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2)
-                            case default
-                              call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid 2D subtype')
-                          end select
-                          ! Stress tensor in global coordinates
-                          sigma(1:2,1:2)=matmul(matmul(local_axes,sigma_local(1:2,1:2)),transpose(local_axes))
-                          if (problem%subtype.eq.fbem_mechanics_plane_strain) then
-                            sigma(3,3)=nu*(sigma(1,1)+sigma(2,2))
-                          end if
-                        !
-                        ! 3D
-                        !
-                        case (3)
-                          ! Local stress tensor due to traction at boundary
-                          sigma_local(3,1)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,1))
-                          sigma_local(3,2)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,2))
-                          sigma_local(3,3)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,3))
-                          sigma_local(1,3)=sigma_local(3,1)
-                          sigma_local(2,3)=sigma_local(3,2)
-                          ! Tangential displacement gradient in local cartesian coordinates
-                          dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
-                          ! Local stress tensor due to traction at boundary and tangential displacement
-                          sigma_local(1,1)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(1,1)+nu*dudx_tangential_local(2,2)))
-                          sigma_local(2,2)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(2,2)+nu*dudx_tangential_local(1,1)))
-                          sigma_local(1,2)=mu*(dudx_tangential_local(1,2)+dudx_tangential_local(2,1))
-                          sigma_local(2,1)=sigma_local(1,2)
-                          ! Stress tensor in global coordinates
-                          sigma=matmul(matmul(local_axes,sigma_local),transpose(local_axes))
-                        case default
-                          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid dimension')
-                      end select
-                      ! Add
-                      do ki=1,3
-                        do kj=1,3
-                          kk=(ki-1)*3+kj
-                          exp_element_node_value(kk,kn,exp_n_elements)=sigma(ki,kj)
-                        end do
-                      end do
-                    end do
-                    deallocate(xi,psi)
-                  !
-                  ! Crack-like boundaries
-                  !
-                  case (fbem_boundary_class_cracklike)
-                    face=1
-                    allocate(psi(element(se)%n_nodes,problem%n),xi(element(se)%n_dimension))
-                    exp_n_elements=exp_n_elements+1
-                    exp_element_eid(exp_n_elements)=element(se)%id
-                    exp_element_n_nodes(exp_n_elements)=element(se)%n_nodes
-                    do kn=1,element(se)%n_nodes
-                      xi=element(se)%xi_fn(:,kn)
-                      psi=fbem_psi(problem%n,element(se)%type_g,element(se)%x_gn,element(se)%type_f1,element(se)%delta_f,xi)
-                      dudx_tangential=0
-                      do kkn=1,element(se)%n_nodes
-                        do kc=1,problem%n
-                          dudx_tangential(kc,:)=dudx_tangential(kc,:)+psi(kkn,:)*node(element(se)%node(kkn))%value_r(kc,face)
-                        end do
-                      end do
-                      ! Local cartesian axes
-                      local_axes=fbem_local_tangential_cartesian_axes(problem%n,element(se)%type_g,element(se)%x_gn,.false.,xi)
-                      select case (problem%n)
-                        !
-                        ! 2D (plane strain or plane stress)
-                        !
-                        case (2)
-                          sigma_local=0
-                          sigma=0
-                          ! Local stress tensor due to traction at boundary
-                          sigma_local(2,1)=dot_product(node(element(se)%node(kn))%value_r(3:4,face),local_axes(:,1))
-                          sigma_local(2,2)=dot_product(node(element(se)%node(kn))%value_r(3:4,face),local_axes(:,2))
-                          sigma_local(1,2)=sigma_local(2,1)
-                          ! Tangential displacement gradient in local cartesian coordinates
-                          dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
-                          ! Local stress tensor due to traction at boundary and tangential displacement
-                          select case (problem%subtype)
-                            case (fbem_mechanics_plane_strain)
-                              sigma_local(1,1)=1.d0/(1.d0-nu)*(2.d0*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2))
-                            case (fbem_mechanics_plane_stress)
-                              sigma_local(1,1)=2.d0*(1.d0+nu)*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2)
-                            case default
-                              call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid 2D subtype')
-                          end select
-                          ! Stress tensor in global coordinates
-                          sigma(1:2,1:2)=matmul(matmul(local_axes,sigma_local(1:2,1:2)),transpose(local_axes))
-                          if (problem%subtype.eq.fbem_mechanics_plane_strain) then
-                            sigma(3,3)=nu*(sigma(1,1)+sigma(2,2))
-                          end if
-                        !
-                        ! 3D
-                        !
-                        case (3)
-                          ! Local stress tensor due to traction at boundary
-                          sigma_local(3,1)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,1))
-                          sigma_local(3,2)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,2))
-                          sigma_local(3,3)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,3))
-                          sigma_local(1,3)=sigma_local(3,1)
-                          sigma_local(2,3)=sigma_local(3,2)
-                          ! Tangential displacement gradient in local cartesian coordinates
-                          dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
-                          ! Local stress tensor due to traction at boundary and tangential displacement
-                          sigma_local(1,1)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(1,1)+nu*dudx_tangential_local(2,2)))
-                          sigma_local(2,2)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(2,2)+nu*dudx_tangential_local(1,1)))
-                          sigma_local(1,2)=mu*(dudx_tangential_local(1,2)+dudx_tangential_local(2,1))
-                          sigma_local(2,1)=sigma_local(1,2)
-                          ! Stress tensor in global coordinates
-                          sigma=matmul(matmul(local_axes,sigma_local),transpose(local_axes))
-                        case default
-                          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid dimension')
-                      end select
-                      ! Add
-                      do ki=1,3
-                        do kj=1,3
-                          kk=(ki-1)*3+kj
-                          exp_element_node_value(kk,kn,exp_n_elements)=sigma(ki,kj)
-                        end do
-                      end do
-                    end do
-                    deallocate(xi,psi)
-
-                end select
-              !
-              ! BE-BE coupled boundary of BE-FE-BE coupled boundary
-              !
-              case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
-                ! The region is the region 1 of the boundary
-                if (region(kr)%boundary_reversion(kb).eqv.(.false.)) then
-                  face=1
-                  allocate(psi(element(se)%n_nodes,problem%n),xi(element(se)%n_dimension))
-                  exp_n_elements=exp_n_elements+1
-                  exp_element_eid(exp_n_elements)=element(se)%id
-                  exp_element_n_nodes(exp_n_elements)=element(se)%n_nodes
-                  do kn=1,element(se)%n_nodes
-                    xi=element(se)%xi_fn(:,kn)
-                    psi=fbem_psi(problem%n,element(se)%type_g,element(se)%x_gn,element(se)%type_f1,element(se)%delta_f,xi)
-                    dudx_tangential=0
-                    do kkn=1,element(se)%n_nodes
-                      do kc=1,problem%n
-                        dudx_tangential(kc,:)=dudx_tangential(kc,:)+psi(kkn,:)*node(element(se)%node(kkn))%value_r(kc,face)
-                      end do
-                    end do
-                    ! Local cartesian axes
-                    local_axes=fbem_local_tangential_cartesian_axes(problem%n,element(se)%type_g,element(se)%x_gn,.false.,xi)
-                    select case (problem%n)
-                      !
-                      ! 2D (plane strain or plane stress)
-                      !
-                      case (2)
-                        sigma_local=0
-                        sigma=0
-                        ! Local stress tensor due to traction at boundary
-                        sigma_local(2,1)=dot_product(node(element(se)%node(kn))%value_r(3:4,face),local_axes(:,1))
-                        sigma_local(2,2)=dot_product(node(element(se)%node(kn))%value_r(3:4,face),local_axes(:,2))
-                        sigma_local(1,2)=sigma_local(2,1)
-                        ! Tangential displacement gradient in local cartesian coordinates
-                        dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
-                        ! Local stress tensor due to traction at boundary and tangential displacement
-                        select case (problem%subtype)
-                          case (fbem_mechanics_plane_strain)
-                            sigma_local(1,1)=1.d0/(1.d0-nu)*(2.d0*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2))
-                          case (fbem_mechanics_plane_stress)
-                            sigma_local(1,1)=2.d0*(1.d0+nu)*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2)
-                          case default
-                            call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid 2D subtype')
-                        end select
-                        ! Stress tensor in global coordinates
-                        sigma(1:2,1:2)=matmul(matmul(local_axes,sigma_local(1:2,1:2)),transpose(local_axes))
-                        if (problem%subtype.eq.fbem_mechanics_plane_strain) then
-                          sigma(3,3)=nu*(sigma(1,1)+sigma(2,2))
-                        end if
-                      !
-                      ! 3D
-                      !
-                      case (3)
-                        ! Local stress tensor due to traction at boundary
-                        sigma_local(3,1)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,1))
-                        sigma_local(3,2)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,2))
-                        sigma_local(3,3)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,3))
-                        sigma_local(1,3)=sigma_local(3,1)
-                        sigma_local(2,3)=sigma_local(3,2)
-                        ! Tangential displacement gradient in local cartesian coordinates
-                        dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
-                        ! Local stress tensor due to traction at boundary and tangential displacement
-                        sigma_local(1,1)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(1,1)+nu*dudx_tangential_local(2,2)))
-                        sigma_local(2,2)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(2,2)+nu*dudx_tangential_local(1,1)))
-                        sigma_local(1,2)=mu*(dudx_tangential_local(1,2)+dudx_tangential_local(2,1))
-                        sigma_local(2,1)=sigma_local(1,2)
-                        ! Stress tensor in global coordinates
-                        sigma=matmul(matmul(local_axes,sigma_local),transpose(local_axes))
-                      case default
-                        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid dimension')
-                    end select
-                    ! Add
-                    do ki=1,3
-                      do kj=1,3
-                        kk=(ki-1)*3+kj
-                        exp_element_node_value(kk,kn,exp_n_elements)=sigma(ki,kj)
-                      end do
-                    end do
-                  end do
-                  deallocate(xi,psi)
-
-                end if
-
-            end select
-          end do
-        end do
-
-        ! +-----------------+
-        ! | INTERNAL POINTS |
-        ! +-----------------+
-
-        ! to be done...
-
-      ! ============================================================================================================================
-
-      ! ============================================================================================================================
-      ! FE region
-      !
-      case (fbem_fe)
-
-        !
-        ! Nothing to do
-        !
-
-      ! ============================================================================================================================
-
-    end select
-  end do ! Loop through REGIONS
-  if (exp_n_elements.gt.0) then
-    call fbem_export_gmsh_ElementNodeData(output_fileunit,'Stress tensor SIJ (BE +n)',0.d0,0,9,&
-                                          n_elements,maxval(fbem_n_nodes),&
-                                          exp_n_elements,exp_element_eid,exp_element_n_nodes,exp_element_node_value)
-  end if
-
-  ! ================================================================================================================================
-  ! Stress tensor (negative faces)
-  ! ================================================================================================================================
-
-  exp_n_elements=0
-  exp_element_eid=0
-  exp_element_n_nodes=0
-  exp_element_node_value=0
-  ! Loop through REGIONS
-  do kr=1,n_regions
-    select case (region(kr)%class)
-
-      ! ============================================================================================================================
-      ! BE REGION
-      !
-      case (fbem_be)
-
-        ! +----------------+
-        ! | BOUNDARY NODES |
-        ! +----------------+
-
-        k_start=problem%n+1
-        k_end  =2*problem%n
-        mu=region(kr)%property_r(2)
-        lambda=region(kr)%property_r(6)
-
-        ! Loop through boundaries
-        do kb=1,region(kr)%n_boundaries
-          sb=region(kr)%boundary(kb)
-          ! Loop through elements
-          do ke=1,part(boundary(sb)%part)%n_elements
-            se=part(boundary(sb)%part)%element(ke)
-
-            select case (boundary(sb)%coupling)
-              !
-              ! Uncoupled boundary of BE-FE coupled boundary
-              !
-              case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
-                select case (boundary(sb)%class)
-                  !
-                  ! Ordinary boundary
-                  !
-                  case (fbem_boundary_class_ordinary)
-
-                    !
-                    ! Nothing to do
-                    !
-
-                  !
-                  ! Crack-like boundaries
-                  !
-                  case (fbem_boundary_class_cracklike)
-                    face=2
-                    allocate(psi(element(se)%n_nodes,problem%n),xi(element(se)%n_dimension))
-                    exp_n_elements=exp_n_elements+1
-                    exp_element_eid(exp_n_elements)=element(se)%id
-                    exp_element_n_nodes(exp_n_elements)=element(se)%n_nodes
-                    do kn=1,element(se)%n_nodes
-                      xi=element(se)%xi_fn(:,kn)
-                      psi=fbem_psi(problem%n,element(se)%type_g,element(se)%x_gn,element(se)%type_f1,element(se)%delta_f,xi)
-                      dudx_tangential=0
-                      do kkn=1,element(se)%n_nodes
-                        do kc=1,problem%n
-                          dudx_tangential(kc,:)=dudx_tangential(kc,:)+psi(kkn,:)*node(element(se)%node(kkn))%value_r(kc,face)
-                        end do
-                      end do
-                      ! Local cartesian axes
-                      local_axes=fbem_local_tangential_cartesian_axes(problem%n,element(se)%type_g,element(se)%x_gn,.true.,xi)
-                      select case (problem%n)
-                        !
-                        ! 2D (plane strain or plane stress)
-                        !
-                        case (2)
-                          sigma_local=0
-                          sigma=0
-                          ! Local stress tensor due to traction at boundary
-                          sigma_local(2,1)=dot_product(node(element(se)%node(kn))%value_r(3:4,face),local_axes(:,1))
-                          sigma_local(2,2)=dot_product(node(element(se)%node(kn))%value_r(3:4,face),local_axes(:,2))
-                          sigma_local(1,2)=sigma_local(2,1)
-                          ! Tangential displacement gradient in local cartesian coordinates
-                          dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
-                          ! Local stress tensor due to traction at boundary and tangential displacement
-                          select case (problem%subtype)
-                            case (fbem_mechanics_plane_strain)
-                              sigma_local(1,1)=1.d0/(1.d0-nu)*(2.d0*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2))
-                            case (fbem_mechanics_plane_stress)
-                              sigma_local(1,1)=2.d0*(1.d0+nu)*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2)
-                            case default
-                              call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid 2D subtype')
-                          end select
-                          ! Stress tensor in global coordinates
-                          sigma(1:2,1:2)=matmul(matmul(local_axes,sigma_local(1:2,1:2)),transpose(local_axes))
-                          if (problem%subtype.eq.fbem_mechanics_plane_strain) then
-                            sigma(3,3)=nu*(sigma(1,1)+sigma(2,2))
-                          end if
-                        !
-                        ! 3D
-                        !
-                        case (3)
-                          ! Local stress tensor due to traction at boundary
-                          sigma_local(3,1)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,1))
-                          sigma_local(3,2)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,2))
-                          sigma_local(3,3)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,3))
-                          sigma_local(1,3)=sigma_local(3,1)
-                          sigma_local(2,3)=sigma_local(3,2)
-                          ! Tangential displacement gradient in local cartesian coordinates
-                          dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
-                          ! Local stress tensor due to traction at boundary and tangential displacement
-                          sigma_local(1,1)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(1,1)+nu*dudx_tangential_local(2,2)))
-                          sigma_local(2,2)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(2,2)+nu*dudx_tangential_local(1,1)))
-                          sigma_local(1,2)=mu*(dudx_tangential_local(1,2)+dudx_tangential_local(2,1))
-                          sigma_local(2,1)=sigma_local(1,2)
-                          ! Stress tensor in global coordinates
-                          sigma=matmul(matmul(local_axes,sigma_local),transpose(local_axes))
-                        case default
-                          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid dimension')
-                      end select
-                      ! Add
-                      do ki=1,3
-                        do kj=1,3
-                          kk=(ki-1)*3+kj
-                          exp_element_node_value(kk,kn,exp_n_elements)=sigma(ki,kj)
-                        end do
-                      end do
-                    end do
-                    deallocate(xi,psi)
-
-                end select
-              !
-              ! BE-BE coupled boundary of BE-FE-BE coupled boundary
-              !
-              case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
-                ! The region is the region 1 of the boundary
-                if (region(kr)%boundary_reversion(kb)) then
-                  face=2
-                  allocate(psi(element(se)%n_nodes,problem%n),xi(element(se)%n_dimension))
-                  exp_n_elements=exp_n_elements+1
-                  exp_element_eid(exp_n_elements)=element(se)%id
-                  exp_element_n_nodes(exp_n_elements)=element(se)%n_nodes
-                  do kn=1,element(se)%n_nodes
-                    xi=element(se)%xi_fn(:,kn)
-                    psi=fbem_psi(problem%n,element(se)%type_g,element(se)%x_gn,element(se)%type_f1,element(se)%delta_f,xi)
-                    dudx_tangential=0
-                    do kkn=1,element(se)%n_nodes
-                      do kc=1,problem%n
-                        dudx_tangential(kc,:)=dudx_tangential(kc,:)+psi(kkn,:)*node(element(se)%node(kkn))%value_r(kc,face)
-                      end do
-                    end do
-                    ! Local cartesian axes
-                    local_axes=fbem_local_tangential_cartesian_axes(problem%n,element(se)%type_g,element(se)%x_gn,.true.,xi)
-                    select case (problem%n)
-                      !
-                      ! 2D (plane strain or plane stress)
-                      !
-                      case (2)
-                        sigma_local=0
-                        sigma=0
-                        ! Local stress tensor due to traction at boundary
-                        sigma_local(2,1)=dot_product(node(element(se)%node(kn))%value_r(3:4,face),local_axes(:,1))
-                        sigma_local(2,2)=dot_product(node(element(se)%node(kn))%value_r(3:4,face),local_axes(:,2))
-                        sigma_local(1,2)=sigma_local(2,1)
-                        ! Tangential displacement gradient in local cartesian coordinates
-                        dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
-                        ! Local stress tensor due to traction at boundary and tangential displacement
-                        select case (problem%subtype)
-                          case (fbem_mechanics_plane_strain)
-                            sigma_local(1,1)=1.d0/(1.d0-nu)*(2.d0*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2))
-                          case (fbem_mechanics_plane_stress)
-                            sigma_local(1,1)=2.d0*(1.d0+nu)*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2)
-                          case default
-                            call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid 2D subtype')
-                        end select
-                        ! Stress tensor in global coordinates
-                        sigma(1:2,1:2)=matmul(matmul(local_axes,sigma_local(1:2,1:2)),transpose(local_axes))
-                        if (problem%subtype.eq.fbem_mechanics_plane_strain) then
-                          sigma(3,3)=nu*(sigma(1,1)+sigma(2,2))
-                        end if
-                      !
-                      ! 3D
-                      !
-                      case (3)
-                        ! Local stress tensor due to traction at boundary
-                        sigma_local(3,1)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,1))
-                        sigma_local(3,2)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,2))
-                        sigma_local(3,3)=dot_product(node(element(se)%node(kn))%value_r(4:6,face),local_axes(:,3))
-                        sigma_local(1,3)=sigma_local(3,1)
-                        sigma_local(2,3)=sigma_local(3,2)
-                        ! Tangential displacement gradient in local cartesian coordinates
-                        dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
-                        ! Local stress tensor due to traction at boundary and tangential displacement
-                        sigma_local(1,1)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(1,1)+nu*dudx_tangential_local(2,2)))
-                        sigma_local(2,2)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(2,2)+nu*dudx_tangential_local(1,1)))
-                        sigma_local(1,2)=mu*(dudx_tangential_local(1,2)+dudx_tangential_local(2,1))
-                        sigma_local(2,1)=sigma_local(1,2)
-                        ! Stress tensor in global coordinates
-                        sigma=matmul(matmul(local_axes,sigma_local),transpose(local_axes))
-                      case default
-                        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid dimension')
-                    end select
-                    ! Add
-                    do ki=1,3
-                      do kj=1,3
-                        kk=(ki-1)*3+kj
-                        exp_element_node_value(kk,kn,exp_n_elements)=sigma(ki,kj)
-                      end do
-                    end do
-                  end do
-                  deallocate(xi,psi)
-                end if
-
-            end select
-          end do
-        end do
-
-        ! +-----------------+
-        ! | INTERNAL POINTS |
-        ! +-----------------+
-
-        ! to be done...
-
-      ! ============================================================================================================================
-
-      ! ============================================================================================================================
-      ! FE region
-      !
-      case (fbem_fe)
-
-        !
-        ! Nothing to do
-        !
-
-      ! ============================================================================================================================
-
-    end select
-  end do ! Loop through REGIONS
-  if (exp_n_elements.gt.1) then
-    call fbem_export_gmsh_ElementNodeData(output_fileunit,'Stress tensor SIJ (BE -n)',0.d0,0,9,&
-                                          n_elements,maxval(fbem_n_nodes),&
-                                          exp_n_elements,exp_element_eid,exp_element_n_nodes,exp_element_node_value)
   end if
 
   ! Deallocate working variable

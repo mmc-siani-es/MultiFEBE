@@ -133,7 +133,7 @@ subroutine export_solution_mechanics_static_tot(output_fileunit)
         nc=ncreal
       end if
       ! Write
-      do k=1,nc-fbem_nchar_int(kc)
+      do k=1,nc-fbem_nchar_int(kc)-1
         write(output_fileunit,'(a)',advance='no') '_'
       end do
       write(fmt1,*) '(a1,i',fbem_nchar_int(kc),')'
@@ -584,6 +584,11 @@ subroutine export_solution_mechanics_static_tot(output_fileunit)
         nfaces=1
         face=1
         !
+        ! It is not calculated for point body loads
+        !
+        se=part(be_bodyload(sb)%part)%element(1)
+        if (element(se)%n_dimension.eq.0) cycle
+        !
         ! Point with respect moments are calculated, xm.
         !
         xm=0.d0
@@ -877,7 +882,6 @@ subroutine export_solution_mechanics_static_tot(output_fileunit)
           write(output_fileunit,fmt2,advance='no') MT(k,1)
         end do
         write(output_fileunit,*)
-
 
       end do ! Loop through the BE LOADS of the REGION
 

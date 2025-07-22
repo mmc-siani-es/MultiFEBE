@@ -87,7 +87,7 @@ subroutine read_commands(fileunit)
       if (trim(word).eq.'convert_mesh_file_format') then
         exists=.true.
         if (n_words.ne.6) then
-          call fbem_error_message(error_unit,0,trim(section_name),nl,'invalid number of arguments in this line.')
+          call fbem_error_message(error_unit,0,trim(section_name),nl,'invalid number of arguments in this section line.')
         end if
         word=trim(fbem_extract_word(line,2))
         read(word,*) ndim
@@ -103,7 +103,7 @@ subroutine read_commands(fileunit)
       if (trim(word).eq.'transform_mesh_parts_to_linear') then
         exists=.true.
         if (n_words.lt.8) then
-          call fbem_error_message(error_unit,0,trim(section_name),nl,'invalid number of arguments in this line.')
+          call fbem_error_message(error_unit,0,trim(section_name),nl,'invalid number of arguments in this section line.')
         end if
         word=trim(fbem_extract_word(line,2))
         read(word,*) ndim

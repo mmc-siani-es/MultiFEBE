@@ -23,6 +23,7 @@ subroutine build_auxiliary_variables_mechanics_harmonic
 
   ! Fortran 2003 intrinsic module
   use iso_fortran_env
+  use, intrinsic :: ieee_arithmetic
 
   ! fbem modules
   use fbem_data_structures
@@ -47,8 +48,11 @@ subroutine build_auxiliary_variables_mechanics_harmonic
   logical, allocatable       :: node_used(:)
   character(len=fbem_fmtstr) :: fmtstr
   integer(kind=int64)        :: memory
+  real(kind=real64)          :: r64_nan
 
   if (verbose_level.ge.1)  call fbem_timestamp_w_message(output_unit,2,'START building auxiliary variables')
+
+  r64_nan=ieee_value(r64_nan,ieee_quiet_nan)
 
   ! Allocate auxiliary variable
   allocate (node_used(n_nodes))
@@ -63,6 +67,9 @@ subroutine build_auxiliary_variables_mechanics_harmonic
   ! BE REGIONS
   ! ================================================================================================================================
 
+  !
+  ! NODE-WISE
+  !
   do kr=1,n_regions
     if (region(kr)%class.eq.fbem_be) then
 
@@ -190,9 +197,9 @@ subroutine build_auxiliary_variables_mechanics_harmonic
                             end select
                           end do
 
-                        ! ----------------- !
+                        ! ------------------ !
                         ! POROELASTIC MEDIUM !
-                        ! ----------------- !
+                        ! ------------------ !
 
                         case (fbem_poroelastic)
                           !
@@ -2028,89 +2035,422 @@ subroutine build_auxiliary_variables_mechanics_harmonic
         end do
       end do
 
-      ! =============================
-      ! COUPLED BE BODY LOAD ELEMENTS
-      ! =============================
+      ! =====================
+      ! BE BODY LOAD ELEMENTS
+      ! =====================
+
+      !
+      ! For frequency dependant body load values, this part must be inside
+      ! the frequency loop
+      !
 
       do kb=1,region(kr)%n_be_bodyloads
         sb=region(kr)%be_bodyload(kb)
         sp=be_bodyload(sb)%part
-        select case (be_bodyload(sb)%coupling)
+        do ke=1,part(sp)%n_elements
+          se=part(sp)%element(ke)
+          do kn=1,element(se)%n_nodes
+            sn=element(se)%node(kn)
+            if (node_used(sn).eqv.(.false.)) then
+              node_used(sn)=.true.
+              select case (be_bodyload(sb)%coupling)
 
-          ! ----------------------------------
-          ! FE BEAM TIP - BE LINE/SURFACE LOAD
-          ! ----------------------------------
+                ! ----------------------------------
+                ! UNCOUPLED
+                ! ----------------------------------
 
-          case (fbem_bl_coupling_beam_tip)
-            stop 'not yet'
+                case (fbem_bl_uncoupled)
+                  select case (region(kr)%type)
 
-          ! ---------------------------------------------------------
-          ! (FE BEAM - BE LINE LOAD) AND (FE SHELL - BE SURFACE LOAD)
-          ! ---------------------------------------------------------
+                    ! --------------
+                    ! INVISCID FLUID
+                    ! --------------
 
-          case (fbem_bl_coupling_beam_line,fbem_bl_coupling_shell_surface)
-                do ke=1,part(sp)%n_elements
-                  se=part(sp)%element(ke)
-
-
-                  !
-                  ! TODO: Kinematic and stress resultants over the element with
-                  ! respect to its centroid.
-                  !
-                  ! element(se)%value_c(1:n                   ,1): u_k
-                  ! element(se)%value_c(n+1:3*(n-1)           ,1): theta_k
-                  ! element(se)%value_c(3*(n-1)+1:3*(n-1)+n   ,1): F_k
-                  ! element(se)%value_c(3*(n-1)+n+1:2*3**(n-1),1): M_k
-                  !
-                  !allocate (element(se)%value_c(2*(3*(problem%n-1)),1))
-
-
-
-
-                  do kn=1,element(se)%n_nodes
-                    sn=element(se)%node(kn)
-                    if (node_used(sn).eqv.(.false.)) then
-                      node_used(sn)=.true.
+                    case (fbem_potential)
                       !
-                      ! Index of equations for each coordinate k:
-                      ! node(sn)%row(k,1): SBIE
+                      ! Index of variables:
+                      ! - node(sn)%value_c(1,1): a
+                      ! - node(sn)%value_c(2,1): Un
                       !
-                      ! Index of variables for each coordinate k:
-                      ! node(sn)%col(          k,1): u_k (not active since u_k == u_k^(FE))
-                      ! node(sn)%col(problem%n+k,1): b_k
+                      allocate (node(sn)%value_c(2,1))
+                      node(sn)%value_c=dcmplx(r64_nan,r64_nan)
+                      node(sn)%value_c(1,1)=node(sn)%cvalue_c(1,1,1)
+
+                    ! ------------------
+                    ! VISCOELASTIC SOLID
+                    ! ------------------
+
+                    case (fbem_viscoelastic)
                       !
-                      allocate (node(sn)%row(problem%n,1))
-                      allocate (node(sn)%col(2*problem%n,1))
+                      ! Index of variables:
+                      ! - node(sn)%value_c(          k,1): u_k
+                      ! - node(sn)%value_c(problem%n+k,1): F_k
+                      !
                       allocate (node(sn)%value_c(2*problem%n,1))
-                      allocate (node(sn)%dvda_c(2*problem%n,1,problem%n_designvariables))
-                      ! Initialize
-                      node(sn)%row=0
-                      node(sn)%col=0
-                      ! Assign row to the equation and column to the variables
+                      node(sn)%value_c=dcmplx(r64_nan,r64_nan)
                       do k=1,problem%n
-                        ! Equation
-                        node(sn)%row(k,1)=row
-                        row=row+1
-                        ! b_k is unknown
-                        node(sn)%col(problem%n+k,1)=col
-                        col=col+1
+                        node(sn)%value_c(problem%n+k,1)=node(sn)%cvalue_c(k,1,1)
                       end do
 
-                    end if
+                    ! -----------------
+                    ! POROELASTIC MEDIUM
+                    ! -----------------
+
+                    case (fbem_poroelastic)
+                      call fbem_error_message(error_unit,0,__FILE__,__LINE__,'body loads not available for poroelastic media')
+
+                  end select
+
+                ! ----------------------------------
+                ! FE BEAM TIP - BE LINE/SURFACE LOAD
+                ! ----------------------------------
+
+                case (fbem_bl_coupling_beam_tip)
+
+                  stop 'not yet'
+
+                ! ---------------------------------------------------------
+                ! (FE BEAM - BE LINE LOAD) AND (FE SHELL - BE SURFACE LOAD)
+                ! ---------------------------------------------------------
+
+                case (fbem_bl_coupling_beam_line,fbem_bl_coupling_shell_surface)
+                  !
+                  ! Index of equations for each coordinate k:
+                  ! node(sn)%row(k,1): SBIE
+                  !
+                  ! Index of variables for each coordinate k:
+                  ! node(sn)%col(          k,1): u_k (not active since u_k == u_k^(FE))
+                  ! node(sn)%col(problem%n+k,1): b_k
+                  !
+                  allocate (node(sn)%row(problem%n,1))
+                  allocate (node(sn)%col(2*problem%n,1))
+                  allocate (node(sn)%value_c(2*problem%n,1))
+                  allocate (node(sn)%dvda_c(2*problem%n,1,problem%n_designvariables))
+                  ! Initialize
+                  node(sn)%row=0
+                  node(sn)%col=0
+                  ! Assign row to the equation and column to the variables
+                  do k=1,problem%n
+                    ! Equation
+                    node(sn)%row(k,1)=row
+                    row=row+1
+                    ! b_k is unknown
+                    node(sn)%col(problem%n+k,1)=col
+                    col=col+1
                   end do
-                end do
 
-          ! -----------------------
-          ! FE SHELL - BE EDGE LOAD
-          ! -----------------------
+                ! -----------------------
+                ! FE SHELL - BE EDGE LOAD
+                ! -----------------------
 
-          case (fbem_bl_coupling_shell_edge)
-            stop 'not yet'
+                case (fbem_bl_coupling_shell_edge)
+                  stop 'not yet'
 
-        end select
+              end select
+           end if
+          end do
+        end do
+      end do
+
+
+    end if
+  end do
+
+  !
+  ! ELEMENT-WISE
+  !
+  do kr=1,n_regions
+    if (region(kr)%class.eq.fbem_be) then
+
+      ! ====================
+      ! BE BOUNDARY ELEMENTS
+      ! ====================
+
+      !
+      ! TODO: Kinematic and stress resultants over the element with
+      ! respect to its centroid.
+      !
+      ! element-wise (below)
+      !
+      ! element(se)%value_c(1:n                   ,1): u_k
+      ! element(se)%value_c(n+1:3*(n-1)           ,1): theta_k
+      ! element(se)%value_c(3*(n-1)+1:3*(n-1)+n   ,1): F_k
+      ! element(se)%value_c(3*(n-1)+n+1:2*3**(n-1),1): M_k
+      !
+      !allocate (element(se)%value_c(2*(3*(problem%n-1)),1))
+
+      do kb=1,region(kr)%n_boundaries
+        sb=region(kr)%boundary(kb)
+        sp=boundary(sb)%part
+        do ke=1,part(sp)%n_elements
+          se=part(sp)%element(ke)
+          select case (boundary(sb)%coupling)
+
+            ! ================================================================================================================ !
+            ! BE OR BE-FE BOUNDARY                                                                                                      !
+            ! ================================================================================================================ !
+
+            case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
+              select case (boundary(sb)%class)
+
+                ! ================= !
+                ! ORDINARY BOUNDARY !
+                ! ================= !
+
+                case (fbem_boundary_class_ordinary)
+                  select case (region(kr)%type)
+
+                    ! -------------- !
+                    ! INVISCID FLUID !
+                    ! -------------- !
+
+                    case (fbem_potential)
+                      !
+                      ! element(se)%value_c(:,node,1): U_k
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(problem%n,element(se)%n_nodes,1))
+
+                    ! ------------------ !
+                    ! VISCOELASTIC SOLID !
+                    ! ------------------ !
+
+                    case (fbem_viscoelastic)
+                      !
+                      ! element(se)%value_c(:,node,1): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(9,element(se)%n_nodes,1))
+
+                    ! ------------------ !
+                    ! POROELASTIC MEDIUM !
+                    ! ------------------ !
+
+                    case (fbem_poroelastic)
+                      !
+                      ! element(se)%value_c(1:problem%,node,1): U_k (fluid displacements)
+                      ! element(se)%value_c((problem%+1):(problem%n+9),node,1): sig11,sig12,sig13,sig21,sig22 (3D solid stress tensor)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(problem%n+9,element(se)%n_nodes,1))
+
+                  end select
+
+                ! =================== !
+                ! CRACK-LIKE BOUNDARY !
+                ! =================== !
+
+                case (fbem_boundary_class_cracklike)
+                  select case (region(kr)%type)
+
+                    ! -------------- !
+                    ! INVISCID FLUID !
+                    ! -------------- !
+
+                    case (fbem_potential)
+                      !
+                      ! element(se)%value_c(:,node,1): U_k
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(problem%n,element(se)%n_nodes,2))
+
+                    ! ------------------ !
+                    ! VISCOELASTIC SOLID !
+                    ! ------------------ !
+
+                    case (fbem_viscoelastic)
+                      !
+                      ! element(se)%value_c(:,node,1): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(9,element(se)%n_nodes,2))
+
+                    ! ------------------ !
+                    ! POROELASTIC MEDIUM !
+                    ! ------------------ !
+
+                    case (fbem_poroelastic)
+                      !
+                      ! element(se)%value_c(1:problem%n               ,node,1): U_k (fluid displacements)
+                      ! element(se)%value_c((problem%+1):(problem%n+9),node,1): sig11,sig12,sig13,sig21,sig22 (3D solid stress tensor)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(problem%n+9,element(se)%n_nodes,2))
+
+                  end select
+
+              end select
+
+            ! ================================================================================================================ !
+            ! BE-BE BOUNDARY                                                                                                   !
+            ! ================================================================================================================ !
+            !
+            ! The region 1 is the region where the boundary has N+
+            ! The region 2 is the region where the boundary has N-
+
+            case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
+              select case (region(boundary(sb)%region(1))%type)
+                case (fbem_potential)
+                  select case (region(boundary(sb)%region(2))%type)
+
+                    ! ------------------------------------------------- !
+                    ! BE (inviscid fluid) - BE (inviscid fluid)         !
+                    ! ------------------------------------------------- !
+
+                    case (fbem_potential)
+                      !
+                      ! element(se)%value_c(1:problem%n,node,1): U_k (face with n+)
+                      ! element(se)%value_c(1:problem%n,node,2): U_k (face with n-)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(problem%n,element(se)%n_nodes,2))
+
+                    ! ------------------------------------------------------- !
+                    ! BE (1: inviscid fluid) - BE (2: viscoelastic solid)     !
+                    ! ------------------------------------------------------- !
+
+                    case (fbem_viscoelastic)
+                      !
+                      ! element(se)%value_c(1:problem%n,node,1): U_k (face with n+)
+                      ! element(se)%value_c(1:9        ,node,2): sig11,sig12,sig13,sig21,sig22,... (in 2D and 3D always the 3D tensor)  (face with n-)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(9,element(se)%n_nodes,2))
+
+                    ! --------------------------------------------------- !
+                    ! BE (1: inviscid fluid) - BE (2: poroelastic medium) !
+                    ! ------------------------------------------.-------- !
+
+                    case (fbem_poroelastic)
+                      !
+                      ! element(se)%value_c(1:problem%n               ,node,1): U_k (face with n+)
+                      ! element(se)%value_c(1:problem%                ,node,2): U_k (fluid displacements) (face with n-)
+                      ! element(se)%value_c((problem%+1):(problem%n+9),node,2): sig11,sig12,sig13,sig21,sig22,... (3D solid stress tensor) (face with n-)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(problem%n+9,element(se)%n_nodes,2))
+
+                  end select
+
+                case (fbem_viscoelastic)
+                  select case (region(boundary(sb)%region(2))%type)
+
+                    ! ---------------------------------------------------- !
+                    ! BE (1: viscoelastic solid) - BE (2: inviscid fluid)  !
+                    ! ---------------------------------------------------- !
+
+                    case (fbem_potential)
+                      !
+                      ! element(se)%value_c(1:9        ,node,1): sig11,sig12,sig13,sig21,sig22,... (in 2D and 3D always the 3D tensor)  (face with n+)
+                      ! element(se)%value_c(1:problem%n,node,2): U_k (face with n-)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(9,element(se)%n_nodes,2))
+
+                    ! ------------------------------------------------- !
+                    ! BE (viscoelastic solid) - BE (viscoelastic solid) !
+                    ! ------------------------------------------------- !
+
+                    case (fbem_viscoelastic)
+                      !
+                      ! element(se)%value_r(1:9,node,1): sig11,sig12,sig13,sig21,sig22,... (in 2D and 3D always the 3D tensor) (face with n+)
+                      ! element(se)%value_r(1:9,node,2): sig11,sig12,sig13,sig21,sig22,... (in 2D and 3D always the 3D tensor) (face with n-)
+                      !
+                      if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_c(9,element(se)%n_nodes,2))
+
+                    ! ------------------------------------------------------- !
+                    ! BE (1: viscoelastic solid) - BE (2: poroelastic medium) !
+                    ! ------------------------------------------------------- !
+
+                    case (fbem_poroelastic)
+                      !
+                      ! element(se)%value_r(1:9                       ,node,1): sig11,sig12,sig13,sig21,sig22,... (in 2D and 3D always the 3D tensor) (face with n+)
+                      ! element(se)%value_c(1:problem%                ,node,2): U_k (fluid displacements) (face with n-)
+                      ! element(se)%value_c((problem%+1):(problem%n+9),node,2): sig11,sig12,sig13,sig21,sig22,... (3D solid stress tensor) (face with n-)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(problem%n+9,element(se)%n_nodes,2))
+
+                  end select
+
+                case (fbem_poroelastic)
+                  select case (region(boundary(sb)%region(2))%type)
+
+                    ! --------------------------------------------------- !
+                    ! BE (1: poroelastic medium) - BE (2: inviscid fluid) !
+                    ! --------------------------------------------------- !
+
+                    case (fbem_potential)
+                      !
+                      ! element(se)%value_c(1:problem%                ,node,1): U_k (fluid displacements) (face with n+)
+                      ! element(se)%value_c((problem%+1):(problem%n+9),node,1): sig11,sig12,sig13,sig21,sig22,... (3D solid stress tensor) (face with n+)
+                      ! element(se)%value_c(1:problem%n               ,node,2): U_k (face with n-)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(problem%n+9,element(se)%n_nodes,2))
+
+                    ! ------------------------------------------------------- !
+                    ! BE (1: poroelastic medium) - BE (2: viscoelastic solid) !
+                    ! ------------------------------------------------------- !
+
+                    case (fbem_viscoelastic)
+                      !
+                      ! element(se)%value_c(1:problem%                ,node,1): U_k (fluid displacements) (face with n+)
+                      ! element(se)%value_c((problem%+1):(problem%n+9),node,1): sig11,sig12,sig13,sig21,sig22,... (3D solid stress tensor) (face with n+)
+                      ! element(se)%value_r(1:9                       ,node,2): sig11,sig12,sig13,sig21,sig22,... (in 2D and 3D always the 3D tensor) (face with n-)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(problem%n+9,element(se)%n_nodes,2))
+
+                    ! ------------------------------------------------------- !
+                    ! BE (1: poroelastic medium) - BE (2: poroelastic medium) !
+                    ! ------------------------------------------------------- !
+
+                    case (fbem_poroelastic)
+                      !
+                      ! element(se)%value_c(1:problem%                ,node,1): U_k (fluid displacements) (face with n+)
+                      ! element(se)%value_c((problem%+1):(problem%n+9),node,1): sig11,sig12,sig13,sig21,sig22,... (3D solid stress tensor) (face with n+)
+                      ! element(se)%value_c(1:problem%                ,node,2): U_k (fluid displacements) (face with n-)
+                      ! element(se)%value_c((problem%+1):(problem%n+9),node,2): sig11,sig12,sig13,sig21,sig22,... (3D solid stress tensor) (face with n-)
+                      !
+                      if (.not.allocated(element(se)%value_c)) allocate(element(se)%value_c(problem%n+9,element(se)%n_nodes,2))
+
+                  end select
+
+              end select
+
+          end select
+
+        end do
 
       end do
 
+      ! =====================
+      ! BE BODY LOAD ELEMENTS
+      ! =====================
+
+      do kb=1,region(kr)%n_be_bodyloads
+        sb=region(kr)%be_bodyload(kb)
+        sp=be_bodyload(sb)%part
+        do ke=1,part(sp)%n_elements
+          se=part(sp)%element(ke)
+          select case (be_bodyload(sb)%coupling)
+
+            ! ----------------------------------
+            ! UNCOUPLED
+            ! ----------------------------------
+
+            case (fbem_bl_uncoupled)
+
+            ! ----------------------------------
+            ! FE BEAM TIP - BE LINE/SURFACE LOAD
+            ! ----------------------------------
+
+            case (fbem_bl_coupling_beam_tip)
+
+
+            ! ---------------------------------------------------------
+            ! (FE BEAM - BE LINE LOAD) AND (FE SHELL - BE SURFACE LOAD)
+            ! ---------------------------------------------------------
+
+            case (fbem_bl_coupling_beam_line,fbem_bl_coupling_shell_surface)
+
+            ! -----------------------
+            ! FE SHELL - BE EDGE LOAD
+            ! -----------------------
+
+            case (fbem_bl_coupling_shell_edge)
+
+          end select
+        end do
+      end do
 
     end if
   end do
@@ -2127,6 +2467,9 @@ subroutine build_auxiliary_variables_mechanics_harmonic
   ! ELEMENT-WISE
   !
   do kr=1,n_regions
+
+
+
     if (region(kr)%class.eq.fbem_fe) then
 
       ! ----------------------------------------------------------------------------------------------------------------------------

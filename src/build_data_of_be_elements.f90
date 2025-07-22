@@ -81,7 +81,10 @@ subroutine build_data_of_be_elements
           end select
         case (fbem_part_be_bodyload)
           n_phi_f1=0
+          n_phi_f2=0
           select case (fbem_n_dimension(se_type_g))
+            case (0)
+              ok=.true.
             case (1)
               call fbem_qs_phijac_ngp_1d(problem%n,se_type_g,se_type_f2,x_gn,qsi_relative_error,n_phi_f2,ok)
             case (2)

@@ -43,19 +43,25 @@ subroutine calculate_stresses_mechanics_static
 
   ! Local variables
   integer                           :: kr
+  integer                           :: sp
   integer                           :: ks_int, ss_int
+  integer                           :: kb, sb
   integer                           :: ke_int, se_int
-  integer                           :: kn, sn, kn2
+  integer                           :: ke, se
+  integer                           :: kn, sn, kn2, sn2
+  integer                           :: ki, kj, kk
+  integer                           :: face
 
   integer                           :: se_int_type
   integer                           :: ndof_mat
   integer                           :: kc, kdofe
 
   integer                           :: kdof
-  real(kind=real64), allocatable    :: phi(:)
+  real(kind=real64), allocatable    :: xi(:), phi(:), psi(:,:)
+
   real(kind=real64)                 :: aux(10)
 
-  real(kind=real64)                 :: E, nu
+  real(kind=real64)                 :: E, nu, lambda, mu
   real(kind=real64)                 :: E11, E22, E33, G12, G13, G23
   real(kind=real64)                 :: nu12, nu21, nu13, nu31, nu23, nu32
 
@@ -66,16 +72,41 @@ subroutine calculate_stresses_mechanics_static
 
   real(kind=real64)                 :: xi1d, xi2d(2), xi3d(3)
 
+  real(kind=real64)                 :: dudx_tangential_local(problem%n,problem%n)
+  real(kind=real64)                 :: dudx_tangential(problem%n,problem%n)
+  real(kind=real64)                 :: sigma(3,3)
+  real(kind=real64)                 :: sigma_local(3,3)
+  real(kind=real64)                 :: delta
+  real(kind=real64)                 :: local_axes(problem%n,problem%n)
+
   if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'START calculating stresses at FE regions')
 
   ! ================================================================================================================================
-  ! CALCULATE ELEMENT STRESSES / STRESS RESULTANTS / EQUILIBRATING LOADS AND NODAL REACTIONS
+  ! CALCULATE BEM SOLID STRESSES / FLUID DISPLACEMENTS ALONG BOUNDARIES
+  ! CALCULATE FEM ELEMENT STRESSES / STRESS RESULTANTS / EQUILIBRATING LOADS AND NODAL REACTIONS
   ! ================================================================================================================================
+
 
   !
   ! Initialize
   !
   do kr=1,n_regions
+    !
+    ! Boundary elements
+    !
+    if (region(kr)%class.eq.fbem_be) then
+      do kb=1,region(kr)%n_boundaries
+        sb=region(kr)%boundary(kb)
+        sp=boundary(sb)%part
+        do ke=1,part(sp)%n_elements
+          se=part(sp)%element(ke)
+          element(se)%value_r=0
+        end do
+      end do
+    end if
+    !
+    ! Finite elements
+    !
     if (region(kr)%class.eq.fbem_fe) then
       do ks_int=1,region(kr)%n_fe_subregions
         ss_int=region(kr)%fe_subregion(ks_int)
@@ -91,9 +122,304 @@ subroutine calculate_stresses_mechanics_static
     end if
   end do
 
-  !
-  ! Calculate
-  !
+  ! ================================================================================================================================
+  ! CALCULATE BEM SOLID STRESSES / FLUID DISPLACEMENTS ALONG BOUNDARIES
+  ! ================================================================================================================================
+
+  ! Stress recovery from displacement gradient taken from pages 203-204 the reference book of Telles, Brebbia and Wrobel (1984).
+
+  ! Loop through REGIONS
+  do kr=1,n_regions
+    !
+    ! BE region
+    !
+    if (region(kr)%class.eq.fbem_be) then
+
+        ! Material properties
+        mu=region(kr)%property_r(2)
+        lambda=region(kr)%property_r(6)
+        nu=region(kr)%property_r(3)
+
+        ! Loop through boundaries
+        do kb=1,region(kr)%n_boundaries
+          sb=region(kr)%boundary(kb)
+          sp=boundary(sb)%part
+          ! Loop through elements
+          do ke=1,part(sp)%n_elements
+            se=part(sp)%element(ke)
+            allocate(psi(element(se)%n_nodes,problem%n))
+            allocate(xi(element(se)%n_dimension))
+            select case (boundary(sb)%coupling)
+              !
+              ! BE boundary or BE-FE coupled boundary
+              !
+              case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
+                select case (boundary(sb)%class)
+                  !
+                  ! Ordinary boundary
+                  !
+                  case (fbem_boundary_class_ordinary)
+                    face=1
+                    do kn=1,element(se)%n_nodes
+                      sn=element(se)%node(kn)
+                      xi=element(se)%xi_fn(:,kn)
+                      psi=fbem_psi(problem%n,element(se)%type_g,element(se)%x_gn,element(se)%type_f1,element(se)%delta_f,xi)
+                      ! GRADIENT OF DISPLACEMENTS (TANGENTIAL PART)
+                      dudx_tangential=0
+                      do kn2=1,element(se)%n_nodes
+                        sn2=element(se)%node(kn2)
+                        do kc=1,problem%n
+                          dudx_tangential(kc,:)=dudx_tangential(kc,:)+psi(kn2,:)*node(sn2)%value_r(kc,face)
+                        end do
+                      end do
+                      ! LOCAL CARTESIAN AXES
+                      local_axes=fbem_local_tangential_cartesian_axes(problem%n,element(se)%type_g,element(se)%x_gn,region(kr)%boundary_reversion(kb),xi)
+                      ! CALCULATE STRESS TENSOR
+                      select case (problem%n)
+                        !
+                        ! 2D (plane strain or plane stress)
+                        !
+                        case (2)
+                          sigma_local=0
+                          sigma=0
+                          ! Local stress tensor due to traction at boundary
+                          sigma_local(2,1)=dot_product(node(sn)%value_r(3:4,face),local_axes(:,1))
+                          sigma_local(2,2)=dot_product(node(sn)%value_r(3:4,face),local_axes(:,2))
+                          sigma_local(1,2)=sigma_local(2,1)
+                          ! Tangential displacement gradient in local cartesian coordinates
+                          dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
+                          ! Local stress tensor due to traction at boundary and tangential displacement
+                          select case (problem%subtype)
+                            case (fbem_mechanics_plane_strain)
+                              sigma_local(1,1)=1.d0/(1.d0-nu)*(2.d0*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2))
+                            case (fbem_mechanics_plane_stress)
+                              sigma_local(1,1)=2.d0*(1.d0+nu)*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2)
+                            case default
+                              call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid 2D subtype')
+                          end select
+                          ! Stress tensor in global coordinates
+                          sigma(1:2,1:2)=matmul(matmul(local_axes,sigma_local(1:2,1:2)),transpose(local_axes))
+                          if (problem%subtype.eq.fbem_mechanics_plane_strain) then
+                            sigma(3,3)=nu*(sigma(1,1)+sigma(2,2))
+                          end if
+                        !
+                        ! 3D
+                        !
+                        case (3)
+                          ! Local stress tensor due to traction at boundary
+                          sigma_local(3,1)=dot_product(node(sn)%value_r(4:6,face),local_axes(:,1))
+                          sigma_local(3,2)=dot_product(node(sn)%value_r(4:6,face),local_axes(:,2))
+                          sigma_local(3,3)=dot_product(node(sn)%value_r(4:6,face),local_axes(:,3))
+                          sigma_local(1,3)=sigma_local(3,1)
+                          sigma_local(2,3)=sigma_local(3,2)
+                          ! Tangential displacement gradient in local cartesian coordinates
+                          dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
+                          ! Local stress tensor due to traction at boundary and tangential displacement
+                          sigma_local(1,1)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(1,1)+nu*dudx_tangential_local(2,2)))
+                          sigma_local(2,2)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(2,2)+nu*dudx_tangential_local(1,1)))
+                          sigma_local(1,2)=mu*(dudx_tangential_local(1,2)+dudx_tangential_local(2,1))
+                          sigma_local(2,1)=sigma_local(1,2)
+                          ! Stress tensor in global coordinates
+                          sigma=matmul(matmul(local_axes,sigma_local),transpose(local_axes))
+                        case default
+                          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid dimension')
+                      end select
+                      ! SAVE STRESS TENSOR
+                      do ki=1,3
+                        do kj=1,3
+                          kk=(ki-1)*3+kj
+                          element(se)%value_r(kk,kn,face)=sigma(ki,kj)
+                        end do
+                      end do
+                    end do
+                  !
+                  ! Crack-like boundaries
+                  !
+                  case (fbem_boundary_class_cracklike)
+                    ! Similar to BE boundary or BE-FE coupled boundary, except that face=2 needs normal reversion with respecto to the boundary.
+                    do face=1,2
+                      do kn=1,element(se)%n_nodes
+                        sn=element(se)%node(kn)
+                        xi=element(se)%xi_fn(:,kn)
+                        psi=fbem_psi(problem%n,element(se)%type_g,element(se)%x_gn,element(se)%type_f1,element(se)%delta_f,xi)
+                        ! GRADIENT OF DISPLACEMENTS (TANGENTIAL PART)
+                        dudx_tangential=0
+                        do kn2=1,element(se)%n_nodes
+                          sn2=element(se)%node(kn2)
+                          do kc=1,problem%n
+                            dudx_tangential(kc,:)=dudx_tangential(kc,:)+psi(kn2,:)*node(sn2)%value_r(kc,face)
+                          end do
+                        end do
+                        ! LOCAL CARTESIAN AXES
+                        if (face.eq.1) then
+                          local_axes=fbem_local_tangential_cartesian_axes(problem%n,element(se)%type_g,element(se)%x_gn,region(kr)%boundary_reversion(kb),xi)
+                        else
+                          local_axes=fbem_local_tangential_cartesian_axes(problem%n,element(se)%type_g,element(se)%x_gn,.not.region(kr)%boundary_reversion(kb),xi)
+                        end if
+                        ! CALCULATE STRESS TENSOR
+                        select case (problem%n)
+                          !
+                          ! 2D (plane strain or plane stress)
+                          !
+                          case (2)
+                            sigma_local=0
+                            sigma=0
+                            ! Local stress tensor due to traction at boundary
+                            sigma_local(2,1)=dot_product(node(sn)%value_r(3:4,face),local_axes(:,1))
+                            sigma_local(2,2)=dot_product(node(sn)%value_r(3:4,face),local_axes(:,2))
+                            sigma_local(1,2)=sigma_local(2,1)
+                            ! Tangential displacement gradient in local cartesian coordinates
+                            dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
+                            ! Local stress tensor due to traction at boundary and tangential displacement
+                            select case (problem%subtype)
+                              case (fbem_mechanics_plane_strain)
+                                sigma_local(1,1)=1.d0/(1.d0-nu)*(2.d0*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2))
+                              case (fbem_mechanics_plane_stress)
+                                sigma_local(1,1)=2.d0*(1.d0+nu)*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2)
+                              case default
+                                call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid 2D subtype')
+                            end select
+                            ! Stress tensor in global coordinates
+                            sigma(1:2,1:2)=matmul(matmul(local_axes,sigma_local(1:2,1:2)),transpose(local_axes))
+                            if (problem%subtype.eq.fbem_mechanics_plane_strain) then
+                              sigma(3,3)=nu*(sigma(1,1)+sigma(2,2))
+                            end if
+                          !
+                          ! 3D
+                          !
+                          case (3)
+                            ! Local stress tensor due to traction at boundary
+                            sigma_local(3,1)=dot_product(node(sn)%value_r(4:6,face),local_axes(:,1))
+                            sigma_local(3,2)=dot_product(node(sn)%value_r(4:6,face),local_axes(:,2))
+                            sigma_local(3,3)=dot_product(node(sn)%value_r(4:6,face),local_axes(:,3))
+                            sigma_local(1,3)=sigma_local(3,1)
+                            sigma_local(2,3)=sigma_local(3,2)
+                            ! Tangential displacement gradient in local cartesian coordinates
+                            dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
+                            ! Local stress tensor due to traction at boundary and tangential displacement
+                            sigma_local(1,1)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(1,1)+nu*dudx_tangential_local(2,2)))
+                            sigma_local(2,2)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(2,2)+nu*dudx_tangential_local(1,1)))
+                            sigma_local(1,2)=mu*(dudx_tangential_local(1,2)+dudx_tangential_local(2,1))
+                            sigma_local(2,1)=sigma_local(1,2)
+                            ! Stress tensor in global coordinates
+                            sigma=matmul(matmul(local_axes,sigma_local),transpose(local_axes))
+                          case default
+                            call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid dimension')
+                        end select
+                        ! SAVE STRESS TENSOR
+                        do ki=1,3
+                          do kj=1,3
+                            kk=(ki-1)*3+kj
+                            element(se)%value_r(kk,kn,face)=sigma(ki,kj)
+                          end do
+                        end do
+                      end do
+                    end do
+
+                end select
+
+              !
+              ! BE-BE coupled boundary or BE-FE-BE coupled boundary
+              !
+              case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
+
+                ! The region is the region 1 of the boundary
+                if (.not.region(kr)%boundary_reversion(kb)) then
+                  face=1
+                ! The region is the region 2 of the boundary
+                else
+                  face=2
+                end if
+
+                ! The same as with BE boundary or BE-FE coupled boundary
+                do kn=1,element(se)%n_nodes
+                  sn=element(se)%node(kn)
+                  xi=element(se)%xi_fn(:,kn)
+                  psi=fbem_psi(problem%n,element(se)%type_g,element(se)%x_gn,element(se)%type_f1,element(se)%delta_f,xi)
+                  ! GRADIENT OF DISPLACEMENTS (TANGENTIAL PART)
+                  dudx_tangential=0
+                  do kn2=1,element(se)%n_nodes
+                    sn2=element(se)%node(kn2)
+                    do kc=1,problem%n
+                      dudx_tangential(kc,:)=dudx_tangential(kc,:)+psi(kn2,:)*node(sn2)%value_r(kc,face)
+                    end do
+                  end do
+                  ! LOCAL CARTESIAN AXES
+                  local_axes=fbem_local_tangential_cartesian_axes(problem%n,element(se)%type_g,element(se)%x_gn,region(kr)%boundary_reversion(kb),xi)
+                  ! CALCULATE STRESS TENSOR
+                  select case (problem%n)
+                    !
+                    ! 2D (plane strain or plane stress)
+                    !
+                    case (2)
+                      sigma_local=0
+                      sigma=0
+                      ! Local stress tensor due to traction at boundary
+                      sigma_local(2,1)=dot_product(node(sn)%value_r(3:4,face),local_axes(:,1))
+                      sigma_local(2,2)=dot_product(node(sn)%value_r(3:4,face),local_axes(:,2))
+                      sigma_local(1,2)=sigma_local(2,1)
+                      ! Tangential displacement gradient in local cartesian coordinates
+                      dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
+                      ! Local stress tensor due to traction at boundary and tangential displacement
+                      select case (problem%subtype)
+                        case (fbem_mechanics_plane_strain)
+                          sigma_local(1,1)=1.d0/(1.d0-nu)*(2.d0*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2))
+                        case (fbem_mechanics_plane_stress)
+                          sigma_local(1,1)=2.d0*(1.d0+nu)*mu*dudx_tangential_local(1,1)+nu*sigma_local(2,2)
+                        case default
+                          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid 2D subtype')
+                      end select
+                      ! Stress tensor in global coordinates
+                      sigma(1:2,1:2)=matmul(matmul(local_axes,sigma_local(1:2,1:2)),transpose(local_axes))
+                      if (problem%subtype.eq.fbem_mechanics_plane_strain) then
+                        sigma(3,3)=nu*(sigma(1,1)+sigma(2,2))
+                      end if
+                    !
+                    ! 3D
+                    !
+                    case (3)
+                      ! Local stress tensor due to traction at boundary
+                      sigma_local(3,1)=dot_product(node(sn)%value_r(4:6,face),local_axes(:,1))
+                      sigma_local(3,2)=dot_product(node(sn)%value_r(4:6,face),local_axes(:,2))
+                      sigma_local(3,3)=dot_product(node(sn)%value_r(4:6,face),local_axes(:,3))
+                      sigma_local(1,3)=sigma_local(3,1)
+                      sigma_local(2,3)=sigma_local(3,2)
+                      ! Tangential displacement gradient in local cartesian coordinates
+                      dudx_tangential_local=matmul(matmul(transpose(local_axes),dudx_tangential),local_axes)
+                      ! Local stress tensor due to traction at boundary and tangential displacement
+                      sigma_local(1,1)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(1,1)+nu*dudx_tangential_local(2,2)))
+                      sigma_local(2,2)=1.d0/(1.d0-nu)*(nu*sigma_local(3,3)+2.d0*mu*(dudx_tangential_local(2,2)+nu*dudx_tangential_local(1,1)))
+                      sigma_local(1,2)=mu*(dudx_tangential_local(1,2)+dudx_tangential_local(2,1))
+                      sigma_local(2,1)=sigma_local(1,2)
+                      ! Stress tensor in global coordinates
+                      sigma=matmul(matmul(local_axes,sigma_local),transpose(local_axes))
+                    case default
+                      call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid dimension')
+                  end select
+                  ! SAVE STRESS TENSOR
+                  do ki=1,3
+                    do kj=1,3
+                      kk=(ki-1)*3+kj
+                      element(se)%value_r(kk,kn,face)=sigma(ki,kj)
+                    end do
+                  end do
+                end do
+
+            end select
+            deallocate(xi,psi)
+          end do
+        end do
+
+    end if
+
+  end do ! Loop through REGIONS
+
+
+
+  ! ================================================================================================================================
+  ! CALCULATE ELEMENT STRESSES / STRESS RESULTANTS / EQUILIBRATING LOADS AND NODAL REACTIONS
+  ! ================================================================================================================================
+
   ! Loop through the REGIONS
   do kr=1,n_regions
 

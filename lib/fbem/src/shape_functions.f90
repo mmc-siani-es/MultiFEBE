@@ -358,7 +358,7 @@ contains
 #       undef etype
 #       undef delta
 #       undef xi
-        ! Calculate x_i, T1 and T2
+        ! Calculate tangent (velocity) vector
         T=0.d0
         do kphi=1,fbem_n_nodes(gtype)
           T=T+dphidxi(kphi)*x(:,kphi)

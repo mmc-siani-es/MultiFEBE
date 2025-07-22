@@ -54,6 +54,10 @@ module fbem_bem_harpot2d
 
   ! ================================================================================================================================
   ! SINGULAR BOUNDARY INTEGRAL EQUATION (SBIE)
+  ! Fundamental solution
+  public :: fbem_bem_harpot2d_sbie_p
+  public :: fbem_bem_harpot2d_sbie_q
+  ! BOUNDARY ELEMENTS
   ! Exterior integration
   public :: fbem_bem_harpot2d_sbie_ext_pre
   public :: fbem_bem_harpot2d_sbie_ext_st
@@ -62,10 +66,16 @@ module fbem_bem_harpot2d
   public :: fbem_bem_harpot2d_sbie_int
   ! Automatic integration
   public :: fbem_bem_harpot2d_sbie_auto
+  ! BODY LOADS
+  public :: fbem_bem_harpot2d_sbie_bl_auto
   ! ================================================================================================================================
 
   ! ================================================================================================================================
   ! HYPERSINGULAR BOUNDARY INTEGRAL EQUATION (HBIE)
+  ! Fundamental solution
+  public :: fbem_bem_harpot2d_hbie_d
+  public :: fbem_bem_harpot2d_hbie_s
+  ! BOUNDARY ELEMENTS
   ! Exterior integration
   public :: fbem_bem_harpot2d_hbie_ext_pre
   public :: fbem_bem_harpot2d_hbie_ext_st
@@ -74,10 +84,13 @@ module fbem_bem_harpot2d
   public :: fbem_bem_harpot2d_hbie_int
   ! Automatic integration
   public :: fbem_bem_harpot2d_hbie_auto
+  ! BODY LOADS
+  public :: fbem_bem_harpot2d_hbie_bl_auto
   ! ================================================================================================================================
 
   ! ================================================================================================================================
   ! BOTH SBIE AND HBIE SIMULTANEOUSLY
+  ! BOUNDARY ELEMENTS
   ! Exterior integration
   public :: fbem_bem_harpot2d_shbie_ext_pre
   ! Automatic integration
@@ -86,6 +99,7 @@ module fbem_bem_harpot2d
 
   ! ================================================================================================================================
   ! VARIATION SINGULAR BOUNDARY INTEGRAL EQUATION (VSBIE)
+  ! BOUNDARY ELEMENTS
   ! Automatic integration
   public :: fbem_bem_harpot2d_vsbie_auto
   ! Exterior integration
@@ -169,6 +183,50 @@ contains
 
   ! ================================================================================================================================
   ! SINGULAR BOUNDARY INTEGRAL EQUATION (SBIE)
+
+  !! Fundamental solution p*
+  subroutine fbem_bem_harpot2d_sbie_p(x,x_i,pars,po)
+    implicit none
+    ! I/O
+    real(kind=real64)                  :: x(2)    !! Observation point
+    real(kind=real64)                  :: x_i(2)  !! Collocation point
+    type(fbem_bem_harpot2d_parameters) :: pars    !! Parameters of the region
+    complex(kind=real64)               :: po      !! p*
+    ! Local
+    real(kind=real64)    :: rv(2), r, d1r, logr, drdx(2)
+    complex(kind=real64) :: z(1), KnR(0:2,1)
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r=1.0d0/r
+    logr=log(r)
+    drdx=rv*d1r
+    z(1)=c_im*pars%k*r
+    call fbem_BesselKnR_decomposed(1,z,KnR)
+    po=pars%P(1)*logr+pars%P(2)+pars%P(3)*KnR(0,1)
+  end subroutine fbem_bem_harpot2d_sbie_p
+
+  !! Fundamental solution q*
+  subroutine fbem_bem_harpot2d_sbie_q(x,n,x_i,pars,qo)
+    implicit none
+    ! I/O
+    real(kind=real64)                  :: x(2)    !! Observation point
+    real(kind=real64)                  :: n(2)    !! Observation point normal
+    real(kind=real64)                  :: x_i(2)  !! Collocation point
+    type(fbem_bem_harpot2d_parameters) :: pars    !! Parameters of the region
+    complex(kind=real64)               :: qo      !! q*
+    ! Local
+    real(kind=real64)    :: rv(2), r, d1r, logr, drdx(2), drdn
+    complex(kind=real64) :: z(1), KnR(0:2,1)
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r=1.0d0/r
+    logr=log(r)
+    drdx=rv*d1r
+    drdn=dot_product(drdx,n)
+    z(1)=c_im*pars%k*r
+    call fbem_BesselKnR_decomposed(1,z,KnR)
+    qo=(pars%Q(1)*d1r+(pars%Q(2)*logr+pars%Q(3))*r+pars%Q(4)*KnR(1,1))*drdn
+  end subroutine fbem_bem_harpot2d_sbie_q
 
   subroutine fbem_bem_harpot2d_sbie_ext_pre(ps,e,reverse,x_i,pars,h,g)
     implicit none
@@ -739,10 +797,158 @@ contains
     end select
   end subroutine fbem_bem_harpot2d_sbie_auto
 
+  !
+  ! BODY LOADS
+  !
+
+
+
+
+
+  subroutine fbem_bem_harpot2d_sbie_bl_auto(e,x_i,p,qsp,ns,g)
+    implicit none
+    ! I/O
+    type(fbem_bem_element)             :: e             !! Integration element
+    real(kind=real64)                  :: x_i(2)        !! Collocation point
+    type(fbem_bem_harpot2d_parameters) :: p             !! Parameters of the region
+    type(fbem_qs_parameters)           :: qsp           !! Quasi-singular integration parameters
+    integer                            :: ns            !! Maximum level of subdivisions
+    complex(kind=real64)               :: g(e%n_snodes) !! g integration kernel
+    ! Local
+    real(kind=real64) :: r(2)      ! Distance vector
+    real(kind=real64) :: rmin      ! Minimum distance between element and x_i
+    real(kind=real64) :: barxi(1)  ! Local coordinates of the nearest element point with respect to x_i
+    real(kind=real64) :: d         ! Dimensionless distance
+    integer           :: delta     ! Control variable
+    real(kind=real64) :: xi_s(1,2) ! Local coordinates of the element subdivision
+    integer           :: method    ! Method used when calculating the nearest element point
+    integer           :: gln_near  ! 1D Gauss-Legendre integration points required by the quasi-singular function
+    integer           :: gln       ! 1D Gauss-Legendre integration points used in the integration
+    integer           :: ps        ! Selected precalculated dataset
+    integer           :: i         ! Counter
+    ! POINT BODY LOAD
+    if (e%d.eq.0) then
+      r=e%x(:,1)-x_i
+      rmin=sqrt(dot_product(r,r))
+      if (rmin.eq.0.d0) then
+        call fbem_error_message(output_unit,0,'fbem_bem_harpot2d_sbie_bl_auto',0,'it is not possible to collocate at a point load')
+      else
+        call fbem_bem_harpot2d_sbie_p(e%x(:,1),x_i,p,g(1))
+        return
+      end if
+    ! LINE, SURFACE OR VOLUME BODY LOAD
+    ! Determine if interior or exterior integration
+    !   - Interior integration (delta=1) requires: xi_i
+    !   - Exterior integration (delta=0) requires: x_i, barxi, rmin and d
+    ! Use the element ball
+    else
+      !
+      ! Only point loads
+      !
+      call fbem_error_message(output_unit,0,'fbem_bem_harpot2d_sbie_bl_auto',0,'only point loads are available')
+      r=e%bball_centre-x_i
+      rmin=sqrt(dot_product(r,r))-e%bball_radius
+      if (rmin.gt.(4.d0*e%bball_radius)) then
+        delta=0
+        barxi=0.d0
+        d=rmin/e%cl
+      else
+        ! Use an adaptative algorithm that combines sampling and minimization algorithms
+        call fbem_nearest_element_point_bem(2,e%gtype,e%x,e%cl,x_i,barxi,rmin,d,method)
+        if (d.le.1.d-12) then
+          delta=1
+        else
+          delta=0
+        end if
+      end if
+      ! Integrate
+      select case (delta)
+        case (1)
+          !call fbem_bem_harpot2d_sbie_bl_int(30,e%gtype,e%ptype,e%stype,e%ptype_delta,e%x,barxi(1),p,g)
+        case (0)
+          ! Estimate the required integration rule
+          gln_near=fbem_qs_n_estimation_standard(e%n,e%gtype,2,qsp,d,barxi)
+          gln=max(e%gln_far,gln_near)
+          ! Integrate using a conservative precalculated dataset
+          if ((gln.le.e%ps_gln_max).and.(gln_near.gt.0)) then
+            do i=1,e%n_ps
+              if (e%ps_gln(i).ge.gln) then
+                ps=i
+                exit
+              end if
+            end do
+            !call fbem_bem_harpot2d_sbie_bl_ext_pre(ps,e,x_i,p,g)
+          ! Integrate using an adaptative algorithm
+          else
+            !call fbem_bem_harpot2d_sbie_bl_ext_adp(e,xi_s,x_i,p,qsp,1,ns,g)
+          end if
+      end select
+    end if
+  end subroutine fbem_bem_harpot2d_sbie_bl_auto
+
+
+
+
+
+
   ! ================================================================================================================================
 
   ! ================================================================================================================================
   ! HYPERSINGULAR BOUNDARY INTEGRAL EQUATION (HBIE)
+
+  !! Fundamental solution d*
+  subroutine fbem_bem_harpot2d_hbie_d(x,x_i,n_i,pars,do)
+    implicit none
+    ! I/O
+    real(kind=real64)                  :: x(2)    !! Observation point
+    real(kind=real64)                  :: x_i(2)  !! Collocation point
+    real(kind=real64)                  :: n_i(2)  !! Collocation point unit normal
+    type(fbem_bem_harpot2d_parameters) :: pars    !! Parameters of the region
+    complex(kind=real64)               :: do      !! d*
+    ! Local
+    real(kind=real64)    :: rv(2), r, d1r1, d1r2, logr, drdx(2), drdni
+    complex(kind=real64) :: z(1), KnR(0:2,1)
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r1=1.0d0/r
+    d1r2=d1r1*d1r1
+    logr=log(r)
+    drdx=rv*d1r1
+    drdni=-dot_product(drdx,n_i)
+    z(1)=c_im*pars%k*r
+    call fbem_BesselKnR_decomposed(1,z,KnR)
+    do=(pars%Q(1)*d1r1+(pars%Q(2)*logr+pars%Q(3))*r+pars%Q(4)*KnR(1,1))*drdni
+  end subroutine fbem_bem_harpot2d_hbie_d
+
+  !! Fundamental solution s*
+  subroutine fbem_bem_harpot2d_hbie_s(x,n,x_i,n_i,pars,so)
+    implicit none
+    ! I/O
+    real(kind=real64)                  :: x(2)    !! Observation point
+    real(kind=real64)                  :: n(2)    !! Observation point unit normal
+    real(kind=real64)                  :: x_i(2)  !! Collocation point
+    real(kind=real64)                  :: n_i(2)  !! Collocation point unit normal
+    type(fbem_bem_harpot2d_parameters) :: pars    !! Parameters of the region
+    complex(kind=real64)               :: so      !! s*
+    ! Local
+    real(kind=real64)    :: rv(2), r, d1r1, d1r2, logr, drdx(2), drdn, drdni, n_dot_ni
+    complex(kind=real64) :: z(1), KnR(0:2,1)
+    complex(kind=real64) :: S1, S2
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r1=1.0d0/r
+    d1r2=d1r1*d1r1
+    logr=log(r)
+    drdx=rv*d1r1
+    drdn=dot_product(drdx,n)
+    drdni=-dot_product(drdx,n_i)
+    n_dot_ni=dot_product(n,n_i)
+    z(1)=c_im*pars%k*r
+    call fbem_BesselKnR_decomposed(1,z,KnR)
+    S1=pars%S1(1)*d1r2+pars%S1(2)+(pars%S1(3)*logr+pars%S1(4))*r**2+pars%S1(5)*KnR(2,1)
+    S2=pars%S2(1)*d1r2+pars%S2(2)*logr+pars%S2(3)+pars%S2(4)*d1r1*KnR(1,1)
+    so=S1*drdn*drdni+S2*n_dot_ni
+  end subroutine fbem_bem_harpot2d_hbie_s
 
   subroutine fbem_bem_harpot2d_hbie_ext_pre(ps,e,reverse,x_i,n_i,pars,m,l)
     implicit none
@@ -1480,6 +1686,89 @@ contains
         end if
     end select
   end subroutine fbem_bem_harpot2d_hbie_auto
+
+
+  subroutine fbem_bem_harpot2d_hbie_bl_auto(e,x_i,n_i,p,qsp,ns,l)
+    implicit none
+    ! I/O
+    type(fbem_bem_element)             :: e             !! Integration element
+    real(kind=real64)                  :: x_i(2)        !! Collocation point
+    real(kind=real64)                  :: n_i(2)        !! Unit normal at the collocation point
+    type(fbem_bem_harpot2d_parameters) :: p             !! Parameters of the region
+    type(fbem_qs_parameters)           :: qsp           !! Quasi-singular integration parameters
+    integer                            :: ns            !! Maximum level of subdivisions
+    complex(kind=real64)               :: l(e%n_snodes) !! l integration kernel
+    ! Local
+    real(kind=real64) :: r(2)      ! Distance vector
+    real(kind=real64) :: rmin      ! Minimum distance between element and x_i
+    real(kind=real64) :: barxi(1)  ! Local coordinates of the nearest element point with respect to x_i
+    real(kind=real64) :: d         ! Dimensionless distance
+    integer           :: delta     ! Control variable
+    real(kind=real64) :: xi_s(1,2) ! Local coordinates of the element subdivision
+    integer           :: method    ! Method used when calculating the nearest element point
+    integer           :: gln_near  ! 1D Gauss-Legendre integration points required by the quasi-singular function
+    integer           :: gln       ! 1D Gauss-Legendre integration points used in the integration
+    integer           :: ps        ! Selected precalculated dataset
+    integer           :: i         ! Counter
+    ! POINT BODY LOAD
+    if (e%d.eq.0) then
+      r=e%x(:,1)-x_i
+      rmin=sqrt(dot_product(r,r))
+      if (rmin.eq.0.d0) then
+        call fbem_error_message(output_unit,0,'fbem_bem_harpot2d_hbie_bl_auto',0,'it is not possible to collocate at a point load')
+      else
+        call fbem_bem_harpot2d_hbie_d(e%x(:,1),x_i,n_i,p,l(1))
+        return
+      end if
+    ! LINE, SURFACE OR VOLUME BODY LOAD
+    ! Determine if interior or exterior integration
+    !   - Interior integration (delta=1) requires: xi_i
+    !   - Exterior integration (delta=0) requires: x_i, barxi, rmin and d
+    ! Use the element ball
+    else
+      !
+      ! Only point loads
+      !
+      call fbem_error_message(output_unit,0,'fbem_bem_harpot2d_hbie_bl_auto',0,'only point loads are available')
+      r=e%bball_centre-x_i
+      rmin=sqrt(dot_product(r,r))-e%bball_radius
+      if (rmin.gt.(4.d0*e%bball_radius)) then
+        delta=0
+        barxi=0.d0
+        d=rmin/e%cl
+      else
+        ! Use an adaptative algorithm that combines sampling and minimization algorithms
+        call fbem_nearest_element_point_bem(2,e%gtype,e%x,e%cl,x_i,barxi,rmin,d,method)
+        if (d.le.1.d-12) then
+          delta=1
+        else
+          delta=0
+        end if
+      end if
+      ! Integrate
+      select case (delta)
+        case (1)
+          !call fbem_bem_harpot2d_hbie_bl_int(30,e%gtype,e%ptype,e%stype,e%ptype_delta,e%x,barxi(1),p,l)
+        case (0)
+          ! Estimate the required integration rule
+          gln_near=fbem_qs_n_estimation_standard(e%n,e%gtype,4,qsp,d,barxi)
+          gln=max(e%gln_far,gln_near)
+          ! Integrate using a conservative precalculated dataset
+          if ((gln.le.e%ps_gln_max).and.(gln_near.gt.0)) then
+            do i=1,e%n_ps
+              if (e%ps_gln(i).ge.gln) then
+                ps=i
+                exit
+              end if
+            end do
+            !call fbem_bem_harpot2d_hbie_bl_ext_pre(ps,e,x_i,n_i,p,l)
+          ! Integrate using an adaptative algorithm
+          else
+            !call fbem_bem_harpot2d_hbie_bl_ext_adp(e,xi_s,x_i,n_i,p,qsp,1,ns,l)
+          end if
+      end select
+    end if
+  end subroutine fbem_bem_harpot2d_hbie_bl_auto
 
   ! ================================================================================================================================
 

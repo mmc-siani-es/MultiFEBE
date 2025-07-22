@@ -42,14 +42,12 @@ subroutine read_conditions_fem_elements_mechanics(input_fileunit)
   integer                               :: input_fileunit    ! Input file unit
   logical                               :: found             ! Logical variable for sections and keywords
   integer                               :: kn, kg
-  integer                               :: ke, kc
+  integer                               :: ke, se
+  integer                               :: kc
+  integer                               :: kp, ks
   character(len=fbem_stdcharlen)        :: keyword           ! Auxiliary variable to save a keyword
   character(len=fbem_stdcharlen)        :: tmp_ctype
   character(len=fbem_stdcharlen)        :: section_name
-
-
-
-!! POR AQUI cambiando conditions mensaje inii
 
   section_name='conditions over fe elements'
   if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'SEARCHING section ['//trim(section_name)//']')
@@ -126,6 +124,181 @@ subroutine read_conditions_fem_elements_mechanics(input_fileunit)
         end if
       end if
     end do
+    !
+    ! PART
+    !
+    ! Loop through each "fe" part
+    do kp=1,n_parts
+      if (part(kp)%type.eq.fbem_part_fe_subregion) then
+        ! Find the part
+        call fbem_search_section(input_fileunit,'conditions over fe elements',found)
+        write(keyword,*) 'part ', part(kp)%id
+        call fbem_trim2b(keyword)
+        call fbem_search_keyword(input_fileunit,keyword,':',found)
+        if (found) then
+          ! Read the type of distributed load
+          read(input_fileunit,*) tmp_ctype
+          ! First element
+          ke=part(kp)%element(1)
+          element(ke)%ctype(1,1)=0
+          element(ke)%ctype(2,1)=0
+          if (trim(tmp_ctype).eq.'local' ) element(ke)%ctype(1,1)=1
+          if (trim(tmp_ctype).eq.'global') element(ke)%ctype(2,1)=1
+          if (trim(tmp_ctype).eq.'local_and_global') then
+            element(ke)%ctype(1,1)=1
+            element(ke)%ctype(2,1)=1
+          end if
+          if ((element(ke)%ctype(1,1).eq.0).and.(element(ke)%ctype(2,1).eq.0)) then
+            call fbem_error_message(error_unit,0,__FILE__,__LINE__,&
+                                    'invalid type of distributed load')
+          end if
+          !
+          ! Depending on the problem type and analysis
+          !
+          select case (problem%type)
+            case (fbem_mechanics)
+              select case (problem%analysis)
+                case (fbem_static)
+                  ! Read the values for local distributed load
+                  if (element(ke)%ctype(1,1).eq.1) then
+                    read(input_fileunit,*) (element(ke)%cvalue_r(kc,1,1),kc=1,problem%n)
+                  end if
+                  ! Read the values for global distributed load
+                  if (element(ke)%ctype(2,1).eq.1) then
+                    read(input_fileunit,*) (element(ke)%cvalue_r(kc,1,2),kc=1,problem%n)
+                  end if
+                  ! Copy to all nodes
+                  do kc=1,problem%n
+                    element(ke)%cvalue_r(kc,:,1)=element(ke)%cvalue_r(kc,1,1)
+                    element(ke)%cvalue_r(kc,:,2)=element(ke)%cvalue_r(kc,1,2)
+                  end do
+                  ! Copy to the rest of the group
+                  do ke=2,part(kp)%n_elements
+                    element(part(kp)%element(ke))%ctype(1,1)=element(part(kp)%element(1))%ctype(1,1)
+                    element(part(kp)%element(ke))%ctype(2,1)=element(part(kp)%element(1))%ctype(2,1)
+                    do kc=1,problem%n
+                      element(part(kp)%element(ke))%cvalue_r(kc,:,1)=element(part(kp)%element(1))%cvalue_r(kc,1,1)
+                      element(part(kp)%element(ke))%cvalue_r(kc,:,2)=element(part(kp)%element(1))%cvalue_r(kc,1,2)
+                    end do
+                  end do
+                case (fbem_harmonic)
+                  ! Read the values for local distributed load
+                  if (element(ke)%ctype(1,1).eq.1) then
+                    read(input_fileunit,*) (element(ke)%cvalue_c(kc,1,1),kc=1,problem%n)
+                  end if
+                  ! Read the values for global distributed load
+                  if (element(ke)%ctype(2,1).eq.1) then
+                    read(input_fileunit,*) (element(ke)%cvalue_c(kc,1,2),kc=1,problem%n)
+                  end if
+                  ! Copy to all nodes
+                  do kc=1,problem%n
+                    element(ke)%cvalue_c(kc,:,1)=element(ke)%cvalue_c(kc,1,1)
+                    element(ke)%cvalue_c(kc,:,2)=element(ke)%cvalue_c(kc,1,2)
+                  end do
+                  ! Copy to the rest of the group
+                  do ke=2,part(kp)%n_elements
+                    element(part(kp)%element(ke))%ctype(1,1)=element(part(kp)%element(1))%ctype(1,1)
+                    element(part(kp)%element(ke))%ctype(2,1)=element(part(kp)%element(1))%ctype(2,1)
+                    do kc=1,problem%n
+                      element(part(kp)%element(ke))%cvalue_c(kc,:,1)=element(part(kp)%element(1))%cvalue_c(kc,1,1)
+                      element(part(kp)%element(ke))%cvalue_c(kc,:,2)=element(part(kp)%element(1))%cvalue_c(kc,1,2)
+                    end do
+                  end do
+              end select
+          end select
+        end if
+      end if
+    end do
+    !
+    ! FE SUBREGION
+    !
+    ! Loop through each FE subregion
+    do ks=1,n_fe_subregions
+      kp=fe_subregion(ks)%part
+      ! Find the fe subregion
+      call fbem_search_section(input_fileunit,'conditions over fe elements',found)
+      write(keyword,*) 'fe_subregion ', fe_subregion(ks)%id
+      call fbem_trim2b(keyword)
+      call fbem_search_keyword(input_fileunit,keyword,':',found)
+
+      !
+      ! Code similar to "part" finding
+      !
+      if (found) then
+        ! Read the type of distributed load
+        read(input_fileunit,*) tmp_ctype
+        ! First element
+        ke=part(kp)%element(1)
+        element(ke)%ctype(1,1)=0
+        element(ke)%ctype(2,1)=0
+        if (trim(tmp_ctype).eq.'local' ) element(ke)%ctype(1,1)=1
+        if (trim(tmp_ctype).eq.'global') element(ke)%ctype(2,1)=1
+        if (trim(tmp_ctype).eq.'local_and_global') then
+          element(ke)%ctype(1,1)=1
+          element(ke)%ctype(2,1)=1
+        end if
+        if ((element(ke)%ctype(1,1).eq.0).and.(element(ke)%ctype(2,1).eq.0)) then
+          call fbem_error_message(error_unit,0,__FILE__,__LINE__,&
+                                  'invalid type of distributed load')
+        end if
+        !
+        ! Depending on the problem type and analysis
+        !
+        select case (problem%type)
+          case (fbem_mechanics)
+            select case (problem%analysis)
+              case (fbem_static)
+                ! Read the values for local distributed load
+                if (element(ke)%ctype(1,1).eq.1) then
+                  read(input_fileunit,*) (element(ke)%cvalue_r(kc,1,1),kc=1,problem%n)
+                end if
+                ! Read the values for global distributed load
+                if (element(ke)%ctype(2,1).eq.1) then
+                  read(input_fileunit,*) (element(ke)%cvalue_r(kc,1,2),kc=1,problem%n)
+                end if
+                ! Copy to all nodes
+                do kc=1,problem%n
+                  element(ke)%cvalue_r(kc,:,1)=element(ke)%cvalue_r(kc,1,1)
+                  element(ke)%cvalue_r(kc,:,2)=element(ke)%cvalue_r(kc,1,2)
+                end do
+                ! Copy to the rest of the group
+                do ke=2,part(kp)%n_elements
+                  element(part(kp)%element(ke))%ctype(1,1)=element(part(kp)%element(1))%ctype(1,1)
+                  element(part(kp)%element(ke))%ctype(2,1)=element(part(kp)%element(1))%ctype(2,1)
+                  do kc=1,problem%n
+                    element(part(kp)%element(ke))%cvalue_r(kc,:,1)=element(part(kp)%element(1))%cvalue_r(kc,1,1)
+                    element(part(kp)%element(ke))%cvalue_r(kc,:,2)=element(part(kp)%element(1))%cvalue_r(kc,1,2)
+                  end do
+                end do
+              case (fbem_harmonic)
+                ! Read the values for local distributed load
+                if (element(ke)%ctype(1,1).eq.1) then
+                  read(input_fileunit,*) (element(ke)%cvalue_c(kc,1,1),kc=1,problem%n)
+                end if
+                ! Read the values for global distributed load
+                if (element(ke)%ctype(2,1).eq.1) then
+                  read(input_fileunit,*) (element(ke)%cvalue_c(kc,1,2),kc=1,problem%n)
+                end if
+                ! Copy to all nodes
+                do kc=1,problem%n
+                  element(ke)%cvalue_c(kc,:,1)=element(ke)%cvalue_c(kc,1,1)
+                  element(ke)%cvalue_c(kc,:,2)=element(ke)%cvalue_c(kc,1,2)
+                end do
+                ! Copy to the rest of the group
+                do ke=2,part(kp)%n_elements
+                  element(part(kp)%element(ke))%ctype(1,1)=element(part(kp)%element(1))%ctype(1,1)
+                  element(part(kp)%element(ke))%ctype(2,1)=element(part(kp)%element(1))%ctype(2,1)
+                  do kc=1,problem%n
+                    element(part(kp)%element(ke))%cvalue_c(kc,:,1)=element(part(kp)%element(1))%cvalue_c(kc,1,1)
+                    element(part(kp)%element(ke))%cvalue_c(kc,:,2)=element(part(kp)%element(1))%cvalue_c(kc,1,2)
+                  end do
+                end do
+            end select
+        end select
+      end if
+
+    end do
+
     !
     ! GROUP
     !

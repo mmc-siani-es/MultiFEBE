@@ -109,10 +109,6 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
   ! ¿?¿?¿?
 
 
-
-
-
-
   ! Save the region properties to local variables
   rho=region(kr)%property_r(1)
   c=region(kr)%property_c(4)
@@ -127,10 +123,6 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
     case (3)
       call fbem_bem_harpot3d_calculate_parameters(rho,c,omega,p3d)
   end select
-
-
-
-
 
 
   ! ============================== !

@@ -86,8 +86,6 @@ subroutine read_be_bodyloads(fileunit)
       call fbem_error_message(error_unit,0,section_name,0,'the number of BE body loads must be >0')
     end if
 
-
-
     ! Read BE body load id, part
     do i=1,n_be_bodyloads
       ! Read

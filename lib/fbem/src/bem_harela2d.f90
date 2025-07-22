@@ -81,6 +81,9 @@ module fbem_bem_harela2d
   ! SINGULAR BOUNDARY INTEGRAL EQUATION (SBIE)
   ! Free-term
   public :: fbem_bem_harela2d_sbie_freeterm
+  ! Fundamental solution
+  public :: fbem_bem_harela2d_sbie_u
+  public :: fbem_bem_harela2d_sbie_t
   ! BOUNDARY ELEMENTS
   ! Exterior integration
   public :: fbem_bem_harela2d_sbie_ext_pre
@@ -103,6 +106,9 @@ module fbem_bem_harela2d
 
   ! ================================================================================================================================
   ! HYPERSINGULAR BOUNDARY INTEGRAL EQUATION (HBIE)
+  ! Fundamental solution
+  public :: fbem_bem_harela2d_hbie_d
+  public :: fbem_bem_harela2d_hbie_s
   ! Exterior integration
   public :: fbem_bem_harela2d_hbie_ext_pre
   public :: fbem_bem_harela2d_hbie_ext_st
@@ -854,6 +860,73 @@ contains
         c(2,2)=1.0d0-theta_ext*c_1_2pi+cte*ctesin
     end select
   end subroutine fbem_bem_harela2d_sbie_freeterm
+
+  !! Fundamental solution u*
+  subroutine fbem_bem_harela2d_sbie_u(x,x_i,p,uo)
+    implicit none
+    ! I/O
+    real(kind=real64)                  :: x(2)    !! Observation point
+    real(kind=real64)                  :: x_i(2)  !! Collocation point
+    type(fbem_bem_harela2d_parameters) :: p       !! Parameters of the region
+    complex(kind=real64)               :: uo(2,2) !! u*_{lk}
+    ! Local
+    integer              :: il, ik
+    real(kind=real64)    :: rv(2), r, r2, d1r1, logr, drdx(2)
+    complex(kind=real64) :: z(2), KnR(0:2,2)
+    complex(kind=real64) :: psi, chi
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    r2=r**2
+    d1r1=1.0d0/r
+    logr=log(r)
+    drdx=rv*d1r1
+    z(1)=c_im*p%k1*r
+    z(2)=c_im*p%k2*r
+    call fbem_BesselKnR_decomposed(2,z,KnR)
+    psi=p%psi(1)*logr+p%psi(2)+KnR(0,2)+d1r1*p%psi(3)*KnR(1,1)+d1r1*p%psi(4)*KnR(1,2)
+    chi=p%chi(1)+(p%chi(2)*logr+p%chi(3))*r2+p%chi(4)*KnR(2,1)+KnR(2,2)
+    do il=1,2
+      do ik=1,2
+        uo(il,ik)=psi*c_dkr(il,ik)-chi*drdx(il)*drdx(ik)
+      end do
+    end do
+    uo=p%cte_u*uo
+  end subroutine fbem_bem_harela2d_sbie_u
+
+  !! Fundamental solution t*
+  subroutine fbem_bem_harela2d_sbie_t(x,n,x_i,p,to)
+    implicit none
+    ! I/O
+    real(kind=real64)                  :: x(2)    !! Observation point
+    real(kind=real64)                  :: n(2)    !! Observation point normal
+    real(kind=real64)                  :: x_i(2)  !! Collocation point
+    type(fbem_bem_harela2d_parameters) :: p       !! Parameters of the region
+    complex(kind=real64)               :: to(2,2) !! t*_{lk}
+    ! Local
+    integer              :: il, ik
+    real(kind=real64)    :: rv(2), r, r2, d1r1, logr, drdx(2), drdn
+    complex(kind=real64) :: z(2), KnR(0:2,2)
+    complex(kind=real64) :: T1, T2, T3
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    r2=r**2
+    d1r1=1.0d0/r
+    logr=log(r)
+    drdx=rv*d1r1
+    drdn=dot_product(drdx,n)
+    z(1)=c_im*p%k1*r
+    z(2)=c_im*p%k2*r
+    call fbem_BesselKnR_decomposed(2,z,KnR)
+    T1=p%T1(1)*d1r1+p%T1(2)*r+p%T1(3)*KnR(1,1)+p%T1(4)*KnR(1,2)+p%T1(5)*d1r1*KnR(2,1)+p%T1(6)*d1r1*KnR(2,2)
+    T2=p%T2(1)*d1r1+(p%T2(2)*logr+p%T2(3))*r+p%T2(4)*KnR(1,2)+p%T2(5)*d1r1*KnR(2,1)+p%T2(6)*d1r1*KnR(2,2)
+    T3=p%T3(1)*d1r1+(p%T3(2)*logr+p%T3(3))*r+p%T3(4)*KnR(1,1)+p%T3(5)*d1r1*KnR(2,1)+p%T3(6)*d1r1*KnR(2,2)
+    do il=1,2
+      do ik=1,2
+        to(il,ik)=T1*drdx(il)*drdx(ik)*drdn+T2*(drdn*c_dkr(il,ik)+drdx(ik)*n(il))+T3*drdx(il)*n(ik)
+      end do
+    end do
+    to=p%cte_t*to
+  end subroutine fbem_bem_harela2d_sbie_t
 
   ! --------------------------------------------------------------------------------------------------------------------------------
   ! BOUNDARY ELEMENTS
@@ -1760,7 +1833,7 @@ contains
     end if
   end subroutine fbem_bem_harela2d_sbie_bl_ext_adp
 
-  !! Calculation of h and g when the collocation point is on the integration element.
+  !! Calculation of g when the collocation point is on the integration element.
   subroutine fbem_bem_harela2d_sbie_bl_int(ngp,type_g,type_f1,type_f2,delta_f,x_nodes,xi_i,p,g)
     implicit none
     ! I/O
@@ -2044,51 +2117,64 @@ contains
     integer           :: gln       ! 1D Gauss-Legendre integration points used in the integration
     integer           :: ps        ! Selected precalculated dataset
     integer           :: i         ! Counter
+    ! POINT BODY LOAD
+    if (e%d.eq.0) then
+      r=e%x(:,1)-x_i
+      rmin=sqrt(dot_product(r,r))
+      if (rmin.eq.0.d0) then
+        call fbem_error_message(output_unit,0,'fbem_bem_harela2d_sbie_bl_auto',0,'it is not possible to collocate at a point load')
+      else
+        call fbem_bem_harela2d_sbie_u(e%x(:,1),x_i,p,g(1,:,:))
+        return
+      end if
+    ! LINE, SURFACE OR VOLUME BODY LOAD
     ! Determine if interior or exterior integration
     !   - Interior integration (delta=1) requires: xi_i
     !   - Exterior integration (delta=0) requires: x_i, barxi, rmin and d
     ! Use the element ball
-    r=e%bball_centre-x_i
-    rmin=sqrt(dot_product(r,r))-e%bball_radius
-    if (rmin.gt.(4.d0*e%bball_radius)) then
-      delta=0
-      barxi=0.d0
-      d=rmin/e%cl
     else
-      ! Use an adaptative algorithm that combines sampling and minimization algorithms
-      call fbem_nearest_element_point_bem(2,e%gtype,e%x,e%cl,x_i,barxi,rmin,d,method)
-      if (d.le.1.d-12) then
-        delta=1
-        if (mode.eq.1) then
-          g=0.d0
-          return
-        end if
-      else
+      r=e%bball_centre-x_i
+      rmin=sqrt(dot_product(r,r))-e%bball_radius
+      if (rmin.gt.(4.d0*e%bball_radius)) then
         delta=0
-      end if
-    end if
-    ! Integrate
-    select case (delta)
-      case (1)
-        call fbem_bem_harela2d_sbie_bl_int(30,e%gtype,e%ptype,e%stype,e%ptype_delta,e%x,barxi(1),p,g)
-      case (0)
-        ! Estimate the required integration rule
-        gln_near=fbem_qs_n_estimation_standard(e%n,e%gtype,2,qsp,d,barxi)
-        gln=max(e%gln_far,gln_near)
-        ! Integrate using a conservative precalculated dataset
-        if ((gln.le.e%ps_gln_max).and.(gln_near.gt.0)) then
-          do i=1,e%n_ps
-            if (e%ps_gln(i).ge.gln) then
-              ps=i
-              exit
-            end if
-          end do
-          call fbem_bem_harela2d_sbie_bl_ext_pre(ps,e,x_i,p,g)
-        ! Integrate using an adaptative algorithm
+        barxi=0.d0
+        d=rmin/e%cl
+      else
+        ! Use an adaptative algorithm that combines sampling and minimization algorithms
+        call fbem_nearest_element_point_bem(2,e%gtype,e%x,e%cl,x_i,barxi,rmin,d,method)
+        if (d.le.1.d-12) then
+          delta=1
+          if (mode.eq.1) then
+            g=0.d0
+            return
+          end if
         else
-          call fbem_bem_harela2d_sbie_bl_ext_adp(e,xi_s,x_i,p,qsp,1,ns,g)
+          delta=0
         end if
-    end select
+      end if
+      ! Integrate
+      select case (delta)
+        case (1)
+          call fbem_bem_harela2d_sbie_bl_int(30,e%gtype,e%ptype,e%stype,e%ptype_delta,e%x,barxi(1),p,g)
+        case (0)
+          ! Estimate the required integration rule
+          gln_near=fbem_qs_n_estimation_standard(e%n,e%gtype,2,qsp,d,barxi)
+          gln=max(e%gln_far,gln_near)
+          ! Integrate using a conservative precalculated dataset
+          if ((gln.le.e%ps_gln_max).and.(gln_near.gt.0)) then
+            do i=1,e%n_ps
+              if (e%ps_gln(i).ge.gln) then
+                ps=i
+                exit
+              end if
+            end do
+            call fbem_bem_harela2d_sbie_bl_ext_pre(ps,e,x_i,p,g)
+          ! Integrate using an adaptative algorithm
+          else
+            call fbem_bem_harela2d_sbie_bl_ext_adp(e,xi_s,x_i,p,qsp,1,ns,g)
+          end if
+      end select
+    end if
   end subroutine fbem_bem_harela2d_sbie_bl_auto
 
   ! --------------------------------------------------------------------------------------------------------------------------------
@@ -2096,6 +2182,88 @@ contains
 
   ! ================================================================================================================================
   ! HYPERSINGULAR BOUNDARY INTEGRAL EQUATION (HBIE)
+
+  !! Fundamental solution d*
+  subroutine fbem_bem_harela2d_hbie_d(x,x_i,n_i,p,do)
+    implicit none
+    ! I/O
+    real(kind=real64)                  :: x(2)    !! Observation point
+    real(kind=real64)                  :: x_i(2)  !! Collocation point
+    real(kind=real64)                  :: n_i(2)  !! Collocation point unit normal
+    type(fbem_bem_harela2d_parameters) :: p       !! Parameters of the region
+    complex(kind=real64)               :: do(2,2) !! d*_{lk}
+    ! Local
+    integer              :: il, ik
+    real(kind=real64)    :: rv(2), r, r2, d1r1, d1r2, logr, drdx(2), drdni                          ! Partial derivative of r respect to unit normal at collocation point
+    complex(kind=real64) :: z(2), KnR(0:2,2)
+    complex(kind=real64) :: T1, T2, T3
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    r2=r**2
+    d1r1=1.0d0/r
+    d1r2=d1r1*d1r1
+    logr=log(r)
+    drdx=rv*d1r1
+    drdni=-dot_product(drdx,n_i)
+    z(1)=c_im*p%k1*r
+    z(2)=c_im*p%k2*r
+    call fbem_BesselKnR_decomposed(2,z,KnR)
+    T1=p%T1(1)*d1r1+p%T1(2)*r+p%T1(3)*KnR(1,1)+p%T1(4)*KnR(1,2)+p%T1(5)*d1r1*KnR(2,1)+p%T1(6)*d1r1*KnR(2,2)
+    T2=p%T2(1)*d1r1+(p%T2(2)*logr+p%T2(3))*r+p%T2(4)*KnR(1,2)+p%T2(5)*d1r1*KnR(2,1)+p%T2(6)*d1r1*KnR(2,2)
+    T3=p%T3(1)*d1r1+(p%T3(2)*logr+p%T3(3))*r+p%T3(4)*KnR(1,1)+p%T3(5)*d1r1*KnR(2,1)+p%T3(6)*d1r1*KnR(2,2)
+    do il=1,2
+      do ik=1,2
+        do(il,ik)=T1*drdx(il)*drdx(ik)*drdni-T2*(-drdni*c_dkr(il,ik)+drdx(il)*n_i(ik))-T3*drdx(ik)*n_i(il)
+      end do
+    end do
+    do=p%cte_d*do
+  end subroutine fbem_bem_harela2d_hbie_d
+
+  !! Fundamental solution s*
+  subroutine fbem_bem_harela2d_hbie_s(x,n,x_i,n_i,p,so)
+    implicit none
+    ! I/O
+    real(kind=real64)                  :: x(2)    !! Observation point
+    real(kind=real64)                  :: n(2)    !! Observation point unit normal
+    real(kind=real64)                  :: x_i(2)  !! Collocation point
+    real(kind=real64)                  :: n_i(2)  !! Collocation point unit normal
+    type(fbem_bem_harela2d_parameters) :: p       !! Parameters of the region
+    complex(kind=real64)               :: so(2,2) !! s*_{lk}
+    ! Local
+    integer              :: il, ik
+    real(kind=real64)    :: rv(2), r, r2, d1r1, d1r2, logr, drdx(2), drdn, drdni, n_dot_ni
+    complex(kind=real64) :: z(2), KnR(0:2,2)
+    complex(kind=real64) :: S1, S2, S3, S4, S5
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    r2=r**2
+    d1r1=1.0d0/r
+    d1r2=d1r1*d1r1
+    logr=log(r)
+    drdx=rv*d1r1
+    drdn=dot_product(drdx,n)
+    drdni=-dot_product(drdx,n_i)
+    n_dot_ni=dot_product(n,n_i)
+    z(1)=c_im*p%k1*r
+    z(2)=c_im*p%k2*r
+    call fbem_BesselKnR_decomposed(2,z,KnR)
+    S1=p%S1(1)*d1r2+p%S1(2)+p%S1(3)*KnR(0,2)+p%S1(4)*d1r1*KnR(1,1)+p%S1(5)*d1r1*KnR(1,2)+p%S1(6)*d1r2*KnR(2,1)&
+      +p%S1(7)*d1r2*KnR(2,2)
+    S2=p%S2(1)*d1r2+p%S2(2)+(p%S2(3)*logr+p%S2(4))*r2+p%S2(5)*d1r1*KnR(1,1)+p%S2(6)*d1r1*KnR(1,2)+p%S2(7)*d1r2*KnR(2,1)&
+      +p%S2(8)*KnR(2,1)+p%S2(9)*d1r2*KnR(2,2)
+    S3=p%S3(1)*d1r2+p%S3(2)+p%S3(3)*KnR(0,1)+p%S3(4)*KnR(0,2)+p%S3(5)*d1r1*KnR(1,1)+p%S3(6)*d1r1*KnR(1,2)&
+      +p%S3(7)*d1r2*KnR(2,1)+p%S3(8)*d1r2*KnR(2,2)
+    S4=p%S4(1)*d1r2+p%S4(2)*logr+p%S4(3)+p%S4(4)*d1r1*KnR(1,2)+p%S4(5)*d1r2*KnR(2,1)+p%S4(6)*d1r2*KnR(2,2)
+    S5=p%S5(1)*d1r2+p%S5(2)*logr+p%S5(3)+p%S5(4)*KnR(0,1)+p%S5(5)*d1r1*KnR(1,1)+p%S5(6)*d1r2*KnR(2,1)+p%S5(7)*d1r2*KnR(2,2)
+    do il=1,2
+      do ik=1,2
+        so(il,ik)=S1*(drdx(il)*n_i(ik)*drdn-drdx(ik)*n(il)*drdni-c_dkr(il,ik)*drdn*drdni+drdx(il)*drdx(ik)*n_dot_ni)&
+                 +S2*(drdx(ik)*n_i(il)*drdn-drdx(il)*n(ik)*drdni)+S3*drdx(il)*drdx(ik)*drdn*drdni&
+                 +S4*(c_dkr(il,ik)*n_dot_ni+n_i(ik)*n(il))+S5*n(ik)*n_i(il)
+      end do
+    end do
+    so=p%cte_s*so
+  end subroutine fbem_bem_harela2d_hbie_s
 
   ! --------------------------------------------------------------------------------------------------------------------------------
   ! BOUNDARY ELEMENTS
@@ -3383,51 +3551,64 @@ contains
     integer           :: gln       ! 1D Gauss-Legendre integration points used in the integration
     integer           :: ps        ! Selected precalculated dataset
     integer           :: i         ! Counter
+    ! POINT BODY LOAD
+    if (e%d.eq.0) then
+      r=e%x(:,1)-x_i
+      rmin=sqrt(dot_product(r,r))
+      if (rmin.eq.0.d0) then
+        call fbem_error_message(output_unit,0,'fbem_bem_harela2d_hbie_bl_auto',0,'it is not possible to collocate at a point load')
+      else
+        call fbem_bem_harela2d_hbie_d(e%x(:,1),x_i,n_i,p,l(1,:,:))
+        return
+      end if
+    ! LINE, SURFACE OR VOLUME BODY LOAD
     ! Determine if interior or exterior integration
     !   - Interior integration (delta=1) requires: xi_i
     !   - Exterior integration (delta=0) requires: x_i, barxi, rmin and d
     ! Use the element ball
-    r=e%bball_centre-x_i
-    rmin=sqrt(dot_product(r,r))-e%bball_radius
-    if (rmin.gt.(4.d0*e%bball_radius)) then
-      delta=0
-      barxi=0.d0
-      d=rmin/e%cl
     else
-      ! Use an adaptative algorithm that combines sampling and minimization algorithms
-      call fbem_nearest_element_point_bem(2,e%gtype,e%x,e%cl,x_i,barxi,rmin,d,method)
-      if (d.le.1.d-12) then
-        delta=1
-        if (mode.eq.1) then
-          l=0.d0
-          return
-        end if
-      else
+      r=e%bball_centre-x_i
+      rmin=sqrt(dot_product(r,r))-e%bball_radius
+      if (rmin.gt.(4.d0*e%bball_radius)) then
         delta=0
-      end if
-    end if
-    ! Integrate
-    select case (delta)
-      case (1)
-        call fbem_bem_harela2d_hbie_bl_int(30,e%gtype,e%ptype,e%stype,e%ptype_delta,e%x,barxi(1),p,l)
-      case (0)
-        ! Estimate the required integration rule
-        gln_near=fbem_qs_n_estimation_standard(e%n,e%gtype,4,qsp,d,barxi)
-        gln=max(e%gln_far,gln_near)
-        ! Integrate using a conservative precalculated dataset
-        if ((gln.le.e%ps_gln_max).and.(gln_near.gt.0)) then
-          do i=1,e%n_ps
-            if (e%ps_gln(i).ge.gln) then
-              ps=i
-              exit
-            end if
-          end do
-          call fbem_bem_harela2d_hbie_bl_ext_pre(ps,e,x_i,n_i,p,l)
-        ! Integrate using an adaptative algorithm
+        barxi=0.d0
+        d=rmin/e%cl
+      else
+        ! Use an adaptative algorithm that combines sampling and minimization algorithms
+        call fbem_nearest_element_point_bem(2,e%gtype,e%x,e%cl,x_i,barxi,rmin,d,method)
+        if (d.le.1.d-12) then
+          delta=1
+          if (mode.eq.1) then
+            l=0.d0
+            return
+          end if
         else
-          call fbem_bem_harela2d_hbie_bl_ext_adp(e,xi_s,x_i,n_i,p,qsp,1,ns,l)
+          delta=0
         end if
-    end select
+      end if
+      ! Integrate
+      select case (delta)
+        case (1)
+          call fbem_bem_harela2d_hbie_bl_int(30,e%gtype,e%ptype,e%stype,e%ptype_delta,e%x,barxi(1),p,l)
+        case (0)
+          ! Estimate the required integration rule
+          gln_near=fbem_qs_n_estimation_standard(e%n,e%gtype,4,qsp,d,barxi)
+          gln=max(e%gln_far,gln_near)
+          ! Integrate using a conservative precalculated dataset
+          if ((gln.le.e%ps_gln_max).and.(gln_near.gt.0)) then
+            do i=1,e%n_ps
+              if (e%ps_gln(i).ge.gln) then
+                ps=i
+                exit
+              end if
+            end do
+            call fbem_bem_harela2d_hbie_bl_ext_pre(ps,e,x_i,n_i,p,l)
+          ! Integrate using an adaptative algorithm
+          else
+            call fbem_bem_harela2d_hbie_bl_ext_adp(e,xi_s,x_i,n_i,p,qsp,1,ns,l)
+          end if
+      end select
+    end if
   end subroutine fbem_bem_harela2d_hbie_bl_auto
   ! --------------------------------------------------------------------------------------------------------------------------------
 

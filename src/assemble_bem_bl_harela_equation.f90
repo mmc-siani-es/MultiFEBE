@@ -48,9 +48,9 @@ subroutine assemble_bem_bl_harela_equation(sb_int,se_int,se_int_n_snodes,sn_col,
   integer              :: knt_int, kncbl, se_int_n_nodes
   integer              :: row, col
 
-  ! ===================================
-  ! BE BODY LOAD COUPLING (integration)
-  ! ===================================
+  ! ==========================
+  ! BE BODY LOAD (integration)
+  ! ==========================
 
   select case (be_bodyload(sb_int)%coupling)
 
@@ -58,13 +58,13 @@ subroutine assemble_bem_bl_harela_equation(sb_int,se_int,se_int_n_snodes,sn_col,
     ! UNCOUPLED
     ! ---------
 
-    case (0)
+    case (fbem_bl_uncoupled)
       do il=1,problem%n
         row=node(sn_col)%row(il,eq_index)
         do ik=1,problem%n
           do kn_int=1,se_int_n_snodes
             sn_int=element(se_int)%node(kn_int)
-            b_c(row,1)=b_c(row,1)+gbl(kn_int,il,ik)*node(sn_int)%cvalue_c(problem%n+ik,1,1)
+            b_c(row,1)=b_c(row,1)+gbl(kn_int,il,ik)*node(sn_int)%value_c(problem%n+ik,1)
           end do
         end do
       end do

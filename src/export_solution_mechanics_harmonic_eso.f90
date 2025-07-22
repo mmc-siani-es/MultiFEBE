@@ -127,6 +127,117 @@ subroutine export_solution_mechanics_harmonic_eso(kf,output_fileunit)
       ! BE region
       !
       case (fbem_be)
+        ! Select the start and end indices of variables
+        select case (region(kr)%type)
+          ! INVISCID FLUID
+          case (fbem_potential)
+            k_start=1
+            k_end  =problem%n
+          ! VISCOELASTIC SOLID
+          case (fbem_viscoelastic)
+            k_start=1
+            k_end  =9
+          ! POROELASTIC MEDIA
+          case (fbem_poroelastic)
+            k_start=1
+            k_end  =problem%n+9
+        end select
+        ! Loop through boundaries
+        do kb=1,region(kr)%n_boundaries
+          sb=region(kr)%boundary(kb)
+          do ke=1,part(boundary(sb)%part)%n_elements
+            se=part(boundary(sb)%part)%element(ke)
+            !
+            ! Boundary coupling
+            !
+            select case (boundary(sb)%coupling)
+            !
+            ! Uncoupled boundary of BE-FE coupled boundary
+            !
+            case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
+                !
+                ! Boundary class
+                !
+                select case (boundary(sb)%class)
+                  !
+                  ! Ordinary boundary
+                  !
+                  case (fbem_boundary_class_ordinary)
+                    face=1
+                    do kn=1,element(se)%n_nodes
+                      sn=element(se)%node(kn)
+                      write(output_fileunit,fmt1,advance='no') kf, omega, &
+                                                               region(kr)%id, region(kr)%class, region(kr)%type, &
+                                                               boundary(sb)%id, boundary(sb)%class, face, &
+                                                               element(se)%id, element(se)%n_dimension, element(se)%fe_type,&
+                                                               kn, 0, node(sn)%id, node(sn)%x
+                      do k=k_start,k_end
+                        select case (complex_notation)
+                          case (1)
+                            write(output_fileunit,fmt2,advance='no') abs(element(se)%value_c(k,kn,face)), fbem_zarg(element(se)%value_c(k,kn,face))
+                          case (2)
+                            write(output_fileunit,fmt2,advance='no') real(element(se)%value_c(k,kn,face)), imag(element(se)%value_c(k,kn,face))
+                        end select
+                      end do
+                      write(output_fileunit,*)
+                    end do
+
+                  !
+                  ! Crack-like boundaries
+                  !
+                  case (fbem_boundary_class_cracklike)
+                    do face=1,2
+                      do kn=1,element(se)%n_nodes
+                        sn=element(se)%node(kn)
+                        write(output_fileunit,fmt1,advance='no') kf, omega, &
+                                                                 region(kr)%id, region(kr)%class, region(kr)%type, &
+                                                                 boundary(sb)%id, boundary(sb)%class, face, &
+                                                                 element(se)%id, element(se)%n_dimension, element(se)%fe_type,&
+                                                                 kn, 0, node(sn)%id, node(sn)%x
+                        do k=k_start,k_end
+                          select case (complex_notation)
+                            case (1)
+                              write(output_fileunit,fmt2,advance='no') abs(element(se)%value_c(k,kn,face)), fbem_zarg(element(se)%value_c(k,kn,face))
+                            case (2)
+                              write(output_fileunit,fmt2,advance='no') real(element(se)%value_c(k,kn,face)), imag(element(se)%value_c(k,kn,face))
+                          end select
+                        end do
+                        write(output_fileunit,*)
+                      end do
+                    end do
+
+                end select
+            !
+            ! BE-BE coupled boundary of BE-FE-BE coupled boundary
+            !
+            case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
+              if (region(kr)%boundary_reversion(kb).eqv.(.false.)) then
+                face=1
+              else
+                face=2
+              end if
+              do kn=1,element(se)%n_nodes
+                sn=element(se)%node(kn)
+                write(output_fileunit,fmt1,advance='no') kf, omega, &
+                                                         region(kr)%id, region(kr)%class, region(kr)%type, &
+                                                         boundary(sb)%id, boundary(sb)%class, face, &
+                                                         element(se)%id, element(se)%n_dimension, element(se)%fe_type,&
+                                                         kn, 0, node(sn)%id, node(sn)%x
+                do k=k_start,k_end
+                  select case (complex_notation)
+                    case (1)
+                      write(output_fileunit,fmt2,advance='no') abs(element(se)%value_c(k,kn,face)), fbem_zarg(element(se)%value_c(k,kn,face))
+                    case (2)
+                      write(output_fileunit,fmt2,advance='no') real(element(se)%value_c(k,kn,face)), imag(element(se)%value_c(k,kn,face))
+                  end select
+                end do
+                write(output_fileunit,*)
+              end do
+
+            end select
+
+          end do
+        end do
 
       ! ==========================================================================================================================
       ! FE region
@@ -395,8 +506,6 @@ subroutine export_solution_mechanics_harmonic_eso(kf,output_fileunit)
       ! ==========================================================================================================================
 
     end select
-    write(output_fileunit,*)
-    write(output_fileunit,*)
   end do
 
 end subroutine export_solution_mechanics_harmonic_eso

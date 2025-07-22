@@ -181,6 +181,12 @@ contains
     real(kind=real64), allocatable :: dme_xi(:), dme_gphi(:)
     real(kind=real64), allocatable :: dme_dgphidxi(:), dme_dgphidxi1(:), dme_dgphidxi2(:)
     !
+    ! For 0D elements, returns.
+    !
+    if (e%d.eq.0) then
+      return
+    end if
+    !
     ! Initialization
     !
     if (allocated(e%ps_gln)) deallocate(e%ps_gln)

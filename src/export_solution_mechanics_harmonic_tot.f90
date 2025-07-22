@@ -1158,6 +1158,11 @@ subroutine export_solution_mechanics_harmonic_tot(kf,output_fileunit)
         nfaces=1
         face=1
         !
+        ! It is not calculated for point body loads
+        !
+        se=part(be_bodyload(sb)%part)%element(1)
+        if (element(se)%n_dimension.eq.0) cycle
+        !
         ! Point with respect moments are calculated, xm.
         !
         xm=0

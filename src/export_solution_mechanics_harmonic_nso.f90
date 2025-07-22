@@ -174,26 +174,26 @@ subroutine export_solution_mechanics_harmonic_nso(kf,output_fileunit)
   !
   ! BE region (C4 == 1):
   !
-  ! |-----------------|     |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|------|-----|-----|-----|
-  ! | 5               |     |12,13|14,15|16,17|18,19|20,21|22,23|24,25|26,27|28,29|30,31|32,33 |34,35|36,37|38,39|
-  ! |-----------------| ... |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|------|-----|-----|-----|
-  ! | 1 (fluid)       |     |    p|   Un|  p_i| Un_i|   u1|   u2|     |     |     |     |      |     |     |     |
-  ! | 2 (elastic)     |     |   u1|   u2|   t1|   t2| u1_i| u2_i| t1_i| t2_i|     |     |      |     |     |     |
-  ! | 3 (poroelastic) |     |  tau|   u1|   u2|   Un|   t1|   t2|tau_i| u1_i| u2_i| Un_i| t1_i | t2_i|   U1|   U2|
-  ! |-----------------|     |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|------|-----|-----|-----|
+  ! |-----------------|     |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|------|-----|
+  ! | 5               |     |12,13|14,15|16,17|18,19|20,21|22,23|24,25|26,27|28,29|30,31|32,33 |34,35|
+  ! |-----------------| ... |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|------|-----|
+  ! | 1 (fluid)       |     |    p|   Un|  p_i| Un_i|     |     |     |     |     |     |      |     |
+  ! | 2 (elastic)     |     |   u1|   u2|   t1|   t2| u1_i| u2_i| t1_i| t2_i|     |     |      |     |
+  ! | 3 (poroelastic) |     |  tau|   u1|   u2|   Un|   t1|   t2|tau_i| u1_i| u2_i| Un_i| t1_i | t2_i|
+  ! |-----------------|     |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|------|-----|
   !
   ! 3D PROBLEM
   ! ----------
   !
   ! BE region (C4 == 1):
   !
-  ! |-----------------|     |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-  ! | 5               |     |13,14|15,16|17,18|19,20|21,22|23,24|25,26|27,28|29,30|31,32|33,34|35,36|37,38|39,40|41,42|43,44|45,46|47,48|49,50|
-  ! |-----------------| ... |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-  ! | 1 (fluid)       |     |    p|   Un|  p_i| Un_i|   u1|   u2|   u3|     |     |     |     |     |     |     |     |     |     |     |     |
-  ! | 2 (elastic)     |     |   u1|   u2|   u3|   t1|   t2|   t3| u1_i| u2_i| u3_i| t1_i| t2_i| t3_i|     |     |     |     |     |     |     |
-  ! | 3 (poroelastic) |     |  tau|   u1|   u2|   u3|   Un|   t1|   t2|   t3|tau_i| u1_i| u2_i| u3_i| Un_i| t1_i| t2_i| t3_i|   U1|   U2|   U3|
-  ! |-----------------|     |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+  ! |-----------------|     |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+  ! | 5               |     |13,14|15,16|17,18|19,20|21,22|23,24|25,26|27,28|29,30|31,32|33,34|35,36|37,38|39,40|41,42|43,44|
+  ! |-----------------| ... |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+  ! | 1 (fluid)       |     |    p|   Un|  p_i| Un_i|     |     |     |     |     |     |     |     |     |     |     |     |
+  ! | 2 (elastic)     |     |   u1|   u2|   u3|   t1|   t2|   t3| u1_i| u2_i| u3_i| t1_i| t2_i| t3_i|     |     |     |     |
+  ! | 3 (poroelastic) |     |  tau|   u1|   u2|   u3|   Un|   t1|   t2|   t3|tau_i| u1_i| u2_i| u3_i| Un_i| t1_i| t2_i| t3_i|
+  ! |-----------------|     |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 
   ! --------------
   ! Export formats
@@ -286,104 +286,6 @@ subroutine export_solution_mechanics_harmonic_nso(kf,output_fileunit)
                               write(output_fileunit,fmt2,advance='no') real(node(sn)%incident_c(k,face)), imag(node(sn)%incident_c(k,face))
                           end select
                         end do
-                        ! FLUID DISPLACEMENTS VIA TANGENTIAL DIFFERENTIATION
-                        !
-                        ! Inviscid fluid displacements
-                        !
-                        if (region(kr)%type.eq.fbem_potential) then
-                          dpdx_tangential=0.
-                          do kke=1,node(sn)%n_elements
-                            sse=node(sn)%element(kke)
-                            allocate(psi(element(sse)%n_nodes,problem%n),xi(element(sse)%n_dimension))
-                            xi=element(sse)%xi_gn(:,node(sn)%element_node_iid(kke))
-                            ! delta
-                            select case (element(se)%type_g)
-                              case (fbem_line2,fbem_tri3,fbem_quad4)
-                                delta=0.42264973d0
-                              case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                                delta=0.22540333d0
-                              case (fbem_line4)
-                                delta=0.138863688d0
-                            end select
-                            ! move xi
-                            select case (element(sse)%n_dimension)
-                              case (1)
-                                xi=fbem_move_xi_from_vertex(xi(1),delta)
-                              case (2)
-                                xi=fbem_move_xi1xi2_from_edge(element(sse)%type_g,xi,delta)
-                            end select
-                            psi=fbem_psi(problem%n,element(sse)%type_g,element(sse)%x_gn,element(sse)%type_f1,element(sse)%delta_f,xi)
-                            do kkn=1,element(sse)%n_nodes
-                              dpdx_tangential=dpdx_tangential+psi(kkn,:)*node(element(sse)%node(kkn))%value_c(1,face)
-                            end do
-                            deallocate(xi,psi)
-                          end do
-                          dpdx_tangential=dpdx_tangential/node(sn)%n_elements
-                          ! J = 1/(rho*omega**2)
-                          par_J=1.d0/(region(kr)%property_r(1)*omega**2)
-                          ! tangential displacements + normal displacements
-                          u_total=dpdx_tangential*par_J+node(sn)%n_fn*node(sn)%value_c(2,face)
-                          do k=1,problem%n
-                            select case (complex_notation)
-                              case (1)
-                                write(output_fileunit,fmt2,advance='no') abs(u_total(k)), fbem_zarg(u_total(k))
-                              case (2)
-                                write(output_fileunit,fmt2,advance='no') real(u_total(k)), imag(u_total(k))
-                            end select
-                          end do
-                        end if
-                        !
-                        ! Poroelastic media - fluid phase displacements
-                        !
-                        if (region(kr)%type.eq.fbem_poroelastic) then
-                          dpdx_tangential=0.
-                          do kke=1,node(sn)%n_elements
-                            sse=node(sn)%element(kke)
-                            allocate(psi(element(sse)%n_nodes,problem%n),xi(element(sse)%n_dimension))
-                            xi=element(sse)%xi_gn(:,node(sn)%element_node_iid(kke))
-                            ! delta
-                            select case (element(se)%type_g)
-                              case (fbem_line2,fbem_tri3,fbem_quad4)
-                                delta=0.42264973d0
-                              case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                                delta=0.22540333d0
-                              case (fbem_line4)
-                                delta=0.138863688d0
-                            end select
-                            ! move xi
-                            select case (element(sse)%n_dimension)
-                              case (1)
-                                xi=fbem_move_xi_from_vertex(xi(1),delta)
-                              case (2)
-                                xi=fbem_move_xi1xi2_from_edge(element(sse)%type_g,xi,delta)
-                            end select
-                            psi=fbem_psi(problem%n,element(sse)%type_g,element(sse)%x_gn,element(sse)%type_f1,element(sse)%delta_f,xi)
-                            do kkn=1,element(sse)%n_nodes
-                              dpdx_tangential=dpdx_tangential+psi(kkn,:)*node(element(sse)%node(kkn))%value_c(0,face)
-                            end do
-                            deallocate(xi,psi)
-                          end do
-                          dpdx_tangential=dpdx_tangential/node(sn)%n_elements
-                          ! Parameters
-                          par_rho2=region(kr)%property_r(14)
-                          par_rhoa=region(kr)%property_r(9)
-                          par_b=region(kr)%property_r(12)
-                          ! J=1/(rhohat22*omega**2)
-                          par_J=1.d0/((par_rho2+par_rhoa-c_im*par_b/omega)*omega**2)
-                          ! Z=rhohat12/rhohat22
-                          par_Z=(-par_rhoa+c_im*par_b/omega)/(par_rho2+par_rhoa-c_im*par_b/omega)
-                          ! Fluid displacements
-                          u_total=-par_J*dpdx_tangential-par_Z*node(sn)%value_c(1:problem%n,face)
-                          u_total=u_total+(node(sn)%value_c(problem%n+1,face)+par_Z*dot_product(node(sn)%value_c(1:problem%n,face),node(sn)%n_fn))*node(sn)%n_fn
-                          do k=1,problem%n
-                            select case (complex_notation)
-                              case (1)
-                                write(output_fileunit,fmt2,advance='no') abs(u_total(k)), fbem_zarg(u_total(k))
-                              case (2)
-                                write(output_fileunit,fmt2,advance='no') real(u_total(k)), imag(u_total(k))
-                            end select
-                          end do
-                        end if
                         write(output_fileunit,*)
                       !
                       ! Crack-like boundaries
@@ -415,112 +317,6 @@ subroutine export_solution_mechanics_harmonic_nso(kf,output_fileunit)
                                 write(output_fileunit,fmt2,advance='no') real(node(sn)%incident_c(k,face)), imag(node(sn)%incident_c(k,face))
                             end select
                           end do
-                          ! FLUID DISPLACEMENTS VIA TANGENTIAL DIFFERENTIATION
-                          !
-                          ! Inviscid fluid displacements
-                          !
-                          if (region(kr)%type.eq.fbem_potential) then
-                            dpdx_tangential=0.
-                            do kke=1,node(sn)%n_elements
-                              sse=node(sn)%element(kke)
-                              allocate(psi(element(sse)%n_nodes,problem%n),xi(element(sse)%n_dimension))
-                              xi=element(sse)%xi_gn(:,node(sn)%element_node_iid(kke))
-                              ! delta
-                              select case (element(se)%type_g)
-                                case (fbem_line2,fbem_tri3,fbem_quad4)
-                                  delta=0.42264973d0
-                                case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                                  delta=0.22540333d0
-                                case (fbem_line4)
-                                  delta=0.138863688d0
-                              end select
-                              ! move xi
-                              select case (element(sse)%n_dimension)
-                                case (1)
-                                  xi=fbem_move_xi_from_vertex(xi(1),delta)
-                                case (2)
-                                  xi=fbem_move_xi1xi2_from_edge(element(sse)%type_g,xi,delta)
-                              end select
-                              psi=fbem_psi(problem%n,element(sse)%type_g,element(sse)%x_gn,element(sse)%type_f1,element(sse)%delta_f,xi)
-                              do kkn=1,element(sse)%n_nodes
-                                dpdx_tangential=dpdx_tangential+psi(kkn,:)*node(element(sse)%node(kkn))%value_c(1,face)
-                              end do
-                              deallocate(xi,psi)
-                            end do
-                            dpdx_tangential=dpdx_tangential/node(sn)%n_elements
-                            ! J = 1/(rho*omega**2)
-                            par_J=1.d0/(region(kr)%property_r(1)*omega**2)
-                            ! tangential displacements + normal displacements
-                            if (face.eq.1) then
-                              u_total=dpdx_tangential*par_J+node(sn)%n_fn*node(sn)%value_c(2,face)
-                            else
-                              u_total=dpdx_tangential*par_J-node(sn)%n_fn*node(sn)%value_c(2,face)
-                            end if
-                            do k=1,problem%n
-                              select case (complex_notation)
-                                case (1)
-                                  write(output_fileunit,fmt2,advance='no') abs(u_total(k)), fbem_zarg(u_total(k))
-                                case (2)
-                                  write(output_fileunit,fmt2,advance='no') real(u_total(k)), imag(u_total(k))
-                              end select
-                            end do
-                          end if
-                          !
-                          ! Poroelastic media - fluid phase displacements
-                          !
-                          if (region(kr)%type.eq.fbem_poroelastic) then
-                            dpdx_tangential=0.
-                            do kke=1,node(sn)%n_elements
-                              sse=node(sn)%element(kke)
-                              allocate(psi(element(sse)%n_nodes,problem%n),xi(element(sse)%n_dimension))
-                              xi=element(sse)%xi_gn(:,node(sn)%element_node_iid(kke))
-                              ! delta
-                              select case (element(se)%type_g)
-                                case (fbem_line2,fbem_tri3,fbem_quad4)
-                                  delta=0.42264973d0
-                                case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                                  delta=0.22540333d0
-                                case (fbem_line4)
-                                  delta=0.138863688d0
-                              end select
-                              ! move xi
-                              select case (element(sse)%n_dimension)
-                                case (1)
-                                  xi=fbem_move_xi_from_vertex(xi(1),delta)
-                                case (2)
-                                  xi=fbem_move_xi1xi2_from_edge(element(sse)%type_g,xi,delta)
-                              end select
-                              psi=fbem_psi(problem%n,element(sse)%type_g,element(sse)%x_gn,element(sse)%type_f1,element(sse)%delta_f,xi)
-                              do kkn=1,element(sse)%n_nodes
-                                dpdx_tangential=dpdx_tangential+psi(kkn,:)*node(element(sse)%node(kkn))%value_c(0,face)
-                              end do
-                              deallocate(xi,psi)
-                            end do
-                            dpdx_tangential=dpdx_tangential/node(sn)%n_elements
-                            ! Parameters
-                            par_rho2=region(kr)%property_r(14)
-                            par_rhoa=region(kr)%property_r(9)
-                            par_b=region(kr)%property_r(12)
-                            ! J=1/(rhohat22*omega**2)
-                            par_J=1.d0/((par_rho2+par_rhoa-c_im*par_b/omega)*omega**2)
-                            ! Z=rhohat12/rhohat22
-                            par_Z=(-par_rhoa+c_im*par_b/omega)/(par_rho2+par_rhoa-c_im*par_b/omega)
-                            ! Fluid displacements
-                            u_total=-par_J*dpdx_tangential-par_Z*node(sn)%value_c(1:problem%n,face)
-                            if (face.eq.1) then
-                              u_total=u_total+(node(sn)%value_c(problem%n+1,face)+par_Z*dot_product(node(sn)%value_c(1:problem%n,face),node(sn)%n_fn))*node(sn)%n_fn
-                            else
-                              u_total=u_total-(node(sn)%value_c(problem%n+1,face)+par_Z*dot_product(node(sn)%value_c(1:problem%n,face),-node(sn)%n_fn))*node(sn)%n_fn
-                            end if
-                            do k=1,problem%n
-                              select case (complex_notation)
-                                case (1)
-                                  write(output_fileunit,fmt2,advance='no') abs(u_total(k)), fbem_zarg(u_total(k))
-                                case (2)
-                                  write(output_fileunit,fmt2,advance='no') real(u_total(k)), imag(u_total(k))
-                              end select
-                            end do
-                          end if
                           write(output_fileunit,*)
                         end do
                     end select
@@ -559,112 +355,6 @@ subroutine export_solution_mechanics_harmonic_nso(kf,output_fileunit)
                           write(output_fileunit,fmt2,advance='no') real(node(sn)%incident_c(k,face)), imag(node(sn)%incident_c(k,face))
                       end select
                     end do
-                    ! FLUID DISPLACEMENTS VIA TANGENTIAL DIFFERENTIATION
-                    !
-                    ! Inviscid fluid displacements
-                    !
-                    if (region(kr)%type.eq.fbem_potential) then
-                      dpdx_tangential=0.
-                      do kke=1,node(sn)%n_elements
-                        sse=node(sn)%element(kke)
-                        allocate(psi(element(sse)%n_nodes,problem%n),xi(element(sse)%n_dimension))
-                        xi=element(sse)%xi_gn(:,node(sn)%element_node_iid(kke))
-                        ! delta
-                        select case (element(se)%type_g)
-                          case (fbem_line2,fbem_tri3,fbem_quad4)
-                            delta=0.42264973d0
-                          case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                            delta=0.22540333d0
-                          case (fbem_line4)
-                            delta=0.138863688d0
-                        end select
-                        ! move xi
-                        select case (element(sse)%n_dimension)
-                          case (1)
-                            xi=fbem_move_xi_from_vertex(xi(1),delta)
-                          case (2)
-                            xi=fbem_move_xi1xi2_from_edge(element(sse)%type_g,xi,delta)
-                        end select
-                        psi=fbem_psi(problem%n,element(sse)%type_g,element(sse)%x_gn,element(sse)%type_f1,element(sse)%delta_f,xi)
-                        do kkn=1,element(sse)%n_nodes
-                          dpdx_tangential=dpdx_tangential+psi(kkn,:)*node(element(sse)%node(kkn))%value_c(1,face)
-                        end do
-                        deallocate(xi,psi)
-                      end do
-                      dpdx_tangential=dpdx_tangential/node(sn)%n_elements
-                      ! J = 1/(rho*omega**2)
-                      par_J=1.d0/(region(kr)%property_r(1)*omega**2)
-                      ! tangential displacements + normal displacements
-                      if (face.eq.1) then
-                        u_total=dpdx_tangential*par_J+node(sn)%n_fn*node(sn)%value_c(2,face)
-                      else
-                        u_total=dpdx_tangential*par_J-node(sn)%n_fn*node(sn)%value_c(2,face)
-                      end if
-                      do k=1,problem%n
-                        select case (complex_notation)
-                          case (1)
-                            write(output_fileunit,fmt2,advance='no') abs(u_total(k)), fbem_zarg(u_total(k))
-                          case (2)
-                            write(output_fileunit,fmt2,advance='no') real(u_total(k)), imag(u_total(k))
-                        end select
-                      end do
-                    end if
-                    !
-                    ! Poroelastic media - fluid phase displacements
-                    !
-                    if (region(kr)%type.eq.fbem_poroelastic) then
-                      dpdx_tangential=0.
-                      do kke=1,node(sn)%n_elements
-                        sse=node(sn)%element(kke)
-                        allocate(psi(element(sse)%n_nodes,problem%n),xi(element(sse)%n_dimension))
-                        xi=element(sse)%xi_gn(:,node(sn)%element_node_iid(kke))
-                        ! delta
-                        select case (element(se)%type_g)
-                          case (fbem_line2,fbem_tri3,fbem_quad4)
-                            delta=0.42264973d0
-                          case (fbem_line3,fbem_tri6,fbem_quad8,fbem_quad9)
-                            delta=0.22540333d0
-                          case (fbem_line4)
-                            delta=0.138863688d0
-                        end select
-                        ! move xi
-                        select case (element(sse)%n_dimension)
-                          case (1)
-                            xi=fbem_move_xi_from_vertex(xi(1),delta)
-                          case (2)
-                            xi=fbem_move_xi1xi2_from_edge(element(sse)%type_g,xi,delta)
-                        end select
-                        psi=fbem_psi(problem%n,element(sse)%type_g,element(sse)%x_gn,element(sse)%type_f1,element(sse)%delta_f,xi)
-                        do kkn=1,element(sse)%n_nodes
-                          dpdx_tangential=dpdx_tangential+psi(kkn,:)*node(element(sse)%node(kkn))%value_c(0,face)
-                        end do
-                        deallocate(xi,psi)
-                      end do
-                      dpdx_tangential=dpdx_tangential/node(sn)%n_elements
-                      ! Parameters
-                      par_rho2=region(kr)%property_r(14)
-                      par_rhoa=region(kr)%property_r(9)
-                      par_b=region(kr)%property_r(12)
-                      ! J=1/(rhohat22*omega**2)
-                      par_J=1.d0/((par_rho2+par_rhoa-c_im*par_b/omega)*omega**2)
-                      ! Z=rhohat12/rhohat22
-                      par_Z=(-par_rhoa+c_im*par_b/omega)/(par_rho2+par_rhoa-c_im*par_b/omega)
-                      ! Fluid displacements
-                      u_total=-par_J*dpdx_tangential-par_Z*node(sn)%value_c(1:problem%n,face)
-                      if (face.eq.1) then
-                        u_total=u_total+(node(sn)%value_c(problem%n+1,face)+par_Z*dot_product(node(sn)%value_c(1:problem%n,face),node(sn)%n_fn))*node(sn)%n_fn
-                      else
-                        u_total=u_total-(node(sn)%value_c(problem%n+1,face)+par_Z*dot_product(node(sn)%value_c(1:problem%n,face),-node(sn)%n_fn))*node(sn)%n_fn
-                      end if
-                      do k=1,problem%n
-                        select case (complex_notation)
-                          case (1)
-                            write(output_fileunit,fmt2,advance='no') abs(u_total(k)), fbem_zarg(u_total(k))
-                          case (2)
-                            write(output_fileunit,fmt2,advance='no') real(u_total(k)), imag(u_total(k))
-                        end select
-                      end do
-                    end if
                     write(output_fileunit,*)
                 end select
               end if
@@ -759,15 +449,9 @@ subroutine export_solution_mechanics_harmonic_nso(kf,output_fileunit)
                 end select
               end do
             end do
-
-
-
-
             write(output_fileunit,*)
           end if
         end do
-
-
 
         ! +------------------------+
         ! | ICOUPLED BE BODY LOADS |
@@ -787,8 +471,8 @@ subroutine export_solution_mechanics_harmonic_nso(kf,output_fileunit)
         select case (region(kr)%type)
           ! INVISCID FLUID
           case (fbem_potential)
-            k_start=1
-            k_end  =2
+            k_start=0
+            k_end  =0
           ! VISCOELASTIC SOLID
           case (fbem_viscoelastic)
             k_start=1
@@ -796,11 +480,14 @@ subroutine export_solution_mechanics_harmonic_nso(kf,output_fileunit)
           ! POROELASTIC MEDIA
           case (fbem_poroelastic)
             k_start=0
-            k_end  =1+2*problem%n
+            k_end  =0
         end select
         face=1
         node_used=.false.
         do kb=1,region(kr)%n_be_bodyloads
+
+          if (k_end.eq.0) cycle
+
           sb=region(kr)%be_bodyload(kb)
           sp=be_bodyload(sb)%part
           select case (be_bodyload(sb)%coupling)
@@ -853,8 +540,6 @@ subroutine export_solution_mechanics_harmonic_nso(kf,output_fileunit)
           end select
 
         end do
-
-
 
       ! ==========================================================================================================================
 

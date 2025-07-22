@@ -1,5 +1,5 @@
 ! ---------------------------------------------------------------------
-! Copyright (C) 2014-2022 Universidad de Las Palmas de Gran Canaria:
+! Copyright (C) 2014-2024 Universidad de Las Palmas de Gran Canaria:
 !                         Jacob D.R. Bordon
 !                         Guillermo M. Alamo
 !                         Juan J. Aznarez
@@ -18,7 +18,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ! ---------------------------------------------------------------------
-
 
 subroutine read_conditions_bem_nodes_mechanics_static(input_fileunit)
 
@@ -72,7 +71,11 @@ subroutine read_conditions_bem_nodes_mechanics_static(input_fileunit)
           ! The first node of the group
           kn=group(kg)%object(1)
           sp=node(kn)%part(1)
-          ! Read only groups of nodes belonging to a BE boundary
+
+          ! --------------------------
+          ! GROUP OF BE BOUNDARY NODES
+          ! --------------------------
+
           if (part(sp)%type.eq.fbem_part_be_boundary) then
             ! BE boundary of part
             sb=part(sp)%entity
@@ -220,13 +223,26 @@ subroutine read_conditions_bem_nodes_mechanics_static(input_fileunit)
             end select
 
           end if
+
+          ! ---------------------------
+          ! GROUP OF BE BODY LOAD NODES
+          ! ---------------------------
+
+          if (part(sp)%type.eq.fbem_part_be_bodyload) then
+            ! BE body load of part
+            sb=part(sp)%entity
+
+            ! to be implemented
+
+          end if
+
         end if
 
       end if
     end do
 
     ! ==============================================================================================================================
-    ! FIND BEM NODES
+    ! FIND BE BOUNDARY NODES
     ! ==============================================================================================================================
 
     ! Loop through the nodes of each BE boundary
@@ -365,15 +381,68 @@ subroutine read_conditions_bem_nodes_mechanics_static(input_fileunit)
 
           end select
         end if
+      end do
+    end do
 
+    ! ==============================================================================================================================
+    ! FIND BE BODY LOAD NODES
+    ! ==============================================================================================================================
 
+    do kb=1,n_be_bodyloads
+      sp=be_bodyload(kb)%part
+      do kn=1,part(sp)%n_nodes
+        sn=part(sp)%node(kn)
+        ! Locate the node
+        call fbem_search_section(input_fileunit,section_name,found)
+        write(keyword,*) 'node ', node(sn)%id
+        call fbem_trim2b(keyword)
+        call fbem_search_keyword(input_fileunit,keyword,':',found)
+        if (found) then
+          if (verbose_level.gt.1) write(*,*) keyword
+          select case (be_bodyload(kb)%coupling)
+            !
+            ! UNCOUPLED BE BODY LOAD
+            !
+            case (fbem_bl_uncoupled)
+              ! Read the type of condition for k direction
+              do k=1,problem%n
+                read(input_fileunit,*) node(sn)%ctype(k,1)
+                if (k.eq.1) then
+                  call fbem_search_section(input_fileunit,section_name,found)
+                  call fbem_search_keyword(input_fileunit,keyword,':',found)
+                else
+                  backspace(input_fileunit)
+                end if
+                ! Switch depending on the type of boundary condition
+                select case (node(sn)%ctype(k,1))
+                  ! Force value
+                  case (0)
+                    read(input_fileunit,*) node(sn)%ctype(k,1), node(sn)%cvalue_r(k,1,1)
+                  case default
+                    call fbem_error_message(error_unit,0,trim(section_name),node(sn)%id,'invalid condition for this be body load node.')
+                end select
+              end do
 
+            case (fbem_bl_coupling_beam_tip)
+              ! N/A
+
+            case (fbem_bl_coupling_beam_line)
+              ! N/A
+
+            case (fbem_bl_coupling_shell_edge)
+              ! N/A
+
+            case (fbem_bl_coupling_shell_surface)
+              ! N/A
+
+          end select
+
+        end if
       end do
     end do
 
     if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'END reading section ['//trim(section_name)//']')
 
   end if
-
 
 end subroutine read_conditions_bem_nodes_mechanics_static

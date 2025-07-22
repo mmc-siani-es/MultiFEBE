@@ -50,6 +50,7 @@ subroutine read_conditions_fem_nodes_mechanics_static(input_fileunit)
   integer                                 :: kg, kng
   real(kind=real64)                       :: center(3), axis(3), theta, x(3), urot(3)
 
+  ! To-do: introduce bem bodyload nodes conditions using groups
 
   ! Locate the section
   section_name='conditions over nodes'

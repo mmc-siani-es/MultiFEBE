@@ -276,4 +276,177 @@ module problem_variables
   integer(kind=int64)                     :: max_memory            !! Maximum memory in matrix A and vector b
   ! --------------------------------------------------------------------------------------------------------------------------------
 
+  ! --------------------------------------------------------------------------------------------------------------------------------
+  ! Identifier checking
+  ! -------------------
+  !
+  public :: check_be_bodyload_eid
+  public :: check_node_eid
+  public :: check_element_eid
+  public :: check_region_eid
+  public :: check_boundary_eid
+  public :: check_part_eid
+  public :: check_fe_subregion_eid
+  public :: check_material_eid
+  public :: check_internalpoint_eid
+  public :: check_group_eid
+  public :: check_incidentfield_eid
+  ! --------------------------------------------------------------------------------------------------------------------------------
+
+contains
+
+  function check_be_bodyload_eid(eid)
+    implicit none
+    integer :: check_be_bodyload_eid
+    integer :: eid
+    check_be_bodyload_eid=0
+    if ((eid.ge.be_bodyload_eid_min).and.(eid.le.be_bodyload_eid_max)) then
+      if (be_bodyload_iid(eid).eq.0) then
+        check_be_bodyload_eid=1
+      end if
+    else
+      check_be_bodyload_eid=2
+    end if
+  end function check_be_bodyload_eid
+
+  function check_node_eid(eid)
+    implicit none
+    integer :: check_node_eid
+    integer :: eid
+    check_node_eid=0
+    if ((eid.ge.node_eid_min).and.(eid.le.node_eid_max)) then
+      if (node_iid(eid).eq.0) then
+        check_node_eid=1
+      end if
+    else
+      check_node_eid=2
+    end if
+  end function check_node_eid
+
+  function check_element_eid(eid)
+    implicit none
+    integer :: check_element_eid
+    integer :: eid
+    check_element_eid=0
+    if ((eid.ge.element_eid_min).and.(eid.le.element_eid_max)) then
+      if (element_iid(eid).eq.0) then
+        check_element_eid=1
+      end if
+    else
+      check_element_eid=2
+    end if
+  end function check_element_eid
+
+  function check_region_eid(eid)
+    implicit none
+    integer :: check_region_eid
+    integer :: eid
+    check_region_eid=0
+    if ((eid.ge.region_eid_min).and.(eid.le.region_eid_max)) then
+      if (region_iid(eid).eq.0) then
+        check_region_eid=1
+      end if
+    else
+      check_region_eid=2
+    end if
+  end function check_region_eid
+
+  function check_boundary_eid(eid)
+    implicit none
+    integer :: check_boundary_eid
+    integer :: eid
+    check_boundary_eid=0
+    if ((eid.ge.boundary_eid_min).and.(eid.le.boundary_eid_max)) then
+      if (boundary_iid(eid).eq.0) then
+        check_boundary_eid=1
+      end if
+    else
+      check_boundary_eid=2
+    end if
+  end function check_boundary_eid
+
+  function check_part_eid(eid)
+    implicit none
+    integer :: check_part_eid
+    integer :: eid
+    check_part_eid=0
+    if ((eid.ge.part_eid_min).and.(eid.le.part_eid_max)) then
+      if (part_iid(eid).eq.0) then
+        check_part_eid=1
+      end if
+    else
+      check_part_eid=2
+    end if
+  end function check_part_eid
+
+  function check_fe_subregion_eid(eid)
+    implicit none
+    integer :: check_fe_subregion_eid
+    integer :: eid
+    check_fe_subregion_eid=0
+    if ((eid.ge.fe_subregion_eid_min).and.(eid.le.fe_subregion_eid_max)) then
+      if (fe_subregion_iid(eid).eq.0) then
+        check_fe_subregion_eid=1
+      end if
+    else
+      check_fe_subregion_eid=2
+    end if
+  end function check_fe_subregion_eid
+
+  function check_material_eid(eid)
+    implicit none
+    integer :: check_material_eid
+    integer :: eid
+    check_material_eid=0
+    if ((eid.ge.material_eid_min).and.(eid.le.material_eid_max)) then
+      if (material_iid(eid).eq.0) then
+        check_material_eid=1
+      end if
+    else
+      check_material_eid=2
+    end if
+  end function check_material_eid
+
+  function check_internalpoint_eid(eid)
+    implicit none
+    integer :: check_internalpoint_eid
+    integer :: eid
+    check_internalpoint_eid=0
+    if ((eid.ge.internalpoint_eid_min).and.(eid.le.internalpoint_eid_max)) then
+      if (internalpoint_iid(eid).eq.0) then
+        check_internalpoint_eid=1
+      end if
+    else
+      check_internalpoint_eid=2
+    end if
+  end function check_internalpoint_eid
+
+  function check_group_eid(eid)
+    implicit none
+    integer :: check_group_eid
+    integer :: eid
+    check_group_eid=0
+    if ((eid.ge.group_eid_min).and.(eid.le.group_eid_max)) then
+      if (group_iid(eid).eq.0) then
+        check_group_eid=1
+      end if
+    else
+      check_group_eid=2
+    end if
+  end function check_group_eid
+
+  function check_incidentfield_eid(eid)
+    implicit none
+    integer :: check_incidentfield_eid
+    integer :: eid
+    check_incidentfield_eid=0
+    if ((eid.ge.incidentfield_eid_min).and.(eid.le.incidentfield_eid_max)) then
+      if (incidentfield_iid(eid).eq.0) then
+        check_incidentfield_eid=1
+      end if
+    else
+      check_incidentfield_eid=2
+    end if
+  end function check_incidentfield_eid
+
 end module problem_variables

@@ -78,8 +78,12 @@ module fbem_mesh_module
   contains
     procedure, pass(mesh)           :: read_from_file
     procedure, pass(mesh)           :: write_to_file
+
     procedure, pass(mesh)           :: build_node_nodes_connectivity
     procedure, pass(mesh)           :: build_node_elements_connectivity
+    procedure, pass(mesh)           :: build_node_parts_connectivity
+    procedure, pass(mesh)           :: build_part_nodes_connectivity
+
     procedure, pass(mesh)           :: read_node_values_from_file
     procedure, pass(mesh)           :: destroy
   end type fbem_mesh
@@ -476,10 +480,16 @@ contains
     !
     call mesh%build_node_elements_connectivity
     !
+    ! NODE->PARTS CONNECTIVITY
+    !
+    call mesh%build_node_parts_connectivity
+    !
+    ! PART->NODES CONNECTIVITY
+    !
+    call mesh%build_part_nodes_connectivity
+    !
     ! TODO: OTHER CONNECTIVITIES
     !
-!    call fbem_node_parts_connectivity(n_nodes,node,n_elements,element,n_parts,part)
-!    call fbem_part_nodes_connectivity(n_nodes,node,n_parts,part)
 !    call fbem_build_mesh_subelements(n_nodes,node,n_elements,element,n_subedges,subedge,n_subfaces,subface)
   end subroutine read_from_file
 
@@ -648,6 +658,7 @@ contains
     close(unit=fileunit)
   end subroutine write_to_file
 
+
   !! Build node->nodes connectivity
   subroutine build_node_nodes_connectivity(mesh,tol)
     implicit none
@@ -813,6 +824,103 @@ contains
     end do
   end subroutine build_node_elements_connectivity
 
+  !! Build node->parts connectivity
+  subroutine build_node_parts_connectivity(mesh)
+    implicit none
+    ! I/O
+    class(fbem_mesh)     :: mesh
+    ! Local
+    integer              :: kni
+    integer              :: ke
+    integer              :: se
+    integer              :: tmp_n_parts
+    integer              :: kp
+    integer              :: kpj
+    integer, allocatable :: tmp_part(:)
+    !
+    ! Find the maximum number of elements to which any node is connected and allocate
+    !
+    tmp_n_parts=0
+    do kni=1,mesh%n_nodes
+      if (mesh%node(kni)%n_elements.gt.tmp_n_parts) then
+        tmp_n_parts=mesh%node(kni)%n_elements
+      end if
+    end do
+    allocate (tmp_part(tmp_n_parts))
+    !
+    ! Build connectivity
+    !
+    do kni=1,mesh%n_nodes
+      tmp_part=0
+      kp=0
+      do ke=1,mesh%node(kni)%n_elements
+        se=mesh%node(kni)%element(ke)
+        kp=kp+1
+        tmp_part(kp)=mesh%element(se)%part
+      end do
+      do kp=1,tmp_n_parts
+        if (tmp_part(kp).ne.0) then
+          do kpj=kp+1,tmp_n_parts
+            if (tmp_part(kp).eq.tmp_part(kpj)) tmp_part(kpj)=0
+          end do
+        end if
+      end do
+      mesh%node(kni)%n_parts=0
+      do kp=1,tmp_n_parts
+        if (tmp_part(kp).ne.0) then
+          mesh%node(kni)%n_parts=mesh%node(kni)%n_parts+1
+        end if
+      end do
+      allocate (mesh%node(kni)%part(mesh%node(kni)%n_parts))
+      kpj=0
+      do kp=1,tmp_n_parts
+        if (tmp_part(kp).ne.0) then
+          kpj=kpj+1
+          mesh%node(kni)%part(kpj)=tmp_part(kp)
+        end if
+      end do
+    end do
+  end subroutine build_node_parts_connectivity
+
+  !! Build part->nodes connectivity
+  subroutine build_part_nodes_connectivity(mesh)
+    implicit none
+    ! I/O
+    class(fbem_mesh)     :: mesh
+    ! Local
+    integer              :: kp
+    integer              :: kn
+    integer              :: kpj
+    integer              :: knj
+    !
+    ! Build
+    !
+    do kp=1,mesh%n_parts
+      mesh%part(kp)%n_nodes=0
+      do kn=1,mesh%n_nodes
+        do kpj=1,mesh%node(kn)%n_parts
+          if (mesh%node(kn)%part(kpj).eq.kp) then
+            mesh%part(kp)%n_nodes=mesh%part(kp)%n_nodes+1
+          end if
+        end do
+      end do
+      allocate (mesh%part(kp)%node(mesh%part(kp)%n_nodes))
+      knj=0
+      do kn=1,mesh%n_nodes
+        do kpj=1,mesh%node(kn)%n_parts
+          if (mesh%node(kn)%part(kpj).eq.kp) then
+            knj=knj+1
+            mesh%part(kp)%node(knj)=kn
+          end if
+        end do
+      end do
+    end do
+  end subroutine build_part_nodes_connectivity
+
+
+
+
+
   !! Read node values from file
   subroutine read_node_values_from_file(mesh,filename)
     implicit none
@@ -919,7 +1027,6 @@ contains
     write(output_unit,*) 'Done'
     call mesh%destroy
   end subroutine fbem_convert_mesh_file_format
-
 
   subroutine fbem_transform_mesh_parts_to_linear(n,tol,filename_in,format_in,filename_out,format_out,np,sp_eid)
     implicit none

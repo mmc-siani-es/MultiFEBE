@@ -80,6 +80,7 @@ module fbem_data_structures
   public :: fbem_part_be_bodyload
   ! BE BODY LOAD
   public :: fbem_be_bodyload
+  public :: fbem_bl_uncoupled
   public :: fbem_bl_coupling_beam_tip
   public :: fbem_bl_coupling_beam_line
   public :: fbem_bl_coupling_shell_edge
@@ -583,13 +584,24 @@ module fbem_data_structures
   !
   !! Body load data structure
   type fbem_be_bodyload
+    !
+    ! Basic data
+    !
     integer                           :: id                             !! External identifier
     character(len=fbem_stdcharlen)    :: name                           !! Name
     integer                           :: part                           !! Part (internal identifier)
     integer                           :: region                         !! Region (internal identifier)
     integer                           :: coupling                       !! Type of coupling: 0 (UNCOUPLED), 1 (WITH BEAM TIP), 3 (WITH SHELL EDGE), 2 (WITH BEAM LINE), 4 (WITH SHELL SURFACE)
     logical                           :: export                         !! Export flag
+    !
+    ! Conditions
+    !
+    integer, allocatable              :: ctype(:,:)                     !! Type of condition: ctype(coord,side)
+    integer, allocatable              :: cvalue_i(:,:,:)                !! Condition values (integer): cvalue_i(coord,param,side)
+    real(kind=real64), allocatable    :: cvalue_r(:,:,:)                !! Condition values (real): cvalue_r(coord,param,side)
+    complex(kind=real64), allocatable :: cvalue_c(:,:,:)                !! Condition values (complex): cvalue_c(coord,param,side)
   end type fbem_be_bodyload
+  integer, parameter                  :: fbem_bl_uncoupled             =0 !!
   integer, parameter                  :: fbem_bl_coupling_beam_tip     =1 !!
   integer, parameter                  :: fbem_bl_coupling_beam_line    =2 !!
   integer, parameter                  :: fbem_bl_coupling_shell_edge   =3 !!

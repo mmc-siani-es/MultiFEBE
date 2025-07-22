@@ -70,13 +70,10 @@ subroutine export_solution_mechanics_static_eso(output_fileunit)
     write(output_fileunit,'(a)'  ) '# C3-C5    Region id, class and type.'
     write(output_fileunit,'(a)'  ) '# C6-C8    (if col C4 == 1) Boundary id, class and face.'
     write(output_fileunit,'(a)'  ) '# C6-C8    (if col C4 == 2) Subregion id, finite element dimension and finite element type.'
-    !
-    ! No se incluye col4==1 porque no hay salida por elementos en elementos de contorno
-    ! Se podrían sacar las resultantes de tensiones por elementos
-    ! Falta if col4==1
-    !
+    write(output_fileunit,'(a)'  ) '# C9-C11   (if col C4 == 1) Element id, element dimension, element type.'
+    write(output_fileunit,'(a)'  ) '# C12-C13  (if col C4 == 1) Element node index, 0'
     write(output_fileunit,'(a)'  ) '# C9-C11   (if col C4 == 2) Element id, element dimension, element type.'
-    write(output_fileunit,'(a)'  ) '# C12-C13  (if col C4 == 2) element node index, element node number of DOFs.'
+    write(output_fileunit,'(a)'  ) '# C12-C13  (if col C4 == 2) Element node index, element node number of DOFs.'
 
     select case (problem%n)
     case (2)
@@ -111,6 +108,87 @@ subroutine export_solution_mechanics_static_eso(output_fileunit)
       ! BE region
       !
       case (fbem_be)
+        do kb=1,region(kr)%n_boundaries
+          sb=region(kr)%boundary(kb)
+          node_used=.false.
+          do ke=1,part(boundary(sb)%part)%n_elements
+            se=part(boundary(sb)%part)%element(ke)
+            !
+            ! Boundary coupling
+            !
+            select case (boundary(sb)%coupling)
+            !
+            ! Uncoupled boundary of BE-FE coupled boundary
+            !
+            case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
+                !
+                ! Boundary class
+                !
+                select case (boundary(sb)%class)
+                  !
+                  ! Ordinary boundary
+                  !
+                  case (fbem_boundary_class_ordinary)
+                    face=1
+                    do kn=1,element(se)%n_nodes
+                      sn=element(se)%node(kn)
+                      write(output_fileunit,fmt1,advance='no') 0, 0.d0, &
+                                                               region(kr)%id, region(kr)%class, region(kr)%type, &
+                                                               boundary(sb)%id, boundary(sb)%class, face, &
+                                                               element(se)%id, element(se)%n_dimension, element(se)%fe_type,&
+                                                               kn, 0, node(sn)%id, node(sn)%x
+                      do k=1,9
+                        write(output_fileunit,fmt2,advance='no') element(se)%value_r(k,kn,face)
+                      end do
+                      write(output_fileunit,*)
+                    end do
+
+                  !
+                  ! Crack-like boundaries
+                  !
+                  case (fbem_boundary_class_cracklike)
+                    do face=1,2
+                      do kn=1,element(se)%n_nodes
+                        sn=element(se)%node(kn)
+                        write(output_fileunit,fmt1,advance='no') 0, 0.d0, &
+                                                                 region(kr)%id, region(kr)%class, region(kr)%type, &
+                                                                 boundary(sb)%id, boundary(sb)%class, face, &
+                                                                 element(se)%id, element(se)%n_dimension, element(se)%fe_type,&
+                                                                 kn, 0, node(sn)%id, node(sn)%x
+                        do k=1,9
+                          write(output_fileunit,fmt2,advance='no') element(se)%value_r(k,kn,face)
+                        end do
+                        write(output_fileunit,*)
+                      end do
+                    end do
+
+                end select
+            !
+            ! BE-BE coupled boundary of BE-FE-BE coupled boundary
+            !
+            case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
+              if (region(kr)%boundary_reversion(kb).eqv.(.false.)) then
+                face=1
+              else
+                face=2
+              end if
+              do kn=1,element(se)%n_nodes
+                sn=element(se)%node(kn)
+                write(output_fileunit,fmt1,advance='no') 0, 0.d0, &
+                                                         region(kr)%id, region(kr)%class, region(kr)%type, &
+                                                         boundary(sb)%id, boundary(sb)%class, face, &
+                                                         element(se)%id, element(se)%n_dimension, element(se)%fe_type,&
+                                                         kn, 0, node(sn)%id, node(sn)%x
+                do k=1,9
+                  write(output_fileunit,fmt2,advance='no') element(se)%value_r(k,kn,face)
+                end do
+                write(output_fileunit,*)
+              end do
+
+            end select
+
+          end do
+        end do
 
       ! ==========================================================================================================================
       ! FE region
@@ -340,8 +418,6 @@ subroutine export_solution_mechanics_static_eso(output_fileunit)
       ! ==========================================================================================================================
 
     end select
-    write(output_fileunit,*)
-    write(output_fileunit,*)
   end do
 
 end subroutine export_solution_mechanics_static_eso

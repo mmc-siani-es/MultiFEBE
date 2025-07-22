@@ -128,12 +128,13 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
 
   allocate (node_freeterm_added(n_nodes))
 
-  ! TODO: put this into a function, it also is present in the calculate incident fields
+  ! TODO: put this into a function, it also is present in the calculate incident fields and other
+  ! calculations (calculate stresses)
 
+  ! Save the region properties to local variables
   if (region(kr)%space.eq.fbem_multilayered_half_space) then
     stop 'not multilayered halfspace for elastodynamics yet'
   else
-    ! Save the region properties to local variables
     select case (region(kr)%subtype)
       !
       ! Elastic or viscoelastic
@@ -215,6 +216,8 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
     call fbem_timestamp_message(output_unit,2)
     write(output_unit,fmtstr) 'START assembling region',region(kr)%id
   end if
+
+
 
   ! --------------------------------------------
   ! CALCULATE AND ASSEMBLE ELEMENT BEM INTEGRALS

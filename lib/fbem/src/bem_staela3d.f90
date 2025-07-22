@@ -51,6 +51,9 @@ module fbem_bem_staela3d
   ! SINGULAR BOUNDARY INTEGRAL EQUATION (SBIE)
   ! Free-term
   public :: fbem_bem_staela3d_sbie_freeterm
+  ! Fundamental solution
+  public :: fbem_bem_staela3d_sbie_u, fbem_bem_staela3d_sbie_u_cmplx
+  public :: fbem_bem_staela3d_sbie_t, fbem_bem_staela3d_sbie_t_cmplx
   ! BOUNDARY ELEMENTS
   ! Automatic integration
   public :: fbem_bem_staela3d_sbie_auto, fbem_bem_staela3d_sbie_auto_cmplx
@@ -74,6 +77,9 @@ module fbem_bem_staela3d
 
   ! ================================================================================================================================
   ! HYPERSINGULAR BOUNDARY INTEGRAL EQUATION (HBIE)
+  ! Fundamental solution
+  public :: fbem_bem_staela3d_hbie_d, fbem_bem_staela3d_hbie_d_cmplx
+  public :: fbem_bem_staela3d_hbie_s, fbem_bem_staela3d_hbie_s_cmplx
   ! BOUNDARY ELEMENTS
   ! Automatic integration
   public :: fbem_bem_staela3d_hbie_auto
@@ -397,6 +403,122 @@ contains
       end do
     end do
   end subroutine fbem_bem_staela3d_sbie_freeterm
+
+  !! Fundamental solution u*
+  subroutine fbem_bem_staela3d_sbie_u(x,x_i,mu,nu,uo)
+    implicit none
+    ! I/O
+    real(kind=real64) :: x(3)    !! Observation point
+    real(kind=real64) :: x_i(3)  !! Collocation point
+    real(kind=real64) :: mu      !! Shear modulus
+    real(kind=real64) :: nu      !! Poisson's ratio
+    real(kind=real64) :: uo(3,3) !! u*_{lk}
+    ! Local
+    integer           :: l, k
+    real(kind=real64) :: cteu1, cteu2
+    real(kind=real64) :: rv(3), r, d1r, drdx(3)
+    cteu1=1.d0/(16.d0*c_pi*mu*(1.d0-nu))
+    cteu2=3.d0-4.d0*nu
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r=1.d0/r
+    drdx=rv*d1r
+    do l=1,3
+      do k=1,3
+        uo(l,k)=d1r*(cteu2*c_dkr(l,k)+drdx(l)*drdx(k))
+      end do
+    end do
+    uo=cteu1*uo
+  end subroutine fbem_bem_staela3d_sbie_u
+
+  !! Fundamental solution t*
+  subroutine fbem_bem_staela3d_sbie_t(x,n,x_i,nu,to)
+    implicit none
+    ! I/O
+    real(kind=real64) :: x(3)    !! Observation point
+    real(kind=real64) :: n(3)    !! Observation point normal
+    real(kind=real64) :: x_i(3)  !! Collocation point
+    real(kind=real64) :: nu      !! Poisson's ratio
+    real(kind=real64) :: to(3,3) !! t*_{lk}
+    ! Local
+    integer           :: l, k
+    real(kind=real64) :: rv(3), r, d1r, d1r2, drdx(3), drdn
+    real(kind=real64) :: ctet1, ctet2
+    ctet1=-1.d0/(8.d0*c_pi*(1.d0-nu))
+    ctet2=1.d0-2.d0*nu
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r=1.d0/r
+    d1r2=d1r**2
+    drdx=rv*d1r
+    drdn=dot_product(drdx,n)
+    do l=1,3
+      do k=1,3
+        to(l,k)=d1r2*((ctet2*c_dkr(l,k)+3.d0*drdx(l)*drdx(k))*drdn+ctet2*(n(l)*drdx(k)-n(k)*drdx(l)))
+      end do
+    end do
+    to=ctet1*to
+  end subroutine fbem_bem_staela3d_sbie_t
+
+  !! Fundamental solution u*
+  subroutine fbem_bem_staela3d_sbie_u_cmplx(x,x_i,mu,nu,uo)
+    implicit none
+    ! I/O
+    real(kind=real64)    :: x(3)    !! Observation point
+    real(kind=real64)    :: x_i(3)  !! Collocation point
+    complex(kind=real64) :: mu      !! Shear modulus
+    complex(kind=real64) :: nu      !! Poisson's ratio
+    complex(kind=real64) :: uo(3,3) !! u*_{lk}
+    ! Local
+    integer              :: l, k
+    complex(kind=real64) :: cteu1, cteu2
+    real(kind=real64)    :: rv(3), r, d1r, drdx(3)
+    cteu1=1.d0/(16.d0*c_pi*mu*(1.d0-nu))
+    cteu2=3.d0-4.d0*nu
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r=1.d0/r
+    drdx=rv*d1r
+    do l=1,3
+      do k=1,3
+        uo(l,k)=d1r*(cteu2*c_dkr(l,k)+drdx(l)*drdx(k))
+      end do
+    end do
+    uo=cteu1*uo
+  end subroutine fbem_bem_staela3d_sbie_u_cmplx
+
+  !! Fundamental solution t*
+  subroutine fbem_bem_staela3d_sbie_t_cmplx(x,n,x_i,nu,to)
+    implicit none
+    ! I/O
+    real(kind=real64)    :: x(3)    !! Observation point
+    real(kind=real64)    :: n(3)    !! Observation point normal
+    real(kind=real64)    :: x_i(3)  !! Collocation point
+    complex(kind=real64) :: nu      !! Poisson's ratio
+    complex(kind=real64) :: to(3,3) !! t*_{lk}
+    ! Local
+    integer              :: l, k
+    real(kind=real64)    :: rv(3), r, d1r, d1r2, drdx(3), drdn
+    complex(kind=real64) :: ctet1, ctet2
+    ctet1=-1.d0/(8.d0*c_pi*(1.d0-nu))
+    ctet2=1.d0-2.d0*nu
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r=1.d0/r
+    d1r2=d1r**2
+    drdx=rv*d1r
+    drdn=dot_product(drdx,n)
+    do l=1,3
+      do k=1,3
+        to(l,k)=d1r2*((ctet2*c_dkr(l,k)+3.d0*drdx(l)*drdx(k))*drdn+ctet2*(n(l)*drdx(k)-n(k)*drdx(l)))
+      end do
+    end do
+    to=ctet1*to
+  end subroutine fbem_bem_staela3d_sbie_t_cmplx
+
+  ! ==================== !
+  ! BE BOUNDARY ELEMENTS !
+  ! ==================== !
 
   !! Efficient automatic integration
   subroutine fbem_bem_staela3d_sbie_auto(e,reverse,x_i,mu,nu,qsp,ns,h,g)
@@ -2427,8 +2549,7 @@ contains
       if (rmin.eq.0.d0) then
         call fbem_error_message(output_unit,0,'fbem_bem_staela3d_sbie_bl_auto',0,'it is not possible to collocate at a point load')
       else
-        stop 'not yet : fbem_bem_staela3d_sbie_bl_auto'
-        !call fbem_bem_staela3d_sbie_u(e%x(:,1),x_i,mu,nu,gbl(1,:,:))
+        call fbem_bem_staela3d_sbie_u(e%x(:,1),x_i,mu,nu,gbl(1,:,:))
         return
       end if
     ! LINE, SURFACE OR VOLUME BODY LOAD
@@ -3226,11 +3347,11 @@ contains
     ! I/O
     type(fbem_bem_element)   :: e                   !! Integration element
     real(kind=real64)        :: x_i(3)              !! Collocation point
-    complex(kind=real64)        :: mu                  !! Shear modulus
-    complex(kind=real64)        :: nu                  !! Poisson's ratio
+    complex(kind=real64)     :: mu                  !! Shear modulus
+    complex(kind=real64)     :: nu                  !! Poisson's ratio
     type(fbem_qs_parameters) :: qsp                 !! Quasi-singular integration parameters
     integer                  :: ns                  !! Maximum level of subdivisions
-    complex(kind=real64)        :: gbl(e%n_snodes,3,3) !! gbl integration kernel
+    complex(kind=real64)     :: gbl(e%n_snodes,3,3) !! gbl integration kernel
     ! Local
     real(kind=real64)        :: r(3)                               ! Distance vector
     real(kind=real64)        :: rmin                               ! Minimum distance between element and x_i
@@ -3250,8 +3371,7 @@ contains
       if (rmin.eq.0.d0) then
         call fbem_error_message(output_unit,0,'fbem_bem_staela3d_sbie_bl_auto',0,'it is not possible to collocate at a point load')
       else
-        stop 'not yet : fbem_bem_staela3d_sbie_bl_auto'
-        !call fbem_bem_staela3d_sbie_u(e%x(:,1),x_i,mu,nu,gbl(1,:,:))
+        call fbem_bem_staela3d_sbie_u_cmplx(e%x(:,1),x_i,mu,nu,gbl(1,:,:))
         return
       end if
     ! LINE, SURFACE OR VOLUME BODY LOAD
@@ -4046,6 +4166,142 @@ contains
   ! --------------------------------------------------------------------------------------------------------------------------------
   ! HYPERSINGULAR BOUNDARY INTEGRAL EQUATION (HBIE)
   !
+
+  !! Fundamental solution d*
+  subroutine fbem_bem_staela3d_hbie_d(x,x_i,n_i,nu,do)
+    implicit none
+    ! I/O
+    real(kind=real64) :: x(3)    !! Observation point
+    real(kind=real64) :: x_i(3)  !! Collocation point
+    real(kind=real64) :: n_i(3)  !! Collocation point unit normal
+    real(kind=real64) :: nu      !! Poisson's ratio
+    real(kind=real64) :: do(3,3) !! d*_{lk}
+    ! Local
+    integer           :: il, ik
+    real(kind=real64) :: rv(3), r, d1r, d1r2, drdx(3), drdni
+    real(kind=real64) :: cted1, cted2
+    cted1=-1.d0/(8.d0*c_pi*(1.d0-nu))
+    cted2=1.d0-2.d0*nu
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r =1.d0/r
+    d1r2=d1r**2
+    drdx=rv*d1r
+    drdni=-dot_product(drdx,n_i)
+    do il=1,3
+      do ik=1,3
+        do(il,ik)=d1r2*((cted2*c_dkr(il,ik)+3.d0*drdx(il)*drdx(ik))*drdni+cted2*(n_i(il)*drdx(ik)-n_i(ik)*drdx(il)))
+      end do
+    end do
+    do=cted1*do
+  end subroutine fbem_bem_staela3d_hbie_d
+
+  !! Fundamental solution s*
+  subroutine fbem_bem_staela3d_hbie_s(x,n,x_i,n_i,mu,nu,so)
+    implicit none
+    ! I/O
+    real(kind=real64) :: x(3)    !! Observation point
+    real(kind=real64) :: n(3)    !! Observation point unit normal
+    real(kind=real64) :: x_i(3)  !! Collocation point
+    real(kind=real64) :: n_i(3)  !! Collocation point unit normal
+    real(kind=real64) :: mu      !! Shear modulus
+    real(kind=real64) :: nu      !! Poisson's ratio
+    real(kind=real64) :: so(3,3) !! s*_{lk}
+    ! Local
+    integer           :: il, ik
+    real(kind=real64) :: rv(3), r, d1r, d1r2, d1r3, drdx(3), drdn, drdni, n_dot_ni
+    real(kind=real64) :: ctes1, ctes2, ctes3
+    ctes1=mu/(4.d0*c_pi*(1.d0-nu))
+    ctes2=1.d0-2.d0*nu
+    ctes3=1.d0-4.d0*nu
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r =1.d0/r
+    d1r2=d1r**2
+    d1r3=d1r2*d1r
+    drdx=rv*d1r
+    drdn=dot_product(drdx,n)
+    drdni=-dot_product(drdx,n_i)
+    n_dot_ni=dot_product(n,n_i)
+    do il=1,3
+      do ik=1,3
+        so(il,ik)=d1r3*(3.d0*(5.d0*drdx(il)*drdx(ik)-nu*c_dkr(il,ik))*drdn*drdni &
+                       +3.d0*ctes2*(drdx(ik)*n_i(il)*drdn-drdx(il)*n(ik)*drdni) &
+                       +3.d0*nu*   (drdx(il)*n_i(ik)*drdn-drdx(ik)*n(il)*drdni) &
+                       +(3.d0*nu*drdx(il)*drdx(ik)+ctes2*c_dkr(il,ik))*n_dot_ni &
+                       +ctes2*n(il)*n_i(ik)-ctes3*n(ik)*n_i(il))
+      end do
+    end do
+    so=ctes1*so
+  end subroutine fbem_bem_staela3d_hbie_s
+
+  !! Fundamental solution d*
+  subroutine fbem_bem_staela3d_hbie_d_cmplx(x,x_i,n_i,nu,do)
+    implicit none
+    ! I/O
+    real(kind=real64)    :: x(3)    !! Observation point
+    real(kind=real64)    :: x_i(3)  !! Collocation point
+    real(kind=real64)    :: n_i(3)  !! Collocation point unit normal
+    complex(kind=real64) :: nu      !! Poisson's ratio
+    complex(kind=real64) :: do(3,3) !! d*_{lk}
+    ! Local
+    integer              :: il, ik
+    real(kind=real64)    :: rv(3), r, d1r, d1r2, drdx(3), drdni
+    complex(kind=real64) :: cted1, cted2
+    cted1=-1.d0/(8.d0*c_pi*(1.d0-nu))
+    cted2=1.d0-2.d0*nu
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r =1.d0/r
+    d1r2=d1r**2
+    drdx=rv*d1r
+    drdni=-dot_product(drdx,n_i)
+    do il=1,3
+      do ik=1,3
+        do(il,ik)=d1r2*((cted2*c_dkr(il,ik)+3.d0*drdx(il)*drdx(ik))*drdni+cted2*(n_i(il)*drdx(ik)-n_i(ik)*drdx(il)))
+      end do
+    end do
+    do=cted1*do
+  end subroutine fbem_bem_staela3d_hbie_d_cmplx
+
+  !! Fundamental solution s*
+  subroutine fbem_bem_staela3d_hbie_s_cmplx(x,n,x_i,n_i,mu,nu,so)
+    implicit none
+    ! I/O
+    real(kind=real64)    :: x(3)    !! Observation point
+    real(kind=real64)    :: n(3)    !! Observation point unit normal
+    real(kind=real64)    :: x_i(3)  !! Collocation point
+    real(kind=real64)    :: n_i(3)  !! Collocation point unit normal
+    complex(kind=real64) :: mu      !! Shear modulus
+    complex(kind=real64) :: nu      !! Poisson's ratio
+    complex(kind=real64) :: so(3,3) !! s*_{lk}
+    ! Local
+    integer           :: il, ik
+    real(kind=real64) :: rv(3), r, d1r, d1r2, d1r3, drdx(3), drdn, drdni, n_dot_ni
+    real(kind=real64) :: ctes1, ctes2, ctes3
+    ctes1=mu/(4.d0*c_pi*(1.d0-nu))
+    ctes2=1.d0-2.d0*nu
+    ctes3=1.d0-4.d0*nu
+    rv=x-x_i
+    r=sqrt(dot_product(rv,rv))
+    d1r =1.d0/r
+    d1r2=d1r**2
+    d1r3=d1r2*d1r
+    drdx=rv*d1r
+    drdn=dot_product(drdx,n)
+    drdni=-dot_product(drdx,n_i)
+    n_dot_ni=dot_product(n,n_i)
+    do il=1,3
+      do ik=1,3
+        so(il,ik)=d1r3*(3.d0*(5.d0*drdx(il)*drdx(ik)-nu*c_dkr(il,ik))*drdn*drdni &
+                       +3.d0*ctes2*(drdx(ik)*n_i(il)*drdn-drdx(il)*n(ik)*drdni) &
+                       +3.d0*nu*   (drdx(il)*n_i(ik)*drdn-drdx(ik)*n(il)*drdni) &
+                       +(3.d0*nu*drdx(il)*drdx(ik)+ctes2*c_dkr(il,ik))*n_dot_ni &
+                       +ctes2*n(il)*n_i(ik)-ctes3*n(ik)*n_i(il))
+      end do
+    end do
+    so=ctes1*so
+  end subroutine fbem_bem_staela3d_hbie_s_cmplx
 
   !! Efficient automatic integration
   subroutine fbem_bem_staela3d_hbie_auto(e,reverse,x_i,n_i,mu,nu,qsp,ns,m,l)
@@ -6272,8 +6528,7 @@ contains
       if (rmin.eq.0.d0) then
         call fbem_error_message(output_unit,0,'fbem_bem_staela3d_hbie_bl_auto',0,'it is not possible to collocate at a point load')
       else
-        stop 'not yet : fbem_bem_staela3d_hbie_bl_auto'
-        !call fbem_bem_staela3d_hbie_d(e%x(:,1),x_i,n_i,nu,lbl(1,:,:))
+        call fbem_bem_staela3d_hbie_d(e%x(:,1),x_i,n_i,nu,lbl(1,:,:))
         return
       end if
     ! LINE, SURFACE OR VOLUME BODY LOAD
@@ -10482,9 +10737,9 @@ contains
       r=e%x(:,1)-xp_i
       rmin=sqrt(dot_product(r,r))
       if (rmin.eq.0.d0) then
-        call fbem_error_message(output_unit,0,'fbem_bem_staela3d_sbie_bl_auto',0,'it is not possible to collocate at a point load')
+        call fbem_error_message(output_unit,0,'fbem_bem_staela3d_hsc_sbie_bl_auto',0,'it is not possible to collocate at a point load')
       else
-        stop 'not yet : fbem_bem_staela3d_sbie_bl_auto'
+        stop 'not yet : fbem_bem_staela3d_hsc_sbie_bl_auto'
         !call fbem_bem_staela3d_sbie_u(e%x(:,1),x_i,mu,nu,gbl(1,:,:))
         return
       end if
@@ -10568,9 +10823,9 @@ contains
       r=e%x(:,1)-xp_i
       rmin=sqrt(dot_product(r,r))
       if (rmin.eq.0.d0) then
-        call fbem_error_message(output_unit,0,'fbem_bem_staela3d_sbie_bl_auto_cmplx',0,'it is not possible to collocate at a point load')
+        call fbem_error_message(output_unit,0,'fbem_bem_staela3d_hsc_sbie_bl_auto_cmplx',0,'it is not possible to collocate at a point load')
       else
-        stop 'not yet : fbem_bem_staela3d_sbie_bl_auto_cmplx'
+        stop 'not yet : fbem_bem_staela3d_hsc_sbie_bl_auto_cmplx'
         !call fbem_bem_staela3d_sbie_u(e%x(:,1),x_i,mu,nu,gbl(1,:,:))
         return
       end if

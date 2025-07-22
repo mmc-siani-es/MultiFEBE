@@ -46,15 +46,24 @@ subroutine read_boundaries(fileunit)
   logical                        :: found
   character(len=fbem_stdcharlen) :: tmp_class         ! Temporary variable to read the class of boundary
   integer                        :: i, j, k           ! Counters
+  integer                        :: n_region_be_boundaries
   integer                        :: kr, kb, sb
   integer                        :: tmp_int           ! Temporary integer
   logical                        :: tmp_bool          ! Temporary integer
 
+  ! Default value
+  n_boundaries=0
+
   ! Return if not needed
-  if (n_be_regions.eq.0) then
-    n_boundaries=0
-    return
-  end if
+  if (n_be_regions.eq.0) return
+
+  ! Detect if there are BE boundaries in BE regions
+  n_region_be_boundaries=0
+  do i=1,n_regions
+    if (region(i)%class.eq.fbem_be) then
+      n_region_be_boundaries=n_region_be_boundaries+region(i)%n_boundaries
+    end if
+  end do
 
   ! Locate the section
   section_name='boundaries'
@@ -240,7 +249,9 @@ subroutine read_boundaries(fileunit)
 
   else
 
-    n_boundaries=0
+    if (n_region_be_boundaries.gt.0) then
+      call fbem_error_message(error_unit,0,'['//trim(section_name)//']',0,'this section is required.')
+    end if
 
   end if
 

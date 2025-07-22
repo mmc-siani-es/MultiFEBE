@@ -200,7 +200,9 @@ subroutine read_input_file
   !   2. Read conditions over BEM boundaries.
   !   3. Transfer conditions over BEM boundaries to its nodes.
   !   4. Read conditions over BEM nodes.
+
   !   5. ?¿?¿??¿?Leer tambien las cargas de volumen..... haciendo lo pispo .....?¿?¿??¿?
+
   !
   if (n_be_regions.gt.0) then
     select case (problem%type)
@@ -212,15 +214,31 @@ subroutine read_input_file
       case (fbem_mechanics)
         select case (problem%analysis)
           case (fbem_static)
+
             call assign_default_conditions_bem_boundaries_mechanics_static
             call read_conditions_bem_boundaries_mechanics_static(input_fileunit)
             call transfer_conditions_bem_boundaries_mechanics_static
+
+            call assign_default_conditions_bem_bodyloads_mechanics_static
+            call read_conditions_bem_bodyloads_mechanics_static(input_fileunit)
+            call transfer_conditions_bem_bodyloads_mechanics_static
+
+            ! To-do: introduce bem bodyload nodes conditions using groups
             call read_conditions_bem_nodes_mechanics_static(input_fileunit)
+
           case (fbem_harmonic)
+
             call assign_default_conditions_bem_boundaries_mechanics_harmonic
             call read_conditions_bem_boundaries_mechanics_harmonic(input_fileunit)
             call transfer_conditions_bem_boundaries_mechanics_harmonic
+
+            call assign_default_conditions_bem_bodyloads_mechanics_harmonic
+            call read_conditions_bem_bodyloads_mechanics_harmonic(input_fileunit)
+            call transfer_conditions_bem_bodyloads_mechanics_harmonic
+
+            ! To-do: introduce bem bodyload nodes conditions
             call read_conditions_bem_nodes_mechanics_harmonic(input_fileunit)
+
         end select
     end select
   end if

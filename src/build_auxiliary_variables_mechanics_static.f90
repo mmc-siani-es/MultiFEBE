@@ -23,6 +23,7 @@ subroutine build_auxiliary_variables_mechanics_static
 
   ! Fortran 2003 intrinsic module
   use iso_fortran_env
+  use, intrinsic :: ieee_arithmetic
 
   ! fbem modules
   use fbem_data_structures
@@ -46,8 +47,11 @@ subroutine build_auxiliary_variables_mechanics_static
   logical, allocatable       :: node_used(:)
   character(len=fbem_fmtstr) :: fmtstr
   integer(kind=int64)        :: memory
+  real(kind=real64)          :: r64_nan
 
   if (verbose_level.ge.1)  call fbem_timestamp_w_message(output_unit,2,'START building auxiliary variables')
+
+  r64_nan=ieee_value(r64_nan,ieee_quiet_nan)
 
   ! Allocate auxiliary variable
   allocate (node_used(n_nodes))
@@ -61,6 +65,8 @@ subroutine build_auxiliary_variables_mechanics_static
   ! ================================================================================================================================
   ! BE REGIONS
   ! ================================================================================================================================
+
+  ! NODE-WISE
 
   do kr=1,n_regions
     if (region(kr)%class.eq.fbem_be) then
@@ -104,6 +110,10 @@ subroutine build_auxiliary_variables_mechanics_static
                       allocate (node(sn)%col(2*problem%n,1))
                       allocate (node(sn)%value_r(2*problem%n,1))
                       allocate (node(sn)%dvda_r(2*problem%n,1,problem%n_designvariables))
+                      !
+                      ! element(se)%value_c(:,node,1): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                      !
+                      if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,1))
                       ! Initialize
                       do k=1,problem%n
                         node(sn)%row(k,1)=0
@@ -149,6 +159,10 @@ subroutine build_auxiliary_variables_mechanics_static
                       allocate (node(sn)%col(2*problem%n,2))
                       allocate (node(sn)%value_r(2*problem%n,2))
                       allocate (node(sn)%dvda_r(2*problem%n,2,problem%n_designvariables))
+                      !
+                      ! element(se)%value_c(:,node,1): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                      !
+                      if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,2))
                       ! Initialize
                       do k=1,problem%n
                         node(sn)%row(k,1)=0
@@ -215,6 +229,10 @@ subroutine build_auxiliary_variables_mechanics_static
                   allocate (node(sn)%col(2*problem%n,2))
                   allocate (node(sn)%value_r(2*problem%n,2))
                   allocate (node(sn)%dvda_r(2*problem%n,2,problem%n_designvariables))
+                  !
+                  ! element(se)%value_c(:,node,1): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                  !
+                  if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,2))
                   ! Initialize
                   do k=1,problem%n
                     node(sn)%row(k,1)=0
@@ -263,6 +281,10 @@ subroutine build_auxiliary_variables_mechanics_static
                       allocate (node(sn)%col(2*problem%n,1))
                       allocate (node(sn)%value_r(2*problem%n,1))
                       allocate (node(sn)%dvda_r(2*problem%n,1,problem%n_designvariables))
+                      !
+                      ! element(se)%value_c(:,node,1): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                      !
+                      if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,1))
                       ! Initialize
                       do k=1,problem%n
                         node(sn)%row(k,1)=0
@@ -349,6 +371,10 @@ subroutine build_auxiliary_variables_mechanics_static
                       allocate (node(sn)%col(2*problem%n,2))
                       allocate (node(sn)%value_r(2*problem%n,2))
                       allocate (node(sn)%dvda_r(2*problem%n,2,problem%n_designvariables))
+                      !
+                      ! element(se)%value_c(:,node,1): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                      !
+                      if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,2))
                       ! Initialize
                       node(sn)%row=0
                       node(sn)%col=0
@@ -391,6 +417,10 @@ subroutine build_auxiliary_variables_mechanics_static
                   allocate (node(sn)%row    (problem%n,2))
                   allocate (node(sn)%col    (2*problem%n,2))
                   allocate (node(sn)%value_c(2*problem%n,2))
+                  !
+                  ! element(se)%value_c(:,node,1): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                  !
+                  if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,2))
                   ! Initialize
                   do k=1,problem%n
                     node(sn)%row(k,1)=0
@@ -423,31 +453,48 @@ subroutine build_auxiliary_variables_mechanics_static
         end do
       end do
 
-      ! =============================
-      ! COUPLED BE BODY LOAD ELEMENTS
-      ! =============================
+      ! =====================
+      ! BE BODY LOAD ELEMENTS
+      ! =====================
 
       do kb=1,region(kr)%n_be_bodyloads
         sb=region(kr)%be_bodyload(kb)
         sp=be_bodyload(sb)%part
-        select case (be_bodyload(sb)%coupling)
+        do ke=1,part(sp)%n_elements
+          se=part(sp)%element(ke)
+          do kn=1,element(se)%n_nodes
+            sn=element(se)%node(kn)
+            if (node_used(sn).eqv.(.false.)) then
+              node_used(sn)=.true.
+              select case (be_bodyload(sb)%coupling)
 
-          ! ----------------------------------
-          ! FE BEAM TIP - BE LINE/SURFACE LOAD
-          ! ----------------------------------
+                ! ----------------------------------
+                ! UNCOUPLED
+                ! ----------------------------------
 
-          case (fbem_bl_coupling_beam_tip)
-            select case (problem%n)
-              !
-              ! 2D: LINE LOAD AT THE BEAM TIP
-              !
-              case (2)
-                do ke=1,part(sp)%n_elements
-                  se=part(sp)%element(ke)
-                  do kn=1,element(se)%n_nodes
-                    sn=element(se)%node(kn)
-                    if (node_used(sn).eqv.(.false.)) then
-                      node_used(sn)=.true.
+                case (fbem_bl_uncoupled)
+                  !
+                  ! Index of variables:
+                  ! - node(sn)%value_r(          k,1): u_k
+                  ! - node(sn)%value_r(problem%n+k,1): F_k
+                  !
+                  allocate (node(sn)%value_r(2*problem%n,1))
+                  node(sn)%value_r=r64_nan
+                  do k=1,problem%n
+                    node(sn)%value_r(problem%n+k,1)=node(sn)%cvalue_r(k,1,1)
+                  end do
+
+
+                ! ----------------------------------
+                ! FE BEAM TIP - BE LINE/SURFACE LOAD
+                ! ----------------------------------
+
+                case (fbem_bl_coupling_beam_tip)
+                  select case (problem%n)
+                    !
+                    ! 2D: LINE LOAD AT THE BEAM TIP
+                    !
+                    case (2)
 
                       !
                       ! Falta saber qué hacer con los en cada coordenada cuando la punta fem tiene condiciones de contorno
@@ -481,29 +528,19 @@ subroutine build_auxiliary_variables_mechanics_static
                         end do
                       end do
 
+                    !
+                    ! 3D: SURFACE LOAD AT THE BEAM TIP
+                    !
+                    case (3)
+                      ! Modelo de Luis (en principio solo habria que crear un cuadrilatero que emule a una circunferencia, se puede hacer..)
+                      stop 'not yet 43'
+                  end select
 
-                    end if
-                  end do
-                end do
-              !
-              ! 3D: SURFACE LOAD AT THE BEAM TIP
-              !
-              case (3)
-                ! Modelo de Luis (en principio solo habria que crear un cuadrilatero que emule a una circunferencia, se puede hacer..)
-                stop 'not yet 43'
-            end select
+                ! ---------------------------------------------------------
+                ! (FE BEAM - BE LINE LOAD) AND (FE SHELL - BE SURFACE LOAD)
+                ! ---------------------------------------------------------
 
-          ! ---------------------------------------------------------
-          ! (FE BEAM - BE LINE LOAD) AND (FE SHELL - BE SURFACE LOAD)
-          ! ---------------------------------------------------------
-
-          case (fbem_bl_coupling_beam_line,fbem_bl_coupling_shell_surface)
-            do ke=1,part(sp)%n_elements
-              se=part(sp)%element(ke)
-              do kn=1,element(se)%n_nodes
-                sn=element(se)%node(kn)
-                if (node_used(sn).eqv.(.false.)) then
-                  node_used(sn)=.true.
+                case (fbem_bl_coupling_beam_line,fbem_bl_coupling_shell_surface)
                   !
                   ! Index of equations for each coordinate k:
                   ! node(sn)%row(k,1): SBIE
@@ -528,22 +565,12 @@ subroutine build_auxiliary_variables_mechanics_static
                     node(sn)%col(problem%n+k,1)=col
                     col=col+1
                   end do
-                end if
-              end do
-            end do
 
-          ! -----------------------
-          ! FE SHELL - BE EDGE LOAD
-          ! -----------------------
+                ! -----------------------
+                ! FE SHELL - BE EDGE LOAD
+                ! -----------------------
 
-          case (fbem_bl_coupling_shell_edge)
-            do ke=1,part(sp)%n_elements
-              se=part(sp)%element(ke)
-              do kn=1,element(se)%n_nodes
-                sn=element(se)%node(kn)
-                if (node_used(sn).eqv.(.false.)) then
-                  node_used(sn)=.true.
-
+                case (fbem_bl_coupling_shell_edge)
                   !
                   ! Falta saber qué hacer con los en cada coordenada cuando la punta fem tiene condiciones de contorno
                   !
@@ -575,13 +602,121 @@ subroutine build_auxiliary_variables_mechanics_static
                     end do
                   end do
 
-                end if
-              end do
-            end do
-
-        end select
-
+              end select
+            end if
+          end do
+        end do
       end do
+
+    end if
+  end do
+
+  ! ELEMENT-WISE
+
+  do kr=1,n_regions
+    if (region(kr)%class.eq.fbem_be) then
+
+      ! ====================
+      ! BE BOUNDARY ELEMENTS
+      ! ====================
+
+      do kb=1,region(kr)%n_boundaries
+        sb=region(kr)%boundary(kb)
+        sp=boundary(sb)%part
+        do ke=1,part(sp)%n_elements
+          se=part(sp)%element(ke)
+          select case (boundary(sb)%coupling)
+
+            ! ------------------------------------------------------------------------------------------------------------------
+            ! BE BOUNDARY
+            ! ------------------------------------------------------------------------------------------------------------------
+
+            case (fbem_boundary_coupling_be)
+              select case (boundary(sb)%class)
+
+                ! =================
+                ! ORDINARY BOUNDARY
+                ! =================
+
+                case (fbem_boundary_class_ordinary)
+                  !
+                  ! element(se)%value_r(:,node,1): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                  !
+                  if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,1))
+
+                ! ===================
+                ! CRACK-LIKE BOUNDARY
+                ! ===================
+
+                case (fbem_boundary_class_cracklike)
+                  !
+                  ! element(se)%value_r(:,node,:): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                  !
+                  if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,2))
+
+              end select
+
+            ! ------------------------------------------------------------------------------------------------------------------
+            ! BE-BE BOUNDARY
+            ! ------------------------------------------------------------------------------------------------------------------
+            ! The region 1 is the region where the boundary has N+
+            ! The region 2 is the region where the boundary has N-
+
+            case (fbem_boundary_coupling_be_be)
+              !
+              ! element(se)%value_r(:,node,:): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+              !
+              if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,2))
+
+            ! ------------------------------------------------------------------------------------------------------------------
+            ! BE-FE BOUNDARY
+            ! ------------------------------------------------------------------------------------------------------------------
+
+            case (fbem_boundary_coupling_be_fe)
+              select case (boundary(sb)%class)
+
+                ! =================
+                ! ORDINARY BOUNDARY
+                ! =================
+
+                case (fbem_boundary_class_ordinary)
+                  !
+                  ! element(se)%value_r(:,node,1): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                  !
+                  if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,1))
+
+                ! ===================
+                ! CRACK-LIKE BOUNDARY
+                ! ===================
+
+                case (fbem_boundary_class_cracklike)
+                  !
+                  ! element(se)%value_r(:,node,:): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+                  !
+                  if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,2))
+
+              end select
+
+            ! ------------------------------------------------------------------------------------------------------------------
+            ! BE-FE-BE BOUNDARY
+            ! ------------------------------------------------------------------------------------------------------------------
+
+            case (fbem_boundary_coupling_be_fe_be)
+              !
+              ! element(se)%value_r(:,node,:): sig11,sig12,sig13,sig21,sig22 (in 2D and 3D always the 3D tensor)
+              !
+              if (.not.allocated(element(se)%value_r)) allocate(element(se)%value_r(9,element(se)%n_nodes,2))
+
+          end select
+
+        end do
+      end do
+
+      ! =============================
+      ! COUPLED BE BODY LOAD ELEMENTS
+      ! =============================
+
+      ! Nothing to do
 
     end if
   end do
