@@ -118,6 +118,35 @@ subroutine read_groups(fileunit)
           end do
         end if
         !
+        ! PART: group of nodes defined by giving a part
+        !
+        ! Syntax:
+        ! <id_group> nodes part <part_id>
+        !
+        if (trim(tmp_built).eq.'part') then
+          tmp_check_built=.true.
+          group(i)%n_objects=0
+          ! Read
+          read(fileunit,*) group(i)%id, tmp_type, tmp_built, tmp_part
+          ! Check tmp_part
+          if ((tmp_part.ge.part_eid_min).and.(tmp_part.le.part_eid_max)) then
+            if (part_iid(tmp_part).eq.0) then
+              call fbem_error_message(error_unit,0,'group',group(i)%id,'the part used for this group does not exist')
+            else
+              tmp_part=part_iid(tmp_part)
+            end if
+          else
+            call fbem_error_message(error_unit,0,'group',group(i)%id,'the part used for this group does not exist')
+          end if
+          !write(*,*) 'part', part(tmp_part)%id, 'has', part(tmp_part)%n_nodes, 'nodes'
+          group(i)%n_objects=part(tmp_part)%n_nodes
+          allocate (group(i)%object(group(i)%n_objects))
+          do j=1,part(tmp_part)%n_nodes
+            group(i)%object(j)=part(tmp_part)%node(j)
+            !write(*,*) 'part', part(tmp_part)%id, 'has node', node(part(tmp_part)%node(j))%id
+          end do
+        end if
+        !
         ! LIST: group of nodes defined by giving a list of nodes
         !
         ! Syntax:
@@ -169,39 +198,10 @@ subroutine read_groups(fileunit)
           deallocate (tmp_check_part)
         end if
         !
-        ! PART: group of nodes defined by giving a part
-        !
-        ! Syntax:
-        ! <id_group> nodes part <part_id>
-        !
-        if (trim(tmp_built).eq.'part') then
-          tmp_check_built=.true.
-          group(i)%n_objects=0
-          ! Read
-          read(fileunit,*) group(i)%id, tmp_type, tmp_built, tmp_part
-          ! Check tmp_part
-          if ((tmp_part.ge.part_eid_min).and.(tmp_part.le.part_eid_max)) then
-            if (part_iid(tmp_part).eq.0) then
-              call fbem_error_message(error_unit,0,'group',group(i)%id,'the part used for this group does not exist')
-            else
-              tmp_part=part_iid(tmp_part)
-            end if
-          else
-            call fbem_error_message(error_unit,0,'group',group(i)%id,'the part used for this group does not exist')
-          end if
-          !write(*,*) 'part', part(tmp_part)%id, 'has', part(tmp_part)%n_nodes, 'nodes'
-          group(i)%n_objects=part(tmp_part)%n_nodes
-          allocate (group(i)%object(group(i)%n_objects))
-          do j=1,part(tmp_part)%n_nodes
-            group(i)%object(j)=part(tmp_part)%node(j)
-            !write(*,*) 'part', part(tmp_part)%id, 'has node', node(part(tmp_part)%node(j))%id
-          end do
-        end if
-        !
         ! BALL: group of nodes defined by node coordinates in an open region (ball shape)
         !
         ! Syntax:
-        ! <id_group> 'nodes' 'ball' <'interior' or 'exterior'> <center> <radius> <id part>
+        ! <id_group> nodes ball <"interior" or "exterior"> <center> <radius> <id part>
         !
         if (trim(tmp_built).eq.'ball') then
           tmp_check_built=.true.
@@ -267,7 +267,7 @@ subroutine read_groups(fileunit)
         ! BOX : group of nodes defined by node coordinates in an open region (box shape)
         !
         ! Syntax:
-        ! <id_group> 'nodes' 'box' <'interior' or 'exterior'> <xmin> <xmax> <ymin> <ymax> [<zmin> <zmax>] <id part>
+        ! <id_group> nodes box <"interior" or "exterior"> <xmin> <xmax> <ymin> <ymax> [<zmin> <zmax>] <id part>
         !
         if (trim(tmp_built).eq.'box') then
           tmp_check_built=.true.
@@ -397,7 +397,66 @@ subroutine read_groups(fileunit)
         group(i)%type=fbem_group_type_elements
         tmp_check_built=.false.
         !
-        ! LIST
+        ! ALL: group of all elements
+        !
+        ! Syntax:
+        ! <id_group> elements all
+        !
+        if (trim(tmp_built).eq.'all') then
+          tmp_check_built=.true.
+          group(i)%n_objects=0
+          ! Just to read something and move to the next line
+          read(fileunit,*) group(i)%id, tmp_type, tmp_built
+          ! Select all elements
+          do j=1,n_elements
+            if (element(j)%part.gt.0) then
+              group(i)%n_objects=group(i)%n_objects+1
+            end if
+          end do
+          allocate (group(i)%object(group(i)%n_objects))
+          k=0
+          do j=1,n_elements
+            if (element(j)%part.gt.0) then
+              k=k+1
+              group(i)%object(k)=j
+            end if
+          end do
+
+        end if
+        !
+        ! PART: group of elements defined by giving a part
+        !
+        ! Syntax:
+        ! <id_group> elements part <part_id>
+        !
+        if (trim(tmp_built).eq.'part') then
+          tmp_check_built=.true.
+          group(i)%n_objects=0
+          ! Read
+          read(fileunit,*) group(i)%id, tmp_type, tmp_built, tmp_part
+          ! Check tmp_part
+          if ((tmp_part.ge.part_eid_min).and.(tmp_part.le.part_eid_max)) then
+            if (part_iid(tmp_part).eq.0) then
+              call fbem_error_message(error_unit,0,'group',group(i)%id,'the part used for this group does not exist')
+            else
+              tmp_part=part_iid(tmp_part)
+            end if
+          else
+            call fbem_error_message(error_unit,0,'group',group(i)%id,'the part used for this group does not exist')
+          end if
+          !write(*,*) 'part', part(tmp_part)%id, 'has', part(tmp_part)%n_elements, 'elements'
+          group(i)%n_objects=part(tmp_part)%n_elements
+          allocate (group(i)%object(group(i)%n_objects))
+          do j=1,part(tmp_part)%n_elements
+            group(i)%object(j)=part(tmp_part)%element(j)
+            !write(*,*) 'part', part(tmp_part)%id, 'has node', node(part(tmp_part)%node(j))%id
+          end do
+        end if
+        !
+        ! LIST: group of elements defined by giving a list of elements
+        !
+        ! Syntax:
+        ! <id_group> elements list <N> <elem_1> <elem_2> ... <elem_N>
         !
         if (trim(tmp_built).eq.'list') then
           tmp_check_built=.true.
@@ -431,30 +490,253 @@ subroutine read_groups(fileunit)
             end if
           end do
         end if
+
+
+
+
+
+
+
+
+
+
         !
-        ! ALL
+        ! BALL (open region)
         !
-        if (trim(tmp_built).eq.'all') then
+        ! Syntax:
+        ! <id_group> elements ball <"interior" or "exterior"> <center> <radius> <id part>
+        !
+        if (trim(tmp_built).eq.'ball') then
           tmp_check_built=.true.
+          ! Read
+          read(fileunit,*) group(i)%id, tmp_type, tmp_built, tmp_top, tmp_center, tmp_radius, tmp_part
+          ! Check tmp_top
+          tmp_top_tag=0
+          if (trim(tmp_top).eq.'interior') tmp_top_tag=1
+          if (trim(tmp_top).eq.'exterior') tmp_top_tag=2
+          if (tmp_top_tag.eq.0) then
+            call fbem_error_message(error_unit,0,'group',group(i)%id,'this parameter must be "interior" or "exterior"')
+          end if
+          ! Check tmp_part
+          if ((tmp_part.ge.part_eid_min).and.(tmp_part.le.part_eid_max)) then
+            if (part_iid(tmp_part).eq.0) then
+              call fbem_error_message(error_unit,0,'group',group(i)%id,'the part used for this group does not exist')
+            else
+              tmp_part=part_iid(tmp_part)
+            end if
+          else
+            call fbem_error_message(error_unit,0,'group',group(i)%id,'the part used for this group does not exist')
+          end if
+          ! Collect the nodes
+          select case (tmp_top_tag)
+            ! INTERIOR BALL
+            case (1)
+              tmp_n_nodes=0
+              do j=1,part(tmp_part)%n_nodes
+                sn=part(tmp_part)%node(j)
+                if (sqrt(dot_product(node(sn)%x-tmp_center,node(sn)%x-tmp_center)).lt.tmp_radius) then
+                  tmp_n_nodes=tmp_n_nodes+1
+                end if
+              end do
+              allocate (tmp_node(tmp_n_nodes))
+              k=0
+              do j=1,part(tmp_part)%n_nodes
+                sn=part(tmp_part)%node(j)
+                if (sqrt(dot_product(node(sn)%x-tmp_center,node(sn)%x-tmp_center)).lt.tmp_radius) then
+                  k=k+1
+                  tmp_node(k)=part(tmp_part)%node(j)
+                end if
+              end do
+            ! EXTERIOR BALL
+            case (2)
+              tmp_n_nodes=0
+              do j=1,part(tmp_part)%n_nodes
+                sn=part(tmp_part)%node(j)
+                if (sqrt(dot_product(node(sn)%x-tmp_center,node(sn)%x-tmp_center)).gt.tmp_radius) then
+                  tmp_n_nodes=tmp_n_nodes+1
+                end if
+              end do
+              allocate (tmp_node(tmp_n_nodes))
+              k=0
+              do j=1,part(tmp_part)%n_nodes
+                sn=part(tmp_part)%node(j)
+                if (sqrt(dot_product(node(sn)%x-tmp_center,node(sn)%x-tmp_center)).gt.tmp_radius) then
+                  k=k+1
+                  tmp_node(k)=part(tmp_part)%node(j)
+                end if
+              end do
+          end select
+        end if
+        !
+        ! BOX (open region)
+        !
+        ! Syntax:
+        ! <id_group> elements box <"interior" or "exterior"> <xmin> <xmax> <ymin> <ymax> [<zmin> <zmax>] <id part>
+        !
+        if (trim(tmp_built).eq.'box') then
+          tmp_check_built=.true.
+          ! Read
+          read(fileunit,*) group(i)%id, tmp_type, tmp_built, tmp_top, xlimits(:,1:problem%n), tmp_part
+          ! Check tmp_top
+          tmp_top_tag=0
+          if (trim(tmp_top).eq.'interior') tmp_top_tag=1
+          if (trim(tmp_top).eq.'exterior') tmp_top_tag=2
+          if (tmp_top_tag.eq.0) then
+            call fbem_error_message(error_unit,0,'group',group(i)%id,'this parameter must be "interior" or "exterior"')
+          end if
+          ! Check tmp_part
+          if ((tmp_part.ge.part_eid_min).and.(tmp_part.le.part_eid_max)) then
+            if (part_iid(tmp_part).eq.0) then
+              call fbem_error_message(error_unit,0,'group',group(i)%id,'the part used for this group does not exist')
+            else
+              tmp_part=part_iid(tmp_part)
+            end if
+          else
+            call fbem_error_message(error_unit,0,'group',group(i)%id,'the part used for this group does not exist')
+          end if
+          ! Collect the nodes
+          select case (tmp_top_tag)
+            ! INTERIOR BOX
+            case (1)
+              select case (problem%n)
+                case (2)
+                  tmp_n_nodes=0
+                  do j=1,part(tmp_part)%n_nodes
+                    sn=part(tmp_part)%node(j)
+                    if ((node(sn)%x(1).gt.xlimits(1,1)).and.(node(sn)%x(1).lt.xlimits(2,1)).and.&
+                        (node(sn)%x(2).gt.xlimits(1,2)).and.(node(sn)%x(2).lt.xlimits(2,2))) then
+                      tmp_n_nodes=tmp_n_nodes+1
+                    end if
+                  end do
+                  allocate (tmp_node(tmp_n_nodes))
+                  k=0
+                  do j=1,part(tmp_part)%n_nodes
+                    sn=part(tmp_part)%node(j)
+                    if ((node(sn)%x(1).gt.xlimits(1,1)).and.(node(sn)%x(1).lt.xlimits(2,1)).and.&
+                        (node(sn)%x(2).gt.xlimits(1,2)).and.(node(sn)%x(2).lt.xlimits(2,2))) then
+                      k=k+1
+                      tmp_node(k)=part(tmp_part)%node(j)
+                    end if
+                  end do
+                case (3)
+                  tmp_n_nodes=0
+                  do j=1,part(tmp_part)%n_nodes
+                    sn=part(tmp_part)%node(j)
+                    if ((node(sn)%x(1).gt.xlimits(1,1)).and.(node(sn)%x(1).lt.xlimits(2,1)).and.&
+                        (node(sn)%x(2).gt.xlimits(1,2)).and.(node(sn)%x(2).lt.xlimits(2,2)).and.&
+                        (node(sn)%x(3).gt.xlimits(1,3)).and.(node(sn)%x(3).lt.xlimits(2,3))) then
+                      tmp_n_nodes=tmp_n_nodes+1
+                    end if
+                  end do
+                  allocate (tmp_node(tmp_n_nodes))
+                  k=0
+                  do j=1,part(tmp_part)%n_nodes
+                    sn=part(tmp_part)%node(j)
+                    if ((node(sn)%x(1).gt.xlimits(1,1)).and.(node(sn)%x(1).lt.xlimits(2,1)).and.&
+                        (node(sn)%x(2).gt.xlimits(1,2)).and.(node(sn)%x(2).lt.xlimits(2,2)).and.&
+                        (node(sn)%x(3).gt.xlimits(1,3)).and.(node(sn)%x(3).lt.xlimits(2,3))) then
+                      k=k+1
+                      tmp_node(k)=part(tmp_part)%node(j)
+                    end if
+                  end do
+              end select
+            ! EXTERIOR BOX
+            case (2)
+              select case (problem%n)
+                case (2)
+                  tmp_n_nodes=0
+                  do j=1,part(tmp_part)%n_nodes
+                    sn=part(tmp_part)%node(j)
+                    if ((node(sn)%x(1).lt.xlimits(1,1)).or.(node(sn)%x(1).gt.xlimits(2,1)).or.&
+                        (node(sn)%x(2).lt.xlimits(1,2)).or.(node(sn)%x(2).gt.xlimits(2,2))) then
+                      tmp_n_nodes=tmp_n_nodes+1
+                    end if
+                  end do
+                  allocate (tmp_node(tmp_n_nodes))
+                  k=0
+                  do j=1,part(tmp_part)%n_nodes
+                    sn=part(tmp_part)%node(j)
+                    if ((node(sn)%x(1).lt.xlimits(1,1)).or.(node(sn)%x(1).gt.xlimits(2,1)).or.&
+                        (node(sn)%x(2).lt.xlimits(1,2)).or.(node(sn)%x(2).gt.xlimits(2,2))) then
+                      k=k+1
+                      tmp_node(k)=part(tmp_part)%node(j)
+                    end if
+                  end do
+                case (3)
+                  tmp_n_nodes=0
+                  do j=1,part(tmp_part)%n_nodes
+                    sn=part(tmp_part)%node(j)
+                    if ((node(sn)%x(1).lt.xlimits(1,1)).or.(node(sn)%x(1).gt.xlimits(2,1)).or.&
+                        (node(sn)%x(2).lt.xlimits(1,2)).or.(node(sn)%x(2).gt.xlimits(2,2)).or.&
+                        (node(sn)%x(3).lt.xlimits(1,3)).or.(node(sn)%x(3).gt.xlimits(2,3))) then
+                      tmp_n_nodes=tmp_n_nodes+1
+                    end if
+                  end do
+                  allocate (tmp_node(tmp_n_nodes))
+                  k=0
+                  do j=1,part(tmp_part)%n_nodes
+                    sn=part(tmp_part)%node(j)
+                    if ((node(sn)%x(1).lt.xlimits(1,1)).or.(node(sn)%x(1).gt.xlimits(2,1)).or.&
+                        (node(sn)%x(2).lt.xlimits(1,2)).or.(node(sn)%x(2).gt.xlimits(2,2)).or.&
+                        (node(sn)%x(3).lt.xlimits(1,3)).or.(node(sn)%x(3).gt.xlimits(2,3))) then
+                      k=k+1
+                      tmp_node(k)=part(tmp_part)%node(j)
+                    end if
+                  end do
+              end select
+          end select
+        end if
+        !
+        ! Put in the group those elements that has all their nodes within the bounding ball or box
+        !
+        if ((trim(tmp_built).eq.'ball').or.(trim(tmp_built).eq.'box')) then
           group(i)%n_objects=0
-
-          ! Just to read something and move to the next line
-          read(fileunit,*) group(i)%id, tmp_type, tmp_built
-
           do j=1,n_elements
-            if (element(j)%part.gt.0) then
-              group(i)%n_objects=group(i)%n_objects+1
+            if (element(j)%part.eq.tmp_part) then
+              tmp_complete=.true.
+              do l=1,element(j)%n_nodes
+                sn=element(j)%node(l)
+                tmp_exists=.false.
+                do m=1,tmp_n_nodes
+                  if (tmp_node(m).eq.sn) then
+                    tmp_exists=.true.
+                  end if
+                end do
+                if (tmp_exists.eqv.(.false.)) then
+                  tmp_complete=.false.
+                  exit
+                end if
+              end do
+              if (tmp_complete) group(i)%n_objects=group(i)%n_objects+1
+              exit
             end if
           end do
           allocate (group(i)%object(group(i)%n_objects))
           k=0
           do j=1,n_elements
-            if (element(j)%part.gt.0) then
-              k=k+1
-              group(i)%object(k)=j
+            if (element(j)%part.eq.tmp_part) then
+              tmp_complete=.true.
+              do l=1,element(j)%n_nodes
+                sn=element(j)%node(l)
+                tmp_exists=.false.
+                do m=1,tmp_n_nodes
+                  if (tmp_node(m).eq.sn) then
+                    tmp_exists=.true.
+                  end if
+                end do
+                if (tmp_exists.eqv.(.false.)) then
+                  tmp_complete=.false.
+                  exit
+                end if
+              end do
+              if (tmp_complete) then
+                k=k+1
+                group(i)%object(k)=j
+              end if
+              exit
             end if
           end do
-
+          deallocate (tmp_node)
         end if
         !
         ! CASE DEFAULT
