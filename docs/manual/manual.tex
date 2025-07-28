@@ -1824,7 +1824,29 @@ To be documented.
 \subsection{Groups}
 \label{sec:groups}
 
-To be documented.
+Groups are sets of entities of similar nature used to assign similar boundary conditions, settings or other attributes. There can be groups of nodes or groups of elements (but not mixed), and there are several ways to gather the nodes or elements of each group:
+\begin{itemize}
+  \item Create a group containing all nodes or elements.
+  \item Create a group containing all nodes or elements belonging of a given part.
+  \item Create a group containing the nodes or elements indicated in a list.
+  \item Create a group containing all nodes or elements in the interior or exterior of a bounding ball or box.
+\end{itemize}
+The format for the data section in each case is:
+\begin{Verbatim}[frame=single, fontsize=\small, label={general format of section [groups]}]
+[groups]
+<n = number of groups>
+<group id> nodes all 
+<group id> nodes part <part_id> 
+<group id> nodes list <N = number of nodes> <node 1> <node 2> ... <node N>
+<group id> nodes ball <"interior" or "exterior"> <center> <radius> <id part>
+<group id> nodes box <"interior" or "exterior"> <xmin> <xmax> <ymin> <ymax> [<zmin> <zmax>] <id part>
+<group id> elements all
+<group id> elements part <part_id> 
+<group id> elements list <N = number of elements> <element 1> <element 2> ... <element N>
+<group id> elements ball <"interior" or "exterior"> <center> <radius> <id part>
+<group id> elements box <"interior" or "exterior"> <xmin> <xmax> <ymin> <ymax> [if 3D: <zmin> <zmax>] <id part>
+...
+\end{Verbatim} 
 
 \section{Model conditions}
 
