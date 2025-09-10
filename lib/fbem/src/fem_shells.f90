@@ -2438,7 +2438,7 @@ contains
       case (13,14)
         mitc_interpolation_scheme_phi(1)=1.d0
         mitc_interpolation_scheme_phi(2)=xi(1)
-        mitc_interpolation_scheme_phi(2)=xi(2)
+        mitc_interpolation_scheme_phi(3)=xi(2)
       !
       ! Linear edges. Special isotropic MITC6a shear strainsinterpolation. Lee & Bathe (2004)
       !
