@@ -248,9 +248,10 @@ subroutine read_input_file
   ! PROCESS CONDITIONS AT FEM MESH
   !
   !   1. Assign default conditions over FEM elements.
-  !   2. Read conditions over FEM elements.
+  !   2. Read and assign conditions over FEM elements.
   !   3. Assign default conditions over FEM nodes.
   !   4. Read conditions over FEM nodes.
+  !   5. Assign constraints due to symmetry planes.
   !
   if (n_fe_regions.gt.0) then
     ! FEM elements
