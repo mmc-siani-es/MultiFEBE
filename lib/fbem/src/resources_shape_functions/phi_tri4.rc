@@ -2,7 +2,13 @@ aux(3)=1.0d0/(1.0d0-delta)
 aux(4)=-0.333333333333333333d0*delta
 aux(1)=(xi(1)+aux(4))*aux(3)
 aux(2)=(xi(2)+aux(4))*aux(3)
-phi(1)=1.d0-aux(1)-aux(2)-3.d0*aux(1)*aux(2)
-phi(2)=aux(1)*(1.d0-3.d0*aux(2))
-phi(3)=aux(2)*(1.d0-3.d0*aux(1))
-phi(4)=9.d0*aux(1)*aux(2)
+! Quadratic bubble function (only null at nodes)
+!phi(1)=aux(1)*(1.d0-3.d0*aux(2))
+!phi(2)=aux(2)*(1.d0-3.d0*aux(1))
+!phi(3)=1.d0-aux(1)-aux(2)-3.d0*aux(1)*aux(2)
+!phi(4)=9.d0*aux(1)*aux(2)
+! Cubic bubble function (null shape function along edges)
+phi(4)=27.d0*aux(1)*aux(2)*(1.d0-aux(1)-aux(2))
+phi(1)=aux(1)-phi(4)/3.d0
+phi(2)=aux(2)-phi(4)/3.d0
+phi(3)=1-aux(1)-aux(2)-phi(4)/3.d0
