@@ -2585,6 +2585,7 @@ contains
     ! Index 4: surface point index
     ! Index 5: covariant strain component (e11,e22,e12,e13,e23)
     !
+
     real(kind=real64) :: cBtp(5,fbem_n_nodes(etype),ngpth,9,5)
     !
     ! Covariant B_ij used for interpolation, not necessarily at values at tying points. Necessary for MITC3 and MITC6. Here
@@ -4853,58 +4854,327 @@ contains
     end do
   end subroutine fbem_fem_degshell_L_load
 
-  ! Stress resultants extrapolated from Gauss points. Remember Fsigma must be later multiplied by E (Young modulus)
-  subroutine fbem_fem_degshell_stress_resultants(etype,x_midnodes,v_midnode,t_midnodes,x1ref,nu,kappa,setype,sedelta,Fsigma)
+!  ! Stress resultants extrapolated from Gauss points. Remember Fsigma must be later multiplied by E (Young modulus)
+!  subroutine fbem_fem_degshell_stress_resultants(etype,x_midnodes,v_midnode,t_midnodes,x1ref,nu,kappa,setype,sedelta,Fsigma)
+!    implicit none
+!    ! I/O
+!    integer           :: etype                              !! Type of element (displacements interpolation): tri3, tri6, quad4, quad8, quad9.
+!    real(kind=real64) :: x_midnodes(3,fbem_n_nodes(etype))  !! Position vectors of the mid-plane nodes.
+!    real(kind=real64) :: v_midnode(3,3,fbem_n_nodes(etype)) !! Local axes for each mid-node for the rotation degrees of freedom.
+!    real(kind=real64) :: t_midnodes(3,fbem_n_nodes(etype))  !! Thickness of each mid-node in each direction (only v_3 makes sense).
+!    real(kind=real64) :: x1ref(3)                           !! Reference vector for x' direction (if 0, t1 is taken as ep1)
+!    real(kind=real64) :: nu                                 !! Poisson's ratio
+!    real(kind=real64) :: kappa(3)                           !! Shear correction factors: kx', ky',-
+!    integer           :: setype                             !! Stress interpolation: type of interpolation
+!    real(kind=real64) :: sedelta                            !! Stress interpolation: delta of type of interpolation
+!    real(kind=real64), allocatable :: Fsigma(:,:,:)         !! Stress resultants matrix at interpolation points (without multiplying by E). Criterio signos Oñate.fig 8.9
+!    ! Local
+!    integer           :: ksp
+!    real(kind=real64), allocatable :: sephi(:)                ! Stress interpolation: shape function values
+!    real(kind=real64) :: xi_sp(2)
+!    integer           :: ngpth                                ! Number of Gauss-Legendre integration points for thickness coordinate (xi3)
+!    integer           :: n_midnodes                           ! Number of mid-nodes
+!    integer           :: kmidnode                             ! Counter of mid-nodes
+!    integer           :: kxi1, kxi2, kxi3, kxit               ! Integration points counters
+!    real(kind=real64) :: xi1, xi2, xi3, xi(2), w1, w2, w3, wt ! Curvilinear coordinates and quadrature weights
+!    real(kind=real64) :: aux(10)                              ! Auxiliary variable needed for shape_functions module resources
+!    real(kind=real64) :: phi(fbem_n_nodes(etype))             ! phi shape functions
+!    real(kind=real64) :: dphidxi1(fbem_n_nodes(etype))        ! phi shape functions derivatives with respect to xi_1
+!    real(kind=real64) :: dphidxi2(fbem_n_nodes(etype))        ! phi shape functions derivatives with respect to xi_2
+!    real(kind=real64) :: dphidxi3(fbem_n_nodes(etype))        ! phi shape functions derivatives with respect to xi_3
+!    real(kind=real64) :: varphi(fbem_n_nodes(etype))          ! varphi shape functions
+!    real(kind=real64) :: dvarphidxi1(fbem_n_nodes(etype))     ! varphi shape functions derivatives with respect to xi_1
+!    real(kind=real64) :: dvarphidxi2(fbem_n_nodes(etype))     ! varphi shape functions derivatives with respect to xi_2
+!    real(kind=real64) :: dvarphidxi3(fbem_n_nodes(etype))     ! varphi shape functions derivatives with respect to xi_3
+!    real(kind=real64) :: t3_midnodes(fbem_n_nodes(etype))
+!    real(kind=real64) :: J(3,3), H(3,3), detJ                 ! Jacobian matrix, its inverse and the jacobian determinant
+!    real(kind=real64) :: jw, zp, r(3)                         ! det(J) * weights
+!    real(kind=real64) :: T1(3), T2(3), N(3)                   ! Derivatives of position with respect to curvilinear coordinates and the normal vector to the mid-plane
+!    real(kind=real64) :: ep1(3), ep2(3), ep3(3)               ! Local ortogonal axes
+!    real(kind=real64) :: E(5,6)                               ! E matrix
+!    real(kind=real64) :: G(6,9)                               ! G matrix
+!    real(kind=real64) :: M(9,5)                               ! M matrix (shape function matrices derivatives)
+!    real(kind=real64) :: Bp(5,5,fbem_n_nodes(etype))          ! B' matrix
+!    real(kind=real64) :: B(6,5,fbem_n_nodes(etype))           ! B matrix
+!    real(kind=real64) :: Dp(5,5)                              ! D' constitutive matrix (local coordinates)
+!    integer           :: ki, kis, kie, kj, kjs, kje           ! Counters and nodal DOF limits
+!    !
+!    ! Initialization
+!    !
+!    ! Number of integration points along thickness direction
+!    ngpth=2
+!    ! Number of mid-nodes
+!    n_midnodes=fbem_n_nodes(etype)
+!    t3_midnodes=t_midnodes(3,:)
+!    ! Local constitutive matrix D'
+!    Dp=0.d0
+!    Dp(1,1)=1.d0
+!    Dp(1,2)=nu
+!    Dp(2,1)=nu
+!    Dp(2,2)=1.d0
+!    Dp(3,3)=0.5d0*(1.d0-nu)
+!    Dp(4,4)=kappa(1)*0.5d0*(1.d0-nu)
+!    Dp(5,5)=kappa(2)*0.5d0*(1.d0-nu)
+!    Dp=1.d0/(1.d0-nu**2)*Dp
+!    ! Select the stress interpolation scheme
+!    select case (etype)
+!      case (fbem_tri3)
+!        setype=fbem_tri1
+!        sedelta=0.d0
+!      case (fbem_tri6)
+!        setype=fbem_tri4
+!        sedelta=0.6d0
+!      case (fbem_quad4)
+!        setype=fbem_quad1
+!        sedelta=0.d0
+!      case (fbem_quad8,fbem_quad9)
+!        setype=fbem_quad4
+!        sedelta=0.42264973d0
+!      case default
+!        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'etype={tri3,tri6,quad4,quad8,quad9}')
+!    end select
+!    ! Sin interpolacion desde puntos de Gauss
+!    !setype=etype
+!    !sedelta=0
+!    ! Local stress resultants matrix at interpolation points
+!    allocate(Fsigma(8,5*n_midnodes,fbem_n_nodes(setype)))
+!    Fsigma=0.
+!    !
+!    ! Loops through sampling points
+!    !
+!    do ksp=1,fbem_n_nodes(setype)
+!      ! Sampling points coordinates
+!#     define node ksp
+!#     define etype setype
+!#     define delta sedelta
+!#     define xi xi_sp
+!#     include <xi_2d_at_node.rc>
+!#     undef node
+!#     undef etype
+!#     undef delta
+!#     undef xi
+!      xi1=xi_sp(1)
+!      xi2=xi_sp(2)
+!      !
+!      ! Integrate along xi3 at mid-surface point (xi1,xi2)
+!      !
+!      do kxi3=1,ngpth
+!        ! xi_3 and w_3
+!        xi3=gl11_xi(kxi3,ngpth)
+!        w3=gl11_w(kxi3,ngpth)
+!        ! In-plane shape functions and their first derivatives with respect to xi_1, xi_2 and xi_3 at (xi_1,xi_2,xi_3)
+!        xi(1)=xi1
+!        xi(2)=xi2
+!#       define delta 0.0d0
+!#       include <phi_and_dphidxik_2d.rc>
+!#       undef delta
+!        dphidxi3=0.d0
+!        ! Thickness shape function and its derivative with respect to xi_1, xi_2 and xi_3 at (xi_1,xi_2,xi_3)
+!        varphi=phi*0.5d0*xi3*t3_midnodes
+!        dvarphidxi1=dphidxi1*0.5d0*xi3*t3_midnodes
+!        dvarphidxi2=dphidxi2*0.5d0*xi3*t3_midnodes
+!        dvarphidxi3=phi*0.5d0*t3_midnodes
+!        ! Calculate position vector x, and Jacobian matrix at (xi_1,xi_2,xi_3)
+!        J=0.d0
+!        do kmidnode=1,n_midnodes
+!          J(1,:)=J(1,:)+dphidxi1(kmidnode)*x_midnodes(:,kmidnode)+dvarphidxi1(kmidnode)*v_midnode(:,3,kmidnode)
+!          J(2,:)=J(2,:)+dphidxi2(kmidnode)*x_midnodes(:,kmidnode)+dvarphidxi2(kmidnode)*v_midnode(:,3,kmidnode)
+!          J(3,:)=J(3,:)+dphidxi3(kmidnode)*x_midnodes(:,kmidnode)+dvarphidxi3(kmidnode)*v_midnode(:,3,kmidnode)
+!        end do
+!        call fbem_invert_3x3_matrix(J,H,detJ)
+!        ! Calculate local orthogonal system of coordinates (ep_1,ep_2,ep_3) at (xi_1,xi_2,xi_3)
+!        ! Tangents T1 and T2
+!        T1=J(1,:)
+!        T2=J(2,:)
+!        ! Calculate N (normal vector) as T1 x T2 at (xi_1,xi_2,0)
+!        N(1)=T1(2)*T2(3)-T1(3)*T2(2)
+!        N(2)=T1(3)*T2(1)-T1(1)*T2(3)
+!        N(3)=T1(1)*T2(2)-T1(2)*T2(1)
+!        ! Local coordinates system
+!        call fbem_fem_degshell_stress_resultants_ep(N,T1,x1ref,ep1,ep2,ep3)
+!        ! Global (x) to local (x') tensor transformation matrix
+!        E=0.d0
+!        E(1,1:3)=ep1**2
+!        E(1,4)=ep1(1)*ep1(2)
+!        E(1,5)=ep1(2)*ep1(3)
+!        E(1,6)=ep1(1)*ep1(3)
+!        E(2,1:3)=ep2**2
+!        E(2,4)=ep2(1)*ep2(2)
+!        E(2,5)=ep2(2)*ep2(3)
+!        E(2,6)=ep2(1)*ep2(3)
+!        E(3,1)=ep1(1)*ep2(1)
+!        E(3,2)=ep1(2)*ep2(2)
+!        E(3,3)=ep1(3)*ep2(3)
+!        E(4,1)=ep2(1)*ep3(1)
+!        E(4,2)=ep2(2)*ep3(2)
+!        E(4,3)=ep2(3)*ep3(3)
+!        E(5,1)=ep1(1)*ep3(1)
+!        E(5,2)=ep1(2)*ep3(2)
+!        E(5,3)=ep1(3)*ep3(3)
+!        E(3:5,1:3)=2.d0*E(3:5,1:3)
+!        E(3,4)=ep1(1)*ep2(2)+ep1(2)*ep2(1)
+!        E(3,5)=ep1(2)*ep2(3)+ep1(3)*ep2(2)
+!        E(3,6)=ep1(1)*ep2(3)+ep1(3)*ep2(1)
+!        E(4,4)=ep2(1)*ep3(2)+ep2(2)*ep3(1)
+!        E(4,5)=ep2(2)*ep3(3)+ep2(3)*ep3(2)
+!        E(4,6)=ep2(1)*ep3(3)+ep2(3)*ep3(1)
+!        E(5,4)=ep1(1)*ep3(2)+ep1(2)*ep3(1)
+!        E(5,5)=ep1(2)*ep3(3)+ep1(3)*ep3(2)
+!        E(5,6)=ep1(1)*ep3(3)+ep1(3)*ep3(1)
+!        ! Derivative transformation matrix for curvilinear to global cartesian tensor transformation
+!        G=0.d0
+!        G(1,1)=H(1,1)
+!        G(2,2)=H(2,1)
+!        G(3,3)=H(3,1)
+!        G(4,1)=H(2,1)
+!        G(4,2)=H(1,1)
+!        G(5,2)=H(3,1)
+!        G(5,3)=H(2,1)
+!        G(6,1)=H(3,1)
+!        G(6,3)=H(1,1)
+!        G(1,4)=H(1,2)
+!        G(2,5)=H(2,2)
+!        G(3,6)=H(3,2)
+!        G(4,4)=H(2,2)
+!        G(4,5)=H(1,2)
+!        G(5,5)=H(3,2)
+!        G(5,6)=H(2,2)
+!        G(6,4)=H(3,2)
+!        G(6,6)=H(1,2)
+!        G(1,7)=H(1,3)
+!        G(2,8)=H(2,3)
+!        G(3,9)=H(3,3)
+!        G(4,7)=H(2,3)
+!        G(4,8)=H(1,3)
+!        G(5,8)=H(3,3)
+!        G(5,9)=H(2,3)
+!        G(6,7)=H(3,3)
+!        G(6,9)=H(1,3)
+!        ! Build matrix B for all nodes
+!        do kmidnode=1,n_midnodes
+!          ! Matrix of derivatives of shape functions matrices with respect to xi1, xi2 and xi3
+!          M=0.d0
+!          M(  1,1)= dphidxi1(kmidnode)
+!          M(  2,2)= dphidxi1(kmidnode)
+!          M(  3,3)= dphidxi1(kmidnode)
+!          M(1:3,4)= dvarphidxi1(kmidnode)*v_midnode(:,1,kmidnode)
+!          M(1:3,5)=-dvarphidxi1(kmidnode)*v_midnode(:,2,kmidnode)
+!          M(  4,1)= dphidxi2(kmidnode)
+!          M(  5,2)= dphidxi2(kmidnode)
+!          M(  6,3)= dphidxi2(kmidnode)
+!          M(4:6,4)= dvarphidxi2(kmidnode)*v_midnode(:,1,kmidnode)
+!          M(4:6,5)=-dvarphidxi2(kmidnode)*v_midnode(:,2,kmidnode)
+!          M(  7,1)= dphidxi3(kmidnode)
+!          M(  8,2)= dphidxi3(kmidnode)
+!          M(  9,3)= dphidxi3(kmidnode)
+!          M(7:9,4)= dvarphidxi3(kmidnode)*v_midnode(:,1,kmidnode)
+!          M(7:9,5)=-dvarphidxi3(kmidnode)*v_midnode(:,2,kmidnode)
+!          ! B matrix for kmidnode
+!          B(:,:,kmidnode)=matmul(G,M)
+!          ! B' matrix for kmidnode
+!          Bp(:,:,kmidnode)=matmul(E,B(:,:,kmidnode))
+!        end do
+!        ! |J(3,:)| * weight
+!        jw=sqrt(dot_product(J(3,:),J(3,:)))*w3
+!        ! Distance z'
+!        ! Distance vector between (xi1,xi2,0)->(xi1,xi2,xi3)
+!        r=0
+!        do kmidnode=1,n_midnodes
+!          r=r+varphi(kmidnode)*v_midnode(:,3,kmidnode)
+!        end do
+!        ! Projection
+!        zp=dot_product(r,ep3)
+!        ! Build the stress resultants matrix at (xi1,xi2)
+!        do kj=1,n_midnodes
+!          kjs=(kj-1)*5+1
+!          kje=kjs+4
+!          Fsigma(1:3,kjs:kje,ksp)=Fsigma(1:3,kjs:kje,ksp)+matmul(Dp(1:3,:),Bp(:,:,kj))*jw             ! In-plane membrane forces: Nx', Ny' and Nx'y'
+!          Fsigma(4:6,kjs:kje,ksp)=Fsigma(4:6,kjs:kje,ksp)-matmul(Dp(1:3,:),Bp(:,:,kj))*zp*jw          ! Bending moments: Mx', My' and Mx'y'
+!          Fsigma(  7,kjs:kje,ksp)=Fsigma(  7,kjs:kje,ksp)+matmul(Dp(  5,:),Bp(:,:,kj))*jw             ! Out-plane shear forces: Vx'
+!          Fsigma(  8,kjs:kje,ksp)=Fsigma(  8,kjs:kje,ksp)+matmul(Dp(  4,:),Bp(:,:,kj))*jw             ! Out-plane shear forces: Vy'
+!        end do
+!      end do ! Integrate along xi3 at mid-surface point (xi1,xi2)
+!    end do ! Loop through interpolation points
+!  end subroutine fbem_fem_degshell_stress_resultants
+
+  ! Stress resultants using selected interpolation. Remember Fsigma must be later multiplied by E (Young modulus)
+  subroutine fbem_fem_degshell_stress_resultants(etype,x_mn,v_mn,t_mn,x1ref,nu,kappa,setype,sedelta,Fsigma)
     implicit none
     ! I/O
-    integer           :: etype                              !! Type of element (displacements interpolation): tri3, tri6, quad4, quad8, quad9.
-    real(kind=real64) :: x_midnodes(3,fbem_n_nodes(etype))  !! Position vectors of the mid-plane nodes.
-    real(kind=real64) :: v_midnode(3,3,fbem_n_nodes(etype)) !! Local axes for each mid-node for the rotation degrees of freedom.
-    real(kind=real64) :: t_midnodes(3,fbem_n_nodes(etype))  !! Thickness of each mid-node in each direction (only v_3 makes sense).
-    real(kind=real64) :: x1ref(3)                           !! Reference vector for x' direction (if 0, t1 is taken as ep1)
-    real(kind=real64) :: nu                                 !! Poisson's ratio
-    real(kind=real64) :: kappa(3)                           !! Shear correction factors: kx', ky',-
-    integer           :: setype                             !! Stress interpolation: type of interpolation
-    real(kind=real64) :: sedelta                            !! Stress interpolation: delta of type of interpolation
-    real(kind=real64), allocatable :: Fsigma(:,:,:)         !! Stress resultants matrix at interpolation points (without multiplying by E). Criterio signos Oñate.fig 8.9
+    integer           :: etype                                          !! Type of element (displacements interpolation): tri3, tri6, quad4, quad8, quad9.
+    real(kind=real64) :: x_mn(3,fbem_n_nodes(etype))                    !! Position vectors of the mid-plane nodes.
+    real(kind=real64) :: v_mn(3,3,fbem_n_nodes(etype))                  !! Local axes for each mid-node for the rotation degrees of freedom.
+    real(kind=real64) :: t_mn(3,fbem_n_nodes(etype))                    !! Thickness of each mid-node in each direction (only v_3 makes sense).
+    real(kind=real64) :: x1ref(3)                                       !! Reference vector for x' direction (if 0, t1 is taken as ep1)
+    real(kind=real64) :: nu                                             !! Poisson's ratio
+    real(kind=real64) :: kappa(3)                                       !! Shear correction factors: kx', ky',-
+    integer           :: setype                                         !! Stress interpolation: type of interpolation
+    real(kind=real64) :: sedelta                                        !! Stress interpolation: delta of type of interpolation
+    real(kind=real64), allocatable :: Fsigma(:,:,:)                     !! Stress resultants matrix at interpolation points (without multiplying by E). Criterio signos Oñate.fig 8.9
     ! Local
     integer           :: ksp
-    real(kind=real64), allocatable :: sephi(:)                ! Stress interpolation: shape function values
     real(kind=real64) :: xi_sp(2)
-    integer           :: ngpth                                ! Number of Gauss-Legendre integration points for thickness coordinate (xi3)
-    integer           :: n_midnodes                           ! Number of mid-nodes
-    integer           :: kmidnode                             ! Counter of mid-nodes
-    integer           :: kxi1, kxi2, kxi3, kxit               ! Integration points counters
-    real(kind=real64) :: xi1, xi2, xi3, xi(2), w1, w2, w3, wt ! Curvilinear coordinates and quadrature weights
-    real(kind=real64) :: aux(10)                              ! Auxiliary variable needed for shape_functions module resources
-    real(kind=real64) :: phi(fbem_n_nodes(etype))             ! phi shape functions
-    real(kind=real64) :: dphidxi1(fbem_n_nodes(etype))        ! phi shape functions derivatives with respect to xi_1
-    real(kind=real64) :: dphidxi2(fbem_n_nodes(etype))        ! phi shape functions derivatives with respect to xi_2
-    real(kind=real64) :: dphidxi3(fbem_n_nodes(etype))        ! phi shape functions derivatives with respect to xi_3
-    real(kind=real64) :: varphi(fbem_n_nodes(etype))          ! varphi shape functions
-    real(kind=real64) :: dvarphidxi1(fbem_n_nodes(etype))     ! varphi shape functions derivatives with respect to xi_1
-    real(kind=real64) :: dvarphidxi2(fbem_n_nodes(etype))     ! varphi shape functions derivatives with respect to xi_2
-    real(kind=real64) :: dvarphidxi3(fbem_n_nodes(etype))     ! varphi shape functions derivatives with respect to xi_3
-    real(kind=real64) :: t3_midnodes(fbem_n_nodes(etype))
-    real(kind=real64) :: J(3,3), H(3,3), detJ                 ! Jacobian matrix, its inverse and the jacobian determinant
-    real(kind=real64) :: jw, zp, r(3)                         ! det(J) * weights
-    real(kind=real64) :: T1(3), T2(3), N(3)                   ! Derivatives of position with respect to curvilinear coordinates and the normal vector to the mid-plane
-    real(kind=real64) :: ep1(3), ep2(3), ep3(3)               ! Local ortogonal axes
-    real(kind=real64) :: E(5,6)                               ! E matrix
-    real(kind=real64) :: G(6,9)                               ! G matrix
-    real(kind=real64) :: M(9,5)                               ! M matrix (shape function matrices derivatives)
-    real(kind=real64) :: Bp(5,5,fbem_n_nodes(etype))          ! B' matrix
-    real(kind=real64) :: B(6,5,fbem_n_nodes(etype))           ! B matrix
-    real(kind=real64) :: Dp(5,5)                              ! D' constitutive matrix (local coordinates)
-    integer           :: ki, kis, kie, kj, kjs, kje           ! Counters and nodal DOF limits
+    integer, parameter:: ngpth=2                                        !! Number of Gauss-Legendre integration points for thickness coordinate (xi3)
+    integer           :: n_mn                                           !! Number of mid-nodes
+    integer           :: kmn                                            !! Counter of mid-nodes
+    integer           :: kxi1, kxi2, kxi3, kxit, ksf                    !! Integration points counters
+    real(kind=real64) :: xi1, xi2, xi3, xi(2), w1, w2, w3, wt           !! Curvilinear coordinates and quadrature weights
+    real(kind=real64) :: aux(10)                                        !! Auxiliary variable needed for shape_functions module resources
+    real(kind=real64) :: phi(fbem_n_nodes(etype))                       !! phi shape functions
+    real(kind=real64) :: dphidxi1(fbem_n_nodes(etype))                  !! phi shape functions derivatives with respect to xi_1
+    real(kind=real64) :: dphidxi2(fbem_n_nodes(etype))                  !! phi shape functions derivatives with respect to xi_2
+    real(kind=real64) :: dphidxi3(fbem_n_nodes(etype))                  !! phi shape functions derivatives with respect to xi_3
+    real(kind=real64) :: varphi(fbem_n_nodes(etype))                    !! varphi shape functions
+    real(kind=real64) :: dvarphidxi1(fbem_n_nodes(etype))               !! varphi shape functions derivatives with respect to xi_1
+    real(kind=real64) :: dvarphidxi2(fbem_n_nodes(etype))               !! varphi shape functions derivatives with respect to xi_2
+    real(kind=real64) :: dvarphidxi3(fbem_n_nodes(etype))               !! varphi shape functions derivatives with respect to xi_3
+    real(kind=real64) :: t3_mn(fbem_n_nodes(etype))
+    real(kind=real64) :: J(3,3), H(3,3), detJ                           !! Jacobian matrix, its inverse and the jacobian determinant
+    real(kind=real64) :: jw, zp, r(3)                                   !! det(J) * weights
+    real(kind=real64) :: T1(3), T2(3), N(3)                             !! Derivatives of position with respect to curvilinear coordinates and the normal vector to the mid-plane
+    real(kind=real64) :: ep1(3), ep2(3), ep3(3)                         !! Local ortogonal axes
+    real(kind=real64) :: E(5,6)                                         !! E matrix (global cartesian to local cartesian rotation matrix for tensors)
+    real(kind=real64) :: G(6,5)                                         !! G matrix (curvilinear to global cartesian rotation matrix for tensors)
+    real(kind=real64) :: EG(5,5)                                        !! E·G
+    real(kind=real64) :: Bp(5,5,fbem_n_nodes(etype))                    !! B' matrix
+    real(kind=real64) :: B(6,5,fbem_n_nodes(etype))                     !! B matrix
+    real(kind=real64) :: Bc(5,5,fbem_n_nodes(etype))                    !! Covariant element B matrix
+    real(kind=real64) :: Dc(5,5)                                        !! Dc constitutive matrix (curvilinear coordinates)
+    real(kind=real64) :: Dp(5,5)                                        !! D' constitutive matrix (local coordinates)
+    integer           :: ki,kis,kie,kj,kjs,kje,ksc,k1,k2                !! Counters and nodal DOF limits
+    real(kind=real64) :: gv1(3), gv2(3), gv3(3)                         !! Covariant basis vectors
+    real(kind=real64) :: gn1(3), gn2(3), gn3(3)                         !! Contravariant basis vectors
+    real(kind=real64) :: dNdxi1(3,5), dNdxi2(3,5), dNdxi3(3,5)
+    ! Covariant strains are ordered as: in-layer strains (e11, e22, e12), transverse shear strains (e13, e23)
+    integer           :: itype(5)      ! Interpolation scheme of each strain component
+    real(kind=real64) :: ipars(2,5)    ! Parameters for custom positioning of tying points
+    integer           :: n_tp(5)       ! Number of tying points of each covariant strain component
+    real(kind=real64) :: xi_tp(2,9,5)  ! Position in curvilinear coordinates tying points
+    real(kind=real64) :: phi_tp(9,5)   ! Shape functions for strain interpolation
+    !
+    ! Covariant B_ij matrix (B11,B22,B12,B13,B23) with 5 nodal DOF for each node k at each tying point (surface, thickness).
+    ! Index 1: nodal DOF (u1,u2,u3,alpha,beta)
+    ! Index 2: node (1,2,...,N)
+    ! Index 3: thickness point index
+    ! Index 4: surface point index
+    ! Index 5: covariant strain component (e11,e22,e12,e13,e23)
+    !
+
+    real(kind=real64) :: cBtp(5,fbem_n_nodes(etype),ngpth,9,5)
+    !
+    ! Covariant B_ij used for interpolation, not necessarily at values at tying points. Necessary for MITC3 and MITC6. Here
+    ! different covariant strains at tying points are combined to form interpolation parameter a,b,c,d,...
+    !
+    real(kind=real64) :: cBpar(5,fbem_n_nodes(etype),ngpth,9,5)
     !
     ! Initialization
-    !
-    ! Number of integration points along thickness direction
-    ngpth=2
     ! Number of mid-nodes
-    n_midnodes=fbem_n_nodes(etype)
-    t3_midnodes=t_midnodes(3,:)
+    n_mn=fbem_n_nodes(etype)
+    ! Thickness in the v3 direction
+    t3_mn=t_mn(3,:)
+    ! Initialización of MITC interpolation
+    itype=0
+    ipars=0
     ! Local constitutive matrix D'
     Dp=0.d0
     Dp(1,1)=1.d0
@@ -4915,29 +5185,428 @@ contains
     Dp(4,4)=kappa(1)*0.5d0*(1.d0-nu)
     Dp(5,5)=kappa(2)*0.5d0*(1.d0-nu)
     Dp=1.d0/(1.d0-nu**2)*Dp
-    ! Select the stress interpolation scheme
+    ! Interpolate from stress at nodes
+    setype=etype
+    sedelta=0
+    ! Interpolate from stress at Gauss points
     select case (etype)
       case (fbem_tri3)
         setype=fbem_tri1
         sedelta=0.d0
-      case (fbem_tri6)
-        setype=fbem_tri4
-        sedelta=0.6d0
+        !setype=fbem_tri3
+        !sedelta=0.5d0
       case (fbem_quad4)
         setype=fbem_quad1
         sedelta=0.d0
-      case (fbem_quad8,fbem_quad9)
+        !setype=fbem_quad4
+        !sedelta=0.42264973d0
+      case (fbem_tri6)
+        setype=fbem_tri1
+        sedelta=0.d0
+        !setype=fbem_tri3
+        !sedelta=0.5d0
+        !setype=fbem_tri4
+        !sedelta=0.6d0
+        !setype=fbem_tri6
+        !sedelta=0.274728d0
+      case (fbem_quad8)
+        setype=fbem_quad1
+        sedelta=0.d0
+        !setype=fbem_quad4
+        !sedelta=0.42264973d0
+        !setype=fbem_quad9
+        !sedelta=0.22540333d0
+      case (fbem_quad9)
+        !setype=fbem_quad1
+        !sedelta=0.d0
         setype=fbem_quad4
         sedelta=0.42264973d0
+        !setype=fbem_quad9
+        !sedelta=0.22540333d0
       case default
         call fbem_error_message(error_unit,0,__FILE__,__LINE__,'etype={tri3,tri6,quad4,quad8,quad9}')
     end select
-    ! Sin interpolacion desde puntos de Gauss
-    !setype=etype
-    !sedelta=0
-    ! Local stress resultants matrix at interpolation points
-    allocate(Fsigma(8,5*n_midnodes,fbem_n_nodes(setype)))
+    ! Fsigma contents: values at mesh nodes interpolated from MITC interpolation scheme
+    ! Local stress resultants matrix at element nodes
+    allocate(Fsigma(8,5*n_mn,fbem_n_nodes(setype)))
     Fsigma=0.
+    !
+    ! Impose strain fields from MITC schemes.
+    !
+    select case (etype)
+      !
+      ! MITC3 (Lee & Bathe, 2004)
+      !
+      case (fbem_tri3)
+        ! eps_13
+        itype(  4)=13
+        ! eps_23
+        itype(  5)=14
+      !
+      ! MITC4 (Dvorkin & Bathe, 1984)
+      !
+      case (fbem_quad4)
+        ! eps_13
+        itype(  4)=3
+        ipars(:,4)=[0.d0,1.d0]
+        ! eps_23
+        itype(  5)=2
+        ipars(:,5)=[1.d0,0.d0]
+      !
+      ! MITC6a (Lee & Bathe, 2004)
+      !
+      case (fbem_tri6)
+        ! eps_11
+        itype(  1)=17
+        ! eps_22
+        itype(  2)=18
+        ! eps_12
+        itype(  3)=19
+        ! eps_13
+        itype(  4)=15
+        ! eps_23
+        itype(  5)=16
+      !
+      ! MITC8
+      !
+      case (fbem_quad8)
+!        !
+!        ! OPTION 1
+!        !
+!        ! MITC8 tying scheme (Bathe & Dvorkin, 1986) but using directly covariant strains.
+!        !
+!        ! eps_11
+!        itype(  1)=8
+!        ipars(:,1)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+!        ! eps_22
+!        itype(  2)=8
+!        ipars(:,2)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+!        ! eps_12
+!        itype(  3)=8
+!        ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+!        ! eps_13
+!        itype(  4)=12
+!        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
+!        ! eps_23
+!        itype(  5)=11
+!        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
+!        !
+!        ! OPTION 2
+!        !
+!        ! Tying scheme as MITC9
+!        !
+!        ! eps_11
+!        itype(  1)=7
+!        ipars(:,1)=[sqrt(1.d0/3.d0),1.d0]
+!        ! eps_22
+!        itype(  2)=6
+!        ipars(:,2)=[1.d0,sqrt(1.d0/3.d0)]
+!        ! eps_12
+!        itype(  3)=4
+!        ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+!        ! eps_13
+!        itype(  4)=7
+!        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
+!        ! eps_23
+!        itype(  5)=6
+!        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
+!        !
+!        ! OPTION 3
+!        !
+!        ! Tying scheme as proposed by Jung (2013) An 8-Node Shell Element for Nonlinear Analysis
+!        ! of Shells Using the Refined Combination of Membrane and Shear Interpolation Functions
+!        !
+!        ! GAMMA PATTERN
+!        !
+!        ! eps_11
+!        !itype(  1)=7
+!        !ipars(:,1)=[sqrt(1.d0/3.d0),1.d0]
+!        ! eps_22
+!        !itype(  2)=6
+!        !ipars(:,2)=[1.d0,sqrt(1.d0/3.d0)]
+!        ! eps_12
+!        !itype(  3)=4
+!        !ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+!        ! eps_13
+!        itype(  4)=10
+!        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
+!        ! eps_23
+!        itype(  5)=9
+!        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
+        !
+        ! OPTION 4
+        !
+        ! Tying scheme as proposed by Jung (2013) An 8-Node Shell Element for Nonlinear Analysis
+        ! of Shells Using the Refined Combination of Membrane and Shear Interpolation Functions
+        !
+        ! GAMMA* PATTERN
+        !
+        ! eps_11
+        itype(  1)=7
+        ipars(:,1)=[sqrt(1.d0/3.d0),1.d0]
+        ! eps_22
+        itype(  2)=6
+        ipars(:,2)=[1.d0,sqrt(1.d0/3.d0)]
+        ! eps_12
+        itype(  3)=4
+        ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+        ! eps_13
+        itype(  4)=12
+        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
+        ! eps_23
+        itype(  5)=11
+        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
+      !
+      ! MITC9 (Bucalem & Bathe, 1993)
+      !
+      case (fbem_quad9)
+        ! eps_11
+        itype(  1)=7
+        ipars(:,1)=[sqrt(1.d0/3.d0),sqrt(3.d0/5.d0)]
+        ! eps_22
+        itype(  2)=6
+        ipars(:,2)=[sqrt(3.d0/5.d0),sqrt(1.d0/3.d0)]
+        ! eps_12
+        itype(  3)=4
+        ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+        ! eps_13
+        itype(  4)=7
+        ipars(:,4)=[sqrt(1.d0/3.d0),sqrt(3.d0/5.d0)]
+        ! eps_23
+        itype(  5)=6
+        ipars(:,5)=[sqrt(3.d0/5.d0),sqrt(1.d0/3.d0)]
+      case default
+        stop 'MITC element not available'
+    end select
+    !
+    ! Calculate the covariant strain matrix Bij at each tying point (cBtp)
+    !
+    !
+    ! Loop through each covariant strain component
+    !
+    !
+    do ksc=1,5
+      !
+      ! Initialize
+      !
+      if (itype(ksc).gt.0) then
+        call mitc_interpolation_scheme_tp(itype(ksc),ipars(:,ksc),n_tp(ksc),xi_tp(:,:,ksc))
+      else
+        n_tp(ksc)=0
+        xi_tp(:,:,ksc)=0.d0
+      end if
+      !
+      ! Loop through each tying point
+      !
+      do ksf=1,n_tp(ksc)
+        ! xi_1, xi_2
+        xi=xi_tp(:,ksf,ksc)
+        ! In-plane shape functions and their first derivatives with respect to xi_1, xi_2 and xi_3 at (xi_1,xi_2,xi_3)
+#       define delta 0.0d0
+#       include <phi_and_dphidxik_2d.rc>
+#       undef delta
+        dphidxi3=0.d0
+        do kxi3=1,ngpth
+          ! xi_3
+          xi3=gl11_xi(kxi3,ngpth)
+          ! Thickness shape function and its derivative with respect to xi_1, xi_2 and xi_3 at (xi_1,xi_2,xi_3)
+          varphi=phi*0.5d0*xi3*t_mn(3,:)
+          dvarphidxi1=dphidxi1*0.5d0*xi3*t_mn(3,:)
+          dvarphidxi2=dphidxi2*0.5d0*xi3*t_mn(3,:)
+          dvarphidxi3=phi*0.5d0*t_mn(3,:)
+          ! Calculate Jacobian matrix at (xi_1,xi_2,xi_3)
+          J=0.d0
+          do kmn=1,n_mn
+            J(1,:)=J(1,:)+dphidxi1(kmn)*x_mn(:,kmn)+dvarphidxi1(kmn)*v_mn(:,3,kmn)
+            J(2,:)=J(2,:)+dphidxi2(kmn)*x_mn(:,kmn)+dvarphidxi2(kmn)*v_mn(:,3,kmn)
+            J(3,:)=J(3,:)+dphidxi3(kmn)*x_mn(:,kmn)+dvarphidxi3(kmn)*v_mn(:,3,kmn)
+          end do
+          ! Calculate inv(J) and det(J)
+          call fbem_invert_3x3_matrix(J,H,detJ)
+          ! Covariant basis
+          gv1=J(1,:)
+          gv2=J(2,:)
+          gv3=J(3,:)
+          ! Contravariant basis
+          gn1=H(:,1)
+          gn2=H(:,2)
+          gn3=H(:,3)
+          ! Build covariant B matrices
+          dNdxi1=0.d0
+          dNdxi2=0.d0
+          dNdxi3=0.d0
+          do kmn=1,n_mn
+            ! dN/dxi
+            dNdxi1(  1,1)= dphidxi1(kmn)
+            dNdxi1(  2,2)= dphidxi1(kmn)
+            dNdxi1(  3,3)= dphidxi1(kmn)
+            dNdxi1(1:3,4)= dvarphidxi1(kmn)*v_mn(:,1,kmn)
+            dNdxi1(1:3,5)=-dvarphidxi1(kmn)*v_mn(:,2,kmn)
+            dNdxi2(  1,1)= dphidxi2(kmn)
+            dNdxi2(  2,2)= dphidxi2(kmn)
+            dNdxi2(  3,3)= dphidxi2(kmn)
+            dNdxi2(1:3,4)= dvarphidxi2(kmn)*v_mn(:,1,kmn)
+            dNdxi2(1:3,5)=-dvarphidxi2(kmn)*v_mn(:,2,kmn)
+            dNdxi3(  1,1)= dphidxi3(kmn)
+            dNdxi3(  2,2)= dphidxi3(kmn)
+            dNdxi3(  3,3)= dphidxi3(kmn)
+            dNdxi3(1:3,4)= dvarphidxi3(kmn)*v_mn(:,1,kmn)
+            dNdxi3(1:3,5)=-dvarphidxi3(kmn)*v_mn(:,2,kmn)
+            ! Save
+            select case (ksc)
+              ! e_rr
+              case (1)
+                cBtp(:,kmn,kxi3,ksf,1)=matmul(gv1,dNdxi1)
+              ! e_ss
+              case (2)
+                cBtp(:,kmn,kxi3,ksf,2)=matmul(gv2,dNdxi2)
+              ! e_rs
+              case (3)
+                cBtp(:,kmn,kxi3,ksf,3)=0.5d0*(matmul(gv2,dNdxi1)+matmul(gv1,dNdxi2))
+              ! e_rt
+              case (4)
+                cBtp(:,kmn,kxi3,ksf,4)=0.5d0*(matmul(gv3,dNdxi1)+matmul(gv1,dNdxi3))
+              ! e_st
+              case (5)
+                cBtp(:,kmn,kxi3,ksf,5)=0.5d0*(matmul(gv3,dNdxi2)+matmul(gv2,dNdxi3))
+            end select
+          end do
+        end do ! Thickness
+      end do ! Surface
+    end do ! Strain component
+    !
+    ! Combine the covariant strain matrix Bij between tying points (cBpar)
+    !
+    !
+    ! Loop through each covariant strain component
+    !
+    do ksc=1,5
+      if (itype(ksc).gt.0) then
+        select case (itype(ksc))
+          !
+          ! MITC3 -- shear strains (eps_13 = a1+b1*r+c1*s)
+          !
+          case (13)
+            if (ksc.ne.4) stop 'mitc error 13'
+            cBpar(:,:,:,1,4) = cBtp(:,:,:,1,4)
+            cBpar(:,:,:,2,4) = 0.d0
+            cBpar(:,:,:,3,4) = cBtp(:,:,:,2,5)-cBtp(:,:,:,1,4)-cBtp(:,:,:,3,5)+cBtp(:,:,:,3,4)
+          !
+          ! MITC3 -- shear strains (eps_23 = a2+b2*r+c2*s)
+          !
+          case (14)
+            if (ksc.ne.5) stop 'mitc error 14'
+            cBpar(:,:,:,1,5) = cBtp(:,:,:,2,5)
+            cBpar(:,:,:,2,5) = -cBpar(:,:,:,3,4)
+            cBpar(:,:,:,3,5) = 0.d0
+          !
+          ! MITC6a -- shear strains (eps_13 = a1+b1*r+c1*s+...)
+          !
+          case (15)
+            if (ksc.ne.4) stop 'mitc error 15'
+            !
+            ! Define all coefficients here
+            !
+            ! a1
+            cBpar(:,:,:,1,4) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,1,4)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,2,4)
+            ! a2
+            cBpar(:,:,:,1,5) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,3,5)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,4,5)
+            ! b1
+            cBpar(:,:,:,2,4) = sqrt(3.d0)*(cBtp(:,:,:,2,4)-cBtp(:,:,:,1,4))
+            ! c2
+            cBpar(:,:,:,3,5) = sqrt(3.d0)*(cBtp(:,:,:,4,5)-cBtp(:,:,:,3,5))
+            ! e1
+            cBpar(:,:,:,5,4) = 0.d0
+            ! f2
+            cBpar(:,:,:,6,5) = 0.d0
+            ! c1
+            cBpar(:,:,:,3,4) = 6.d0*cBtp(:,:,:,7,4)-3.d0*cBtp(:,:,:,7,5)+cBtp(:,:,:,5,5)+cBtp(:,:,:,6,5) &
+            -cBtp(:,:,:,5,4)-cBtp(:,:,:,6,4)-4.d0*cBpar(:,:,:,1,4)-cBpar(:,:,:,2,4)+cBpar(:,:,:,1,5)
+            ! b2
+            cBpar(:,:,:,2,5) =-3.d0*cBtp(:,:,:,7,4)+6.d0*cBtp(:,:,:,7,5)-cBtp(:,:,:,5,5)-cBtp(:,:,:,6,5) &
+            +cBtp(:,:,:,5,4)+cBtp(:,:,:,6,4)+cBpar(:,:,:,1,4)-4.d0*cBpar(:,:,:,1,5)-cBpar(:,:,:,3,5)
+            ! e2
+            cBpar(:,:,:,5,5) = 3.d0*cBtp(:,:,:,7,4)-6.d0*cBtp(:,:,:,7,5)+1.5d0*(cBtp(:,:,:,5,5)+cBtp(:,:,:,6,5)) &
+            -0.5d0*sqrt(3.d0)*(cBtp(:,:,:,6,5)-cBtp(:,:,:,5,5))-1.5d0*(cBtp(:,:,:,5,4)+cBtp(:,:,:,6,4)) &
+            +0.5d0*sqrt(3.d0)*(cBtp(:,:,:,6,4)-cBtp(:,:,:,5,4))+cBpar(:,:,:,2,4)+3.d0*cBpar(:,:,:,1,5)+cBpar(:,:,:,3,5)
+            ! f1
+            cBpar(:,:,:,6,4) =-6.d0*cBtp(:,:,:,7,4)+3.d0*cBtp(:,:,:,7,5)-1.5d0*(cBtp(:,:,:,5,5)+cBtp(:,:,:,6,5)) &
+            -0.5d0*sqrt(3.d0)*(cBtp(:,:,:,6,5)-cBtp(:,:,:,5,5))+1.5d0*(cBtp(:,:,:,5,4)+cBtp(:,:,:,6,4)) &
+            +0.5d0*sqrt(3.d0)*(cBtp(:,:,:,6,4)-cBtp(:,:,:,5,4))+3.d0*cBpar(:,:,:,1,4)+cBpar(:,:,:,2,4)+cBpar(:,:,:,3,5)
+            ! d1
+            cBpar(:,:,:,4,4) = -cBpar(:,:,:,5,5)
+            ! d2
+            cBpar(:,:,:,4,5) = -cBpar(:,:,:,6,4)
+          !
+          ! MITC6a -- shear strains (eps_23 = = a2+b2*r+c2*s+...)
+          !
+          case (16)
+            if (ksc.ne.5) stop 'mitc error 16'
+            ! Build previously
+          !
+          ! MITC6a -- in-plane strains (pag. 951 Lee & Bathe, 2004)
+          !
+          case (17)
+            if (ksc.ne.1) stop 'mitc error 17'
+            !
+            ! Define all coefficients here
+            !
+            ! a1
+            cBpar(:,:,:,1,1) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,1,1)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,2,1)
+            ! b1
+            cBpar(:,:,:,2,1) = sqrt(3.d0)*(cBtp(:,:,:,2,1)-cBtp(:,:,:,1,1))
+            ! a2
+            cBpar(:,:,:,1,2) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,4,2)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,5,2)
+            ! c2
+            cBpar(:,:,:,3,2) = sqrt(3.d0)*(cBtp(:,:,:,5,2)-cBtp(:,:,:,4,2))
+            ! a3
+            cBpar(:,:,:,1,3) = (0.5d0-0.5d0*sqrt(3.d0))*(0.5d0*cBtp(:,:,:,7,1)+0.5d0*cBtp(:,:,:,7,2)-cBtp(:,:,:,7,3))&
+                              +(0.5d0+0.5d0*sqrt(3.d0))*(0.5d0*cBtp(:,:,:,8,1)+0.5d0*cBtp(:,:,:,8,2)-cBtp(:,:,:,8,3))
+            ! b3
+            cBpar(:,:,:,2,3) = -sqrt(3.d0)*(0.5d0*cBtp(:,:,:,8,1)+0.5d0*cBtp(:,:,:,8,2)-cBtp(:,:,:,8,3)&
+                                            -(0.5d0*cBtp(:,:,:,7,1)+0.5d0*cBtp(:,:,:,7,2)-cBtp(:,:,:,7,3)))
+            ! c1
+            cBpar(:,:,:,3,1) = sqrt(3.d0)*(cBtp(:,:,:,3,1)-cBpar(:,:,:,1,1)-cBpar(:,:,:,2,1)*(0.5d0-0.5d0/sqrt(3.d0)))
+            ! b2
+            cBpar(:,:,:,2,2) = sqrt(3.d0)*(cBtp(:,:,:,6,2)-cBpar(:,:,:,1,2)-cBpar(:,:,:,3,2)*(0.5d0-0.5d0/sqrt(3.d0)))
+            ! c3
+            cBpar(:,:,:,3,3) = sqrt(3.d0)*(0.5d0*cBtp(:,:,:,9,1)+0.5d0*cBtp(:,:,:,9,2)-cBtp(:,:,:,9,3)&
+                                           -cBpar(:,:,:,1,3)-cBpar(:,:,:,2,3)*(0.5d0-0.5d0/sqrt(3.d0)))
+            !
+            ! Redefine a3, b3 and c3
+            !
+            cBpar(:,:,:,1,3) = 0.5d0*(cBpar(:,:,:,1,1)+cBpar(:,:,:,1,2))-cBpar(:,:,:,1,3)-cBpar(:,:,:,3,3)
+            cBpar(:,:,:,2,3) = 0.5d0*(cBpar(:,:,:,2,1)+cBpar(:,:,:,2,2))-cBpar(:,:,:,2,3)+cBpar(:,:,:,3,3)
+            cBpar(:,:,:,3,3) = 0.5d0*(cBpar(:,:,:,3,1)+cBpar(:,:,:,3,2))+cBpar(:,:,:,3,3)
+          !
+          ! MITC6a -- in-plane strains (pag. 951 Lee & Bathe, 2004)
+          !
+          case (18)
+            if (ksc.ne.2) stop 'mitc error 18'
+            ! Build previously
+          !
+          ! MITC6a -- in-plane strains (pag. 951 Lee & Bathe, 2004)
+          !
+          case (19)
+            if (ksc.ne.3) stop 'mitc error 19'
+            ! Build previously
+          !
+          ! MITC8 -- shear strains
+          !
+          case (11,12)
+            if ((ksc.ne.4).and.(ksc.ne.5)) stop 'mitc error 11 12'
+            cBpar(:,:,:,1:4,ksc)=cBtp(:,:,:,1:4,ksc)
+            cBpar(:,:,:,5,ksc)=0.5d0*(cBtp(:,:,:,6,ksc)+cBtp(:,:,:,7,ksc))
+          !
+          ! Interpolation schemes without combination of covariant strains
+          !
+          case (1,2,3,4,6,7,8,9,10)
+            cBpar(:,:,:,:,ksc)=cBtp(:,:,:,:,ksc)
+          case default
+            stop 'MITC: invalid itype'
+        end select
+      end if
+    end do
     !
     ! Loops through sampling points
     !
@@ -4955,6 +5624,13 @@ contains
       xi1=xi_sp(1)
       xi2=xi_sp(2)
       !
+      ! Shape functions of the substitute strains intepolations
+      !
+      phi_tp=0.d0
+      do ksc=1,5
+        if (itype(ksc).gt.0) phi_tp(:,ksc)=mitc_interpolation_scheme_phi(itype(ksc),ipars(:,ksc),xi)
+      end do
+      !
       ! Integrate along xi3 at mid-surface point (xi1,xi2)
       !
       do kxi3=1,ngpth
@@ -4969,18 +5645,27 @@ contains
 #       undef delta
         dphidxi3=0.d0
         ! Thickness shape function and its derivative with respect to xi_1, xi_2 and xi_3 at (xi_1,xi_2,xi_3)
-        varphi=phi*0.5d0*xi3*t3_midnodes
-        dvarphidxi1=dphidxi1*0.5d0*xi3*t3_midnodes
-        dvarphidxi2=dphidxi2*0.5d0*xi3*t3_midnodes
-        dvarphidxi3=phi*0.5d0*t3_midnodes
+        varphi=phi*0.5d0*xi3*t3_mn
+        dvarphidxi1=dphidxi1*0.5d0*xi3*t3_mn
+        dvarphidxi2=dphidxi2*0.5d0*xi3*t3_mn
+        dvarphidxi3=phi*0.5d0*t3_mn
         ! Calculate position vector x, and Jacobian matrix at (xi_1,xi_2,xi_3)
         J=0.d0
-        do kmidnode=1,n_midnodes
-          J(1,:)=J(1,:)+dphidxi1(kmidnode)*x_midnodes(:,kmidnode)+dvarphidxi1(kmidnode)*v_midnode(:,3,kmidnode)
-          J(2,:)=J(2,:)+dphidxi2(kmidnode)*x_midnodes(:,kmidnode)+dvarphidxi2(kmidnode)*v_midnode(:,3,kmidnode)
-          J(3,:)=J(3,:)+dphidxi3(kmidnode)*x_midnodes(:,kmidnode)+dvarphidxi3(kmidnode)*v_midnode(:,3,kmidnode)
+        do kmn=1,n_mn
+          J(1,:)=J(1,:)+dphidxi1(kmn)*x_mn(:,kmn)+dvarphidxi1(kmn)*v_mn(:,3,kmn)
+          J(2,:)=J(2,:)+dphidxi2(kmn)*x_mn(:,kmn)+dvarphidxi2(kmn)*v_mn(:,3,kmn)
+          J(3,:)=J(3,:)+dphidxi3(kmn)*x_mn(:,kmn)+dvarphidxi3(kmn)*v_mn(:,3,kmn)
         end do
+        ! Calculate inv(J) and det(J)
         call fbem_invert_3x3_matrix(J,H,detJ)
+        ! Covariant basis
+        gv1=J(1,:)
+        gv2=J(2,:)
+        gv3=J(3,:)
+        ! Contravariant basis
+        gn1=H(:,1)
+        gn2=H(:,2)
+        gn3=H(:,3)
         ! Calculate local orthogonal system of coordinates (ep_1,ep_2,ep_3) at (xi_1,xi_2,xi_3)
         ! Tangents T1 and T2
         T1=J(1,:)
@@ -4991,7 +5676,7 @@ contains
         N(3)=T1(1)*T2(2)-T1(2)*T2(1)
         ! Local coordinates system
         call fbem_fem_degshell_stress_resultants_ep(N,T1,x1ref,ep1,ep2,ep3)
-        ! Global (x) to local (x') tensor transformation matrix
+        ! Global (x) to local (x') transformation matrix for strains: eps' = E· eps
         E=0.d0
         E(1,1:3)=ep1**2
         E(1,4)=ep1(1)*ep1(2)
@@ -5020,81 +5705,107 @@ contains
         E(5,4)=ep1(1)*ep3(2)+ep1(2)*ep3(1)
         E(5,5)=ep1(2)*ep3(3)+ep1(3)*ep3(2)
         E(5,6)=ep1(1)*ep3(3)+ep1(3)*ep3(1)
-        ! Derivative transformation matrix for curvilinear to global cartesian tensor transformation
+        ! Transformation matrix from curvilinear strains to global cartesian strains
+        ! G de 6x5: B^(i)_global = G·B^(i)_curvilinear
         G=0.d0
-        G(1,1)=H(1,1)
-        G(2,2)=H(2,1)
-        G(3,3)=H(3,1)
-        G(4,1)=H(2,1)
-        G(4,2)=H(1,1)
-        G(5,2)=H(3,1)
-        G(5,3)=H(2,1)
-        G(6,1)=H(3,1)
-        G(6,3)=H(1,1)
-        G(1,4)=H(1,2)
-        G(2,5)=H(2,2)
-        G(3,6)=H(3,2)
-        G(4,4)=H(2,2)
-        G(4,5)=H(1,2)
-        G(5,5)=H(3,2)
-        G(5,6)=H(2,2)
-        G(6,4)=H(3,2)
-        G(6,6)=H(1,2)
-        G(1,7)=H(1,3)
-        G(2,8)=H(2,3)
-        G(3,9)=H(3,3)
-        G(4,7)=H(2,3)
-        G(4,8)=H(1,3)
-        G(5,8)=H(3,3)
-        G(5,9)=H(2,3)
-        G(6,7)=H(3,3)
-        G(6,9)=H(1,3)
-        ! Build matrix B for all nodes
-        do kmidnode=1,n_midnodes
-          ! Matrix of derivatives of shape functions matrices with respect to xi1, xi2 and xi3
-          M=0.d0
-          M(  1,1)= dphidxi1(kmidnode)
-          M(  2,2)= dphidxi1(kmidnode)
-          M(  3,3)= dphidxi1(kmidnode)
-          M(1:3,4)= dvarphidxi1(kmidnode)*v_midnode(:,1,kmidnode)
-          M(1:3,5)=-dvarphidxi1(kmidnode)*v_midnode(:,2,kmidnode)
-          M(  4,1)= dphidxi2(kmidnode)
-          M(  5,2)= dphidxi2(kmidnode)
-          M(  6,3)= dphidxi2(kmidnode)
-          M(4:6,4)= dvarphidxi2(kmidnode)*v_midnode(:,1,kmidnode)
-          M(4:6,5)=-dvarphidxi2(kmidnode)*v_midnode(:,2,kmidnode)
-          M(  7,1)= dphidxi3(kmidnode)
-          M(  8,2)= dphidxi3(kmidnode)
-          M(  9,3)= dphidxi3(kmidnode)
-          M(7:9,4)= dvarphidxi3(kmidnode)*v_midnode(:,1,kmidnode)
-          M(7:9,5)=-dvarphidxi3(kmidnode)*v_midnode(:,2,kmidnode)
-          ! B matrix for kmidnode
-          B(:,:,kmidnode)=matmul(G,M)
-          ! B' matrix for kmidnode
-          Bp(:,:,kmidnode)=matmul(E,B(:,:,kmidnode))
+        G(1:3,1)=gn1*gn1
+        G(1:3,2)=gn2*gn2
+        G(1:3,3)=2.d0*gn1*gn2
+        G(1:3,4)=2.d0*gn1*gn3
+        G(1:3,5)=2.d0*gn2*gn3
+        G(  4,1)=gn1(1)*gn1(2)
+        G(  4,2)=gn2(1)*gn2(2)
+        G(  4,3)=gn1(1)*gn2(2)+gn2(1)*gn1(2)
+        G(  4,4)=gn1(1)*gn3(2)+gn3(1)*gn1(2)
+        G(  4,5)=gn2(1)*gn3(2)+gn3(1)*gn2(2)
+        G(  5,1)=gn1(2)*gn1(3)
+        G(  5,2)=gn2(2)*gn2(3)
+        G(  5,3)=gn1(2)*gn2(3)+gn2(2)*gn1(3)
+        G(  5,4)=gn1(2)*gn3(3)+gn3(2)*gn1(3)
+        G(  5,5)=gn2(2)*gn3(3)+gn3(2)*gn2(3)
+        G(  6,1)=gn1(1)*gn1(3)
+        G(  6,2)=gn2(1)*gn2(3)
+        G(  6,3)=gn1(1)*gn2(3)+gn2(1)*gn1(3)
+        G(  6,4)=gn1(1)*gn3(3)+gn3(1)*gn1(3)
+        G(  6,5)=gn2(1)*gn3(3)+gn3(1)*gn2(3)
+        G(4:6,:)=2.d0*G(4:6,:)
+        ! Bp = E·G·Bc
+        EG=matmul(E,G)
+        ! Build covariant B matrices
+        Bc=0
+        do kmn=1,n_mn
+          do ksc=1,5
+            if (itype(ksc).eq.0) then
+              ! dN/dxi
+              dNdxi1=0.d0
+              dNdxi2=0.d0
+              dNdxi3=0.d0
+              dNdxi1(  1,1)= dphidxi1(kmn)
+              dNdxi1(  2,2)= dphidxi1(kmn)
+              dNdxi1(  3,3)= dphidxi1(kmn)
+              dNdxi1(1:3,4)= dvarphidxi1(kmn)*v_mn(:,1,kmn)
+              dNdxi1(1:3,5)=-dvarphidxi1(kmn)*v_mn(:,2,kmn)
+              dNdxi2(  1,1)= dphidxi2(kmn)
+              dNdxi2(  2,2)= dphidxi2(kmn)
+              dNdxi2(  3,3)= dphidxi2(kmn)
+              dNdxi2(1:3,4)= dvarphidxi2(kmn)*v_mn(:,1,kmn)
+              dNdxi2(1:3,5)=-dvarphidxi2(kmn)*v_mn(:,2,kmn)
+              dNdxi3(  1,1)= dphidxi3(kmn)
+              dNdxi3(  2,2)= dphidxi3(kmn)
+              dNdxi3(  3,3)= dphidxi3(kmn)
+              dNdxi3(1:3,4)= dvarphidxi3(kmn)*v_mn(:,1,kmn)
+              dNdxi3(1:3,5)=-dvarphidxi3(kmn)*v_mn(:,2,kmn)
+              ! Displacement-based strains
+              select case (ksc)
+                case (1)
+                  Bc(1,:,kmn)=matmul(gv1,dNdxi1)
+                case (2)
+                  Bc(2,:,kmn)=matmul(gv2,dNdxi2)
+                case (3)
+                  Bc(3,:,kmn)=0.5d0*(matmul(gv2,dNdxi1)+matmul(gv1,dNdxi2))
+                case (4)
+                  Bc(4,:,kmn)=0.5d0*(matmul(gv3,dNdxi1)+matmul(gv1,dNdxi3))
+                case (5)
+                  Bc(5,:,kmn)=0.5d0*(matmul(gv3,dNdxi2)+matmul(gv2,dNdxi3))
+              end select
+            else
+              ! Perform interpolation using assumed strains
+              do ksf=1,n_tp(ksc)
+                Bc(ksc,:,kmn)=Bc(ksc,:,kmn)+phi_tp(ksf,ksc)*cBpar(:,kmn,kxi3,ksf,ksc)
+              end do
+            end if
+          end do
+          ! Transform curvilinear strains
+          Bp(:,:,kmn)=matmul(EG,Bc(:,:,kmn))
         end do
         ! |J(3,:)| * weight
         jw=sqrt(dot_product(J(3,:),J(3,:)))*w3
         ! Distance z'
         ! Distance vector between (xi1,xi2,0)->(xi1,xi2,xi3)
         r=0
-        do kmidnode=1,n_midnodes
-          r=r+varphi(kmidnode)*v_midnode(:,3,kmidnode)
+        do kmn=1,n_mn
+          r=r+varphi(kmn)*v_mn(:,3,kmn)
         end do
         ! Projection
         zp=dot_product(r,ep3)
         ! Build the stress resultants matrix at (xi1,xi2)
-        do kj=1,n_midnodes
+        do kj=1,n_mn
           kjs=(kj-1)*5+1
           kje=kjs+4
-          Fsigma(1:3,kjs:kje,ksp)=Fsigma(1:3,kjs:kje,ksp)+matmul(Dp(1:3,:),Bp(:,:,kj))*jw             ! In-plane membrane forces: Nx', Ny' and Nx'y'
-          Fsigma(4:6,kjs:kje,ksp)=Fsigma(4:6,kjs:kje,ksp)-matmul(Dp(1:3,:),Bp(:,:,kj))*zp*jw          ! Bending moments: Mx', My' and Mx'y'
-          Fsigma(  7,kjs:kje,ksp)=Fsigma(  7,kjs:kje,ksp)+matmul(Dp(  5,:),Bp(:,:,kj))*jw             ! Out-plane shear forces: Vx'
-          Fsigma(  8,kjs:kje,ksp)=Fsigma(  8,kjs:kje,ksp)+matmul(Dp(  4,:),Bp(:,:,kj))*jw             ! Out-plane shear forces: Vy'
+          Fsigma(1:3,kjs:kje,ksp)=Fsigma(1:3,kjs:kje,ksp)+matmul(Dp(1:3,:),Bp(:,:,kj))*jw    ! In-plane membrane forces: Nx', Ny' and Nx'y'
+          Fsigma(4:6,kjs:kje,ksp)=Fsigma(4:6,kjs:kje,ksp)-matmul(Dp(1:3,:),Bp(:,:,kj))*zp*jw ! Bending moments: Mx', My' and Mx'y'
+          Fsigma(  7,kjs:kje,ksp)=Fsigma(  7,kjs:kje,ksp)+matmul(Dp(  5,:),Bp(:,:,kj))*jw    ! Out-plane shear forces: Vx'
+          Fsigma(  8,kjs:kje,ksp)=Fsigma(  8,kjs:kje,ksp)+matmul(Dp(  4,:),Bp(:,:,kj))*jw    ! Out-plane shear forces: Vy'
         end do
       end do ! Integrate along xi3 at mid-surface point (xi1,xi2)
     end do ! Loop through interpolation points
   end subroutine fbem_fem_degshell_stress_resultants
+
+
+
+
+
+
 
   !! Build the orthonormal basis e1', e2', e3' for stress resultant calculation from reference vector e1'ref
   subroutine fbem_fem_degshell_stress_resultants_ep(N,T1,ep1ref,ep1,ep2,ep3)
