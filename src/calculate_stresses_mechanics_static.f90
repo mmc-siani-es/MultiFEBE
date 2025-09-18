@@ -47,7 +47,8 @@ subroutine calculate_stresses_mechanics_static
   integer                           :: ks_int, ss_int
   integer                           :: kb, sb
   integer                           :: ke_int, se_int
-  integer                           :: ke, se
+  integer                           :: ke, se, ne
+  integer                           :: kn_int, sn_int
   integer                           :: kn, sn, kn2, sn2
   integer                           :: ki, kj, kk
   integer                           :: face
@@ -84,12 +85,13 @@ subroutine calculate_stresses_mechanics_static
   ! ================================================================================================================================
   ! CALCULATE BEM SOLID STRESSES / FLUID DISPLACEMENTS ALONG BOUNDARIES
   ! CALCULATE FEM ELEMENT STRESSES / STRESS RESULTANTS / EQUILIBRATING LOADS AND NODAL REACTIONS
+  ! CALCULATE FEM NODAL AVERAGED STRESSES
   ! ================================================================================================================================
 
+  ! -------------- !
+  ! INITIALIZATION !
+  ! -------------- !
 
-  !
-  ! Initialize
-  !
   do kr=1,n_regions
     !
     ! Boundary elements
@@ -972,6 +974,179 @@ subroutine calculate_stresses_mechanics_static
 
     end if
   end do ! Loop through the REGIONS
+
+  ! ================================================================================================================================
+  ! CALCULATE FEM NODAL AVERAGED STRESSES
+  ! ================================================================================================================================
+  ! For element node, the average is taken only between elements of the same FE SUBREGION.
+
+  ! Loop through the REGIONS
+  do kr=1,n_regions
+
+    if (region(kr)%class.eq.fbem_fe) then
+
+      if (region(kr)%type.eq.fbem_rigid) cycle
+
+      ! Loop through the FE SUBREGIONS of the FE REGION
+      do ks_int=1,region(kr)%n_fe_subregions
+        ss_int=region(kr)%fe_subregion(ks_int)
+        ! Representative FINITE ELEMENT
+        se_int=part(fe_subregion(ss_int)%part)%element(1)
+
+        ! Loop through the NODES of the FE SUBREGION
+        do kn_int=1,part(fe_subregion(ss_int)%part)%n_nodes
+          sn_int=part(fe_subregion(ss_int)%part)%node(kn_int)
+
+          ! ==================================================================
+          ! STRESSES / STRESS RESULTANTS: element(*)%value_r(component,node,1)
+          ! ==================================================================
+
+          select case (element(se_int)%n_dimension)
+
+            ! ======================================================================================================================
+            ! ONE-DIMENSIONAL ELEMENTS
+            ! ======================================================================================================================
+
+            case (1)
+
+              select case (element(se_int)%fe_type)
+
+                case (0)
+
+                  !-----------------------------------------------------------------------------------------------------------------
+                  ! DEGENERATED BEAM FINITE ELEMENT
+                  !
+                  !
+                  !-----------------------------------------------------------------------------------------------------------------
+
+                case (1,2)
+
+                  !-----------------------------------------------------------------------------------------------------------------
+                  ! STRAIGHT EULER-BERNOULLI AND TIMOSHENKO BEAM FINITE ELEMENTS
+                  !
+                  !
+                  !-----------------------------------------------------------------------------------------------------------------
+
+                case (3)
+
+                  !-----------------------------------------------------------------------------------------------------------------
+                  ! BAR FINITE ELEMENTS
+                  !
+                  !
+                  !-----------------------------------------------------------------------------------------------------------------
+
+                case (4)
+
+                  !-----------------------------------------------------------------------------------------------------------------
+                  ! DISCRETE TRANSLATIONAL SPRING FINITE ELEMENTS
+                  !
+                  !
+                  !-----------------------------------------------------------------------------------------------------------------
+
+                case (5)
+
+                  !-----------------------------------------------------------------------------------------------------------------
+                  ! DISCRETE ROTATIONAL/TRANSLATIONAL SPRING FINITE ELEMENTS
+                  !
+                  !
+                  !-----------------------------------------------------------------------------------------------------------------
+
+                case (6)
+
+                  !-----------------------------------------------------------------------------------------------------------------
+                  ! DISCRETE SPRING-DASHPOT
+                  !
+                  !
+                  !-----------------------------------------------------------------------------------------------------------------
+
+                case default
+
+                  !-----------------------------------------------------------------------------------------------------------------
+                  ! OTHER TYPES
+                  !
+                  !
+                  !-----------------------------------------------------------------------------------------------------------------
+
+              end select
+
+            ! ======================================================================================================================
+            ! TWO-DIMENSIONAL ELEMENTS
+            ! ======================================================================================================================
+
+            case (2)
+
+              select case (problem%n)
+
+                case (2)
+
+                  !-----------------------------------------------------------------------------------------------------------------
+                  ! SOLID / CONTINUUM ELEMENTS
+                  !
+                  !
+                  !
+                  !-----------------------------------------------------------------------------------------------------------------
+
+                case (3)
+
+                  !-----------------------------------------------------------------------------------------------------------------
+                  ! DEGENERATED SHELL FINITE ELEMENT
+                  !
+                  allocate (f_e(8))
+                  f_e=0.d0
+                  ne=0
+                  do ke=1,node(sn_int)%n_elements
+                    se=node(sn_int)%element(ke)
+                    if (element(se)%part.eq.fe_subregion(ss_int)%part) then
+                      kn=node(sn_int)%element_node_iid(ke)
+                      f_e=f_e+element(se)%value_r(1:8,kn,1)
+                      ne=ne+1
+                    end if
+                  end do
+                  f_e=f_e/dble(ne)
+                  do ke=1,node(sn_int)%n_elements
+                    se=node(sn_int)%element(ke)
+                    if (element(se)%part.eq.fe_subregion(ss_int)%part) then
+                      kn=node(sn_int)%element_node_iid(ke)
+                      element(se)%value_r(1:8,kn,1)=f_e
+                    end if
+                  end do
+                  deallocate (f_e)
+                  !
+                  !-----------------------------------------------------------------------------------------------------------------
+
+              end select
+
+            ! ======================================================================================================================
+            ! THREE-DIMENSIONAL ELEMENTS
+            ! ======================================================================================================================
+
+            case (3)
+
+              !---------------------------------------------------------------------------------------------------------------------
+              ! SOLID / CONTINUUM ELEMENTS
+              !
+              call fbem_error_message(error_unit,0,'element',element(se_int)%id,'3D elements not available yet')
+              !
+              !---------------------------------------------------------------------------------------------------------------------
+
+          end select
+
+        end do ! Loop through the FINITE ELEMENTS of the FE SUBREGION
+
+      end do ! Loop through the FE SUBREGIONS of the FE REGION
+
+    end if
+  end do ! Loop through the REGIONS
+
+
+
+
+
+
+
+
+
+
 
   ! Ending message
   if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'END calculating stresses at FE regions')
