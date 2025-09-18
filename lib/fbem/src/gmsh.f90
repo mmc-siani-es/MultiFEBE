@@ -91,7 +91,7 @@ contains
     ! write
     write(fileunit,'(a9)') '$NodeData'
     write(fileunit,'(a1)' ) '1'
-    write(fmt1,*) '(a1,a',len_trim(viewname),'a1)'
+    write(fmt1,*) '(a1,a',len_trim(viewname),',a1)'
     call fbem_trimall(fmt1)
     write(fileunit,fmt1) '"',viewname,'"'
     write(fileunit,'(a1)' ) '1'
@@ -152,7 +152,7 @@ contains
     ! write
     write(fileunit,'(a12)') '$ElementData'
     write(fileunit,'(a1)' ) '1'
-    write(fmt1,*) '(a1,a',len_trim(viewname),'a1)'
+    write(fmt1,*) '(a1,a',len_trim(viewname),',a1)'
     call fbem_trimall(fmt1)
     write(fileunit,fmt1) '"',viewname,'"'
     write(fileunit,'(a1)' ) '1'
@@ -215,7 +215,7 @@ contains
     ! write
     write(fileunit,'(a16)') '$ElementNodeData'
     write(fileunit,'(a1)' ) '1'
-    write(fmt1,*) '(a1,a',len_trim(viewname),'a1)'
+    write(fmt1,*) '(a1,a',len_trim(viewname),',a1)'
     call fbem_trimall(fmt1)
     write(fileunit,fmt1) '"',viewname,'"'
     write(fileunit,'(a1)' ) '1'
