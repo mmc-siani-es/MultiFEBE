@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(multifebe VERSION 2.0.1) # The version number must be changed here for every new change
+project(multifebe VERSION 2.0.2) # The version number must be changed here for every new change
                                  # Note that it must be changed manually too in src/problem_variables.f90
                                  # This is something that could be automated in the future
 
@@ -10,19 +10,12 @@ enable_language(Fortran)
 if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
     set(CMAKE_Fortran_FLAGS         "${CMAKE_Fortran_FLAGS} -std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none")
     set(CMAKE_Fortran_FLAGS_DEBUG   "-g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow -fno-inline -Og")
-    set(CMAKE_Fortran_FLAGS_RELEASE "-fopenmp -lpthread -march=core2 -O3 -flto")
-#    set(CMAKE_Fortran_FLAGS_RELEASE "-static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -fopenmp -march=core2 -O3 -flto")
+    set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -flto -march=core2")
 endif()
 
-# Works for static compilation
-#if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
-    #set(dialect "-std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -fopenmp -march=core2 -O3 -flto")
-    #set(bounds  "-std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none -g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow -fno-inline -Og")
-#endif()
-#set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${bounds}")
-#set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${dialect}")
-
 file(GLOB_RECURSE sources  src/*.f90 lib/fbem/src/*.f90)
+
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -fopenmp")
 
 add_executable(multifebe ${sources})
 
@@ -30,6 +23,14 @@ include_directories(lib/fbem/src/resources_shape_functions)
 include_directories(lib/fbem/src/resources_quad_rules)
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+
+#
+# Find and enable OpenMP support
+#
+find_package(OpenMP REQUIRED)
+if (OpenMP_FOUND)
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+endif()
 
 #
 # Build and link to SDF
