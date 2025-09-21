@@ -25,36 +25,48 @@ List of examples for users
         -   `SR` Structures
 
             -   `001` [\[TUTORIAL\] Cantilever beam (FEM
-                model)](ME-ST-SR-001/).
+                model)](ME-ST-SR-001/ME-ST-SR-001.pdf).
+
+            -   `002` [\[TUTORIAL\] Rectangular Plate (FEM
+                model)](ME-ST-SR-002/ME-ST-SR-002.pdf).
+
+            -   `003` [\[TUTORIAL\] Scordelis-Lo Roof (FEM
+                model)](ME-ST-SR-003/ME-ST-SR-003.pdf).
+
+            -   `004` [\[TUTORIAL\] Spherical Shell (FEM
+                model)](ME-ST-SR-004/ME-ST-SR-004.pdf).
 
         -   Elastostatics (continuum)
 
             -   `001` [\[TUTORIAL\] Plain strain square (BEM
-                model)](ME-ST-EL-001/).
+                model)](ME-ST-EL-001/ME-ST-EL-001.pdf).
 
-            -   `002` [\[TUTORIAL\] Cube (BEM model)](ME-ST-EL-002/).
+            -   `002` [\[TUTORIAL\] Cube (BEM
+                model)](ME-ST-EL-002/ME-ST-EL-002.pdf).
 
         -   `CO` Coupled
 
             -   `001` [\[TUTORIAL\] Floating pile response under head
-                force or moment (BEM-FEM model)](ME-ST-CO-001/).
+                force or moment (BEM-FEM
+                model)](ME-ST-CO-001/ME-ST-CO-001.pdf).
 
     -   `TH` Time Harmonic
 
         -   `SR` Structures
 
             -   `001` [\[TUTORIAL\] Cantilever beam (FEM
-                model)](ME-TH-SR-001/).
+                model)](ME-TH-SR-001/ME-TH-SR-001.pdf).
 
         -   `EL` Elastodynamics (continuum)
 
-            -   `001` [\[TUTORIAL\] Cube (BEM model)](ME-TH-EL-001/).
+            -   `001` [\[TUTORIAL\] Cube (BEM
+                model)](ME-TH-EL-001/ME-TH-EL-001.pdf).
 
             -   `002` [\[TUTORIAL\] Cantilever wall (BEM
-                model)](ME-TH-EL-002/).
+                model)](ME-TH-EL-002/ME-TH-EL-002.pdf).
 
             -   `003` [\[TUTORIAL\] Soria arch dam: fixed-base (BEM
-                model).](ME-TH-EL-003/)
+                model).](ME-TH-EL-003/ME-TH-EL-003.pdf)
 
         -   `PO` Poroelastodynamics (continuum)
 
@@ -63,27 +75,31 @@ List of examples for users
         -   `AC` Acoustics (continuum)
 
             -   `001` [\[TUTORIAL\] Pressure waves in a room (BEM
-                model)](ME-TH-AC-001/).
+                model)](ME-TH-AC-001/ME-TH-AC-001.pdf).
 
         -   `CO` Coupled
 
             -   `001` [\[TUTORIAL\] Impedances of inclined pile
-                foundations (BEM-FEM model)](ME-TH-CO-001/).
+                foundations (BEM-FEM
+                model)](ME-TH-CO-001/ME-TH-CO-001.pdf).
 
             -   `002` [\[TUTORIAL\] Seismic response of a single
-                inclined pile (BEM-FEM model)](ME-TH-CO-002/).
+                inclined pile (BEM-FEM
+                model)](ME-TH-CO-002/ME-TH-CO-002.pdf).
 
             -   `003` [\[TUTORIAL\] Impedances of a suction caisson /
-                bucket foundation (BEM-FEM model)](ME-TH-CO-003/).
+                bucket foundation (BEM-FEM
+                model)](ME-TH-CO-003/ME-TH-CO-003.pdf).
 
             -   `004` [\[TUTORIAL\] Seismic response of an Offshore Wind
-                Turbine (BEM-FEM model)](ME-TH-CO-004/).
+                Turbine (BEM-FEM model)](ME-TH-CO-004/ME-TH-CO-004.pdf).
 
             -   `005` [\[TUTORIAL\] Soria arch dam: compliant base (BEM
-                model)](ME-TH-CO-005/).
+                model)](ME-TH-CO-005/ME-TH-CO-005.pdf).
 
             -   `006` [\[TUTORIAL\] Soria arch dam: compliant base with
-                112 m water depth (BEM model)](ME-TH-CO-006/).
+                112 m water depth (BEM
+                model)](ME-TH-CO-006/ME-TH-CO-006.pdf).
 
 Notes for developers
 ====================
