@@ -13,7 +13,7 @@
 \title{
 \includegraphics[width=4cm]{../../docs/img/logo.pdf}
 \\
-MultiFEBE (version 2.0.1)
+MultiFEBE (version 2.0.2)
 \\
 Reference Manual}
 \author{
@@ -35,7 +35,7 @@ Reference Manual}
 
 \begin{large}
 \ttfamily
-Copyright {\copyright} 2014-2022 Universidad de Las Palmas de Gran Canaria
+Copyright {\copyright} 2014-2025 Universidad de Las Palmas de Gran Canaria
 \\\\
 Jacob D.R. Bordón \\ 
 Guillermo M. \'Alamo \\
@@ -115,8 +115,8 @@ It has a full set of linear elastic finite elements:
         \begin{itemize}
             \item 3 and 6 nodes triangular shell element based on the degeneration from solid (full/selective/reduced integration) \cite{onate2013}.
             \item 4, 8 and 6 nodes quadrilateral shell element based on the degeneration from solid (full/selective/reduced integration) \cite{onate2013}.
-            \item 3 and 6 nodes triangular MITC element (locking-free): MITC3 \cite{lee2004}, MITC6a \cite{lee2004}.
-            \item 4, 8 and 9 nodes quadrilateral MITC element (locking-free): MITC4 \cite{dvorkin1984}, MITC8 \cite{Bathe1986}, MITC9 \cite{Bucalem1993}.
+            \item 3 and 6 nodes triangular MITC element (locking-free): MITC3i \cite{lee2004,lee2014}, MITC6a \cite{lee2004}.
+            \item 4, 8 and 9 nodes quadrilateral MITC element (locking-free): MITC4 \cite{dvorkin1984}, MITC8 \cite{Bathe1986,jung2013}, MITC9 \cite{Bucalem1993,bathe2003}.
         \end{itemize}
     \end{itemize}
     \item Discrete finite elements:
@@ -1586,7 +1586,7 @@ and they are shown in Figure \ref{fig:stress_resultants_beam}.
 
 \subsubsection{Shell finite element obtained from the degeneration of the solid (\texttt{degshell})}
 
-This type of structural finite element is a shell finite element obtained from the degeneration of the solid via Reissner-Mindlin kinematic assumption, and it is denoted as \texttt{degshell} in the data section. It requires using a triangular element (3 or 6 nodes) or a quadrilateral element (4, 8 or 9 nodes) in the mesh. By default, the locking-free MITC family of elements of Bathe and co-workers \cite{dvorkin1984,Bathe1986,Bucalem1993,lee2004} with full integration is used: MITC3, MITC4, MITC6a, MITC8*, MITC9. 
+This type of structural finite element is a shell finite element obtained from the degeneration of the solid via Reissner-Mindlin kinematic assumption \cite{ahmad1970}, and it is denoted as \texttt{degshell} in the data section. It requires using a triangular element (3 or 6 nodes) or a quadrilateral element (4, 8 or 9 nodes) in the mesh. By default, the locking-free Mixed Interpolation of Tensorial Components (MITC) family of elements of Bathe and co-workers \cite{dvorkin1984,Bathe1986,Bucalem1993,bathe2003,lee2004,lee2014} with full integration is used: MITC3i, MITC4, MITC6a, MITC8*, MITC9. Standard shell finite element (without MITC) can still be used by denoting them as \texttt{degshell\_std}.
 
 Each element node $i$ has 3 translational DOF ($u_x^{(i)}$, $u_y^{(i)}$, $u_z^{(i)}$), and 2 local rotational DOFs ($\alpha^{(i)}$ and $\beta^{(i)}$ local rotations related to shell bending) or 3 global rotational DOFs ($\theta_x^{(i)}$, $\theta_y^{(i)}$ and $\theta_z^{(i)}$ global rotations). This shell model does not have rotational stiffness in the normal direction, the so called ``drilling'' stiffness, thus an artificial stiffness is added when using 6 DOF \cite{bathe1996} in order to avoid any singularity. There are three situations where 6 DOFs are mandatory: 
 \begin{enumerate}
@@ -1599,13 +1599,14 @@ Therefore, in practical problems most element nodes can be 5 DOFs. Although we c
 % Falta enlazar con la seccion [fem node options] para asignar manualmente el tipo de nodo (5 o 6 DOF)
 For time harmonic analysis,  a consistent mass matrix is used, and its density is taken from the \textbf{material} defined for the corresponding \textbf{fe subregion} and \textbf{region}.
 
-When defining \texttt{degshell} FE subregions, the data format of the cross section definition only requires the shell thickness and the $\mathbf{x}'_\mathrm{ref}$ reference vector for establising the $x'$ local axis (see Figure \ref{fig:local_axes_yref_2d} for more details):
+When defining \texttt{degshell} FE subregions, the data format of the cross section definition only requires the shell thickness and the $\mathbf{x}'_\mathrm{ref}$ reference vector for establishing the $x'$ local axis (see Figure \ref{fig:local_axes_yref_2d} for more details):
 \begin{Verbatim}[frame=single, fontsize=\small, label={format of section [cross sections] for degshell elements}]
 [cross sections]
 ...
 degshell <FE subregions> <thickness> <x'ref x> <x'ref y> <x'ref z>
 ...
 \end{Verbatim}
+If the standard shell finite element (without MITC) is needed, substitute \texttt{degshell} by \texttt{degshell\_std}.
 
 The stress resultants are defined as follows:
 \begin{equation}
@@ -3939,6 +3940,10 @@ which will take some time.
 \begin{Verbatim}[frame=single, fontsize=\small]
 $ pacman -S gcc mingw-w64-x86_64-gcc gcc-fortran mingw-w64-x86_64-gcc-fortran
 \end{Verbatim}
+
+% Ojo, en W11 a Samuel le fallo "gcc"
+% Hay que instalar también: pacman -S mingw-w64-x86_64-openmp
+
     \item Install GNU Make, CMake and NSIS:
 \begin{Verbatim}[frame=single, fontsize=\footnotesize]
 $ pacman -S gcc make mingw-w64-x86_64-make cmake mingw-w64-x86_64-cmake mingw-w64-x86_64-nsis
@@ -4084,6 +4089,6 @@ We have implemented a \texttt{*.bas} template file for writing mesh files in the
 
 
 \bibliography{bibliography}
-\bibliographystyle{unsrt}
+%\bibliographystyle{unsrt}
 
 \end{document}
