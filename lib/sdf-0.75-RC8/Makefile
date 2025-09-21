@@ -189,17 +189,31 @@ sdf_browse : sdf_browse.c libsdf.a libsdf_if64.a
 	echo "compiling sdf_browse" 
 	$(COMPILER) $(FLAGS) sdf_browse.c -L. -lsdf -o sdf_browse
 
+ifeq ($(OS),Windows_NT)
+
 fflag-extra.inc : testvers.f
 	echo "compiling xforttest"
 	$(F95) -cpp testvers.f -o xforttest
-	# Depends on Win or GNU/Linux
+	./xforttest.exe
+
+xforttest : testvers.f
+	echo "compiling xforttest"
+	$(F95) -cpp testvers.f -o xforttest
+	./xforttest.exe
+
+else
+
+fflag-extra.inc : testvers.f
+	echo "compiling xforttest"
+	$(F95) -cpp testvers.f -o xforttest
 	./xforttest
 
 xforttest : testvers.f
 	echo "compiling xforttest"
 	$(F95) -cpp testvers.f -o xforttest
-	# Depends on Win or GNU/Linux	
 	./xforttest
+	
+endif
 
 libsdf.a : sdf_subs.o
 	echo "making library archive" $@
