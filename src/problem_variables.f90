@@ -45,7 +45,7 @@ module problem_variables
   ! Program parameters
   ! ------------------
   !
-  character(len=5), parameter             :: multifebe_version='2.0.1'
+  character(len=5), parameter             :: multifebe_version='2.0.2'
   ! --------------------------------------------------------------------------------------------------------------------------------
   ! Files configuration
   ! -------------------
