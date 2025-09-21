@@ -3966,6 +3966,14 @@ $ cd build
 \begin{Verbatim}[frame=single, fontsize=\small]
 $ cmake -G "Unix Makefiles" ..
 \end{Verbatim}
+If you want to compile an executable which uses OpenMP (shared-memory parallelization) and uses all possible compiler optimizations, you should use the Release build:
+\begin{Verbatim}[frame=single, fontsize=\small]
+    $ cmake -D CMAKE_BUILD_TYPE=Release -G "Unix Makefiles" ..
+\end{Verbatim}
+If you want to compile for debugging, you should use the Debug build:
+\begin{Verbatim}[frame=single, fontsize=\small]
+    $ cmake -D CMAKE_BUILD_TYPE=Debug -G "Unix Makefiles" ..
+\end{Verbatim}
   \begin{figure}[h]
   \centering
   \includegraphics[scale=0.7]{figures/windows_compilation_013.png}
