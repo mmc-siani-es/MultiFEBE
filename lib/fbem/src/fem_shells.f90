@@ -57,12 +57,34 @@ module fbem_fem_shells
   !   - Region properties.
   !   - Number of Gauss of integration points for in-plane coordinates (xi1,xi2) for both the membrane-bending and the
   !     shear local strain contributions, and thickness coordinate (xi3).
-  !   - Conventional (full, reduced, selective integration) or MITC (MITC3, MITC4, MITC6a, MITC8*, MITC9) elements.
+  !   - Conventional (full, reduced, selective integration) or MITC (MITC3i, MITC4, MITC6a, MITC8*, MITC9) elements.
   !
   ! Bibliography:
-  !   - K.J. Bathe, Finite Element Procedures, 1996.
-  !   - O.C. Zienkiewicz and R.L. Taylor, The Finite Element Method, Volume 2 - Solid Mechanics, 5th edition, 2000.
-  !   - E. Oñate, Structural Analysis with Finite Element Method, Volume 2 - Beams, Plates and Shells, 1st edition, 2013.
+  !   - General:
+  !     - K.J. Bathe, Finite Element Procedures, 1996.
+  !     - O.C. Zienkiewicz and R.L. Taylor, The Finite Element Method, Volume 2 - Solid Mechanics, 5th edition, 2000.
+  !     - E. Oñate, Structural Analysis with Finite Element Method, Volume 2 - Beams, Plates and Shells, 1st edition, 2013.
+  !   - MITC3, MITC3i, MITC3+:
+  !     - Lee & Bathe, Development of MITC isotropic triangular shell ﬁnite elements, Comput Struct 82, 2004.
+  !     - Lee, Lee & Bathe, The MITC3+ shell element and its performance, Comput Struct 138, 2014.
+  !     - Lee et al., The modal behavior of the MITC3+ triangular shell element, Comput Struct 153, 2015.
+  !     - TODO: Implement the MITC3+.
+  !   - MITC4:
+  !     - Dvorkin & Bathe, A continuum mechanics based four-node shell element for general non-linear analysis, Eng Comput 1 (1984).
+  !     - Bathe & Dvorkin, A formulation of general shell elements - the use of MITC, IntInt J Numer Methods Eng 22, 1986.
+  !     - Ko, Lee & Bathe, A new MITC4+ shell element, Comput Struct 182, 2017.
+  !     - TODO: Implement the new MITC4+:
+  !   - MITC6:
+  !     - Lee & Bathe, Development of MITC isotropic triangular shell ﬁnite elements, Comput Struct 82, 2004.
+  !     - Kim & Bathe, A triangular six-node shell element, Comput Struct 87, 2009.
+  !     - TODO: Implement the improved MITC6 from Kim & Bathe 2009.
+  !   - MITC8:
+  !     - Bathe & Dvorkin, A formulation of general shell elements - the use of MITC, IntInt J Numer Methods Eng 22, 1986.
+  !     - Jung & Han, An 8-Node Shell Element for Nonlinear Analysis of Shells Using the Refined Combination of Membrane and Shear
+  !       Interpolation Functions, Mathematical Problems in Engineering, 2013.
+  !   - MITC9:
+  !     - Bucalem & Bathe, Higher-order MITC general shell elements, Int J Numer Methods Eng 36, 1993.
+  !     - Bathe, Lee & Hiller, Towards improving the MITC9 shell element, Comput Struct 81, 2003.
   !
   public :: fbem_fem_degshell_K_static
   public :: fbem_fem_degshell_K_harmonic
@@ -273,7 +295,7 @@ contains
   subroutine fbem_fem_dkt_K_static(etype,x,t,Em,nu,K)
     implicit none
     ! I/O
-    integer           :: etype                                          !! Type of element (displacements interpolation): tri3, tri6, quad4, quad8, quad9.
+    integer           :: etype                                          !! Type of element (displacements interpolation): tri3 (only valid)
     real(kind=real64) :: x(3,fbem_n_nodes(etype))                       !! Position vectors of the mid-plane nodes.
     real(kind=real64) :: t                                              !! Thickness
     real(kind=real64) :: Em                                             !! Young's modulus
@@ -376,11 +398,11 @@ contains
   ! 3D SHELL FINITE ELEMENTS (DEGENERATED FROM THREE-DIMENSIONAL SOLIDS)
   ! ================================================================================================================================
 
-  subroutine fbem_fem_degshell_K_static(etype,mitc,x_md,v_md,t_md,ndof_md,Em,nu,kappa,intmode,ngp,K)
+  subroutine fbem_fem_degshell_K_static(etype,fe_option,x_md,v_md,t_md,ndof_md,Em,nu,kappa,intmode,ngp,K)
     implicit none
     ! I/O
     integer           :: etype                                          !! Type of element (displacements interpolation): tri3, tri6, quad4, quad8, quad9.
-    logical           :: mitc                                           !! Use MITC elements
+    integer           :: fe_option                                      !! 0: standard, 1: MITC
     real(kind=real64) :: x_md(3,fbem_n_nodes(etype))                    !! Position vectors of the mid-plane nodes.
     real(kind=real64) :: v_md(3,3,fbem_n_nodes(etype))                  !! Local axes for each mid-node for the rotation degrees of freedom.
     real(kind=real64) :: t_md(3,fbem_n_nodes(etype))                    !! Thickness of each mid-node in the v_3 direction.
@@ -473,7 +495,7 @@ contains
     !
     ! MITC shell finite elements
     !
-    if (mitc) then
+    if (fe_option.eq.1) then
       ! Use full integration unless user-defined integration mode is selected
       if (intmode.ne.3) then
         select case (etype)
@@ -546,12 +568,12 @@ contains
     deallocate (Kf,Kp,Lc)
   end subroutine fbem_fem_degshell_K_static
 
-  subroutine fbem_fem_degshell_K_harmonic(omega,etype,mitc,x_md,v_md,t_md,ndof_md,Em,nu,kappa,rho,K_intmode,K_intngp,M_intmode,M_intngp,K)
+  subroutine fbem_fem_degshell_K_harmonic(omega,etype,fe_option,x_md,v_md,t_md,ndof_md,Em,nu,kappa,rho,K_intmode,K_intngp,M_intmode,M_intngp,K)
     implicit none
     ! I/O
     real(kind=real64)    :: omega                                          !! Circular frequency
     integer              :: etype                                          !! Type of element (displacements interpolation): tri3, tri6, quad4, quad8, quad9.
-    logical              :: mitc                                           !! Use MITC elements
+    integer              :: fe_option                                      !! 0: standard, 1: MITC
     real(kind=real64)    :: x_md(3,fbem_n_nodes(etype))                    !! Position vectors of the mid-plane nodes.
     real(kind=real64)    :: v_md(3,3,fbem_n_nodes(etype))                  !! Local axes for each mid-node for the rotation degrees of freedom.
     real(kind=real64)    :: t_md(3,fbem_n_nodes(etype))                    !! Thickness of each mid-node in the v_3 direction.
@@ -647,7 +669,7 @@ contains
     !
     ! MITC shell finite elements
     !
-    if (mitc) then
+    if (fe_option.eq.1) then
       ! Use full integration unless user-defined integration mode is selected
       if (K_intmode.ne.3) then
         select case (etype)
@@ -2129,7 +2151,7 @@ contains
     real(kind=real64) :: p(2)    !! Parameters for the interpolation
     integer           :: n       !! Number of tying points
     real(kind=real64) :: xi(2,9) !! Local coordinates of each interpolation point
-    real(kind=real64) :: s(3), r(3)
+    real(kind=real64) :: s(3), r(3), d
     select case (t)
       !
       ! Constant interpolation evaluated at TP:(p1,p2)
@@ -2243,7 +2265,7 @@ contains
         xi(:,6)=[ p(1), 0.d0]
         xi(:,7)=[-p(1), 0.d0]
       !
-      ! Constant edges. Special isotropic MITC3 shear strains interpolation. Lee & Bathe (2004)
+      ! Special isotropic MITC3 shear strains interpolation. Lee & Bathe (2004)
       !
       case (13,14)
         n=3
@@ -2251,37 +2273,49 @@ contains
         xi(:,2)=[0.0d0,0.5d0]
         xi(:,3)=[0.5d0,0.5d0]
       !
-      ! Linear edges. Special isotropic MITC6a shear strains interpolation. Lee & Bathe (2004)
+      ! MITC6a shear strains interpolation. Lee & Bathe (2004)
       !
       case (15,16)
         n=7
         s=[0.5d0-0.5d0/sqrt(3.d0),0.5d0+0.5d0/sqrt(3.d0),1.d0/3.d0]
         r=s
-        xi(:,1)=[r(1),0.d0] ! e^(1)_1rt
-        xi(:,2)=[r(2),0.d0] ! e^(1)_2rt
-        xi(:,3)=[0.d0,s(1)] ! e^(2)_1st
-        xi(:,4)=[0.d0,s(2)] ! e^(2)_2st
-        xi(:,5)=[r(2),s(1)] ! e^(3)_1qt
-        xi(:,6)=[r(1),s(2)] ! e^(3)_2qt
-        xi(:,7)=[r(3),s(3)] ! e_c
+        xi(:,1)=[r(1),0.d0] ! Tying point 1: e^(1)_1rt
+        xi(:,2)=[r(2),0.d0] ! Tying point 2: e^(1)_2rt
+        xi(:,3)=[0.d0,s(1)] ! Tying point 3: e^(2)_1st
+        xi(:,4)=[0.d0,s(2)] ! Tying point 4: e^(2)_2st
+        xi(:,5)=[r(2),s(1)] ! Tying point 5: e^(3)_1qt
+        xi(:,6)=[r(1),s(2)] ! Tying point 6: e^(3)_2qt
+        xi(:,7)=[r(3),s(3)] ! Tying point 7: e_crt, e_cst
       !
-      ! Linear. Special isotropic MITC6a in-plane strains interpolation. Lee & Bathe (2004)
+      ! MITC6a in-plane strains interpolation. Lee & Bathe (2004)
       !
       case (17,18,19)
         n=9
         s=[0.5d0-0.5d0/sqrt(3.d0),0.5d0+0.5d0/sqrt(3.d0),1.d0/sqrt(3.d0)]
         r=s
-        xi(:,1)=[r(1),0.d0] ! e^(1)_1rr
-        xi(:,2)=[r(2),0.d0] ! e^(1)_2rr
-        xi(:,3)=[r(1),s(3)] ! e^(1)_crr
-        xi(:,4)=[0.d0,s(1)] ! e^(2)_1ss
-        xi(:,5)=[0.d0,s(2)] ! e^(2)_2ss
-        xi(:,6)=[r(3),s(1)] ! e^(2)_css
-        xi(:,7)=[r(2),s(1)] ! e^(3)_1qq
-        xi(:,8)=[r(1),s(2)] ! e^(3)_2qq
-        xi(:,9)=[r(1),s(1)] ! e^(3)_cqq
+        xi(:,1)=[r(1),0.d0] ! Tying point 1: e^(1)_1rr
+        xi(:,2)=[r(2),0.d0] ! Tying point 2: e^(1)_2rr
+        xi(:,3)=[r(1),s(3)] ! Tying point 3: e^(1)_crr
+        xi(:,4)=[0.d0,s(1)] ! Tying point 4: e^(2)_1ss
+        xi(:,5)=[0.d0,s(2)] ! Tying point 5: e^(2)_2ss
+        xi(:,6)=[r(3),s(1)] ! Tying point 6: e^(2)_css
+        xi(:,7)=[r(2),s(1)] ! Tying point 7: e^(3)_1qq
+        xi(:,8)=[r(1),s(2)] ! Tying point 8: e^(3)_2qq
+        xi(:,9)=[r(1),s(1)] ! Tying point 9: e^(3)_cqq
+      !
+      ! Special isotropic MITC3i (and MITC3+) shear strains interpolation. Lee & Bathe (2004) y (2014).
+      !
+      case (20,21)
+        n=6
+        d=0.0001d0 ! d parameter (recommended value)
+        xi(:,1)=[1.d0/6.d0,2.d0/3.d0] ! Tying point A
+        xi(:,2)=[2.d0/3.d0,1.d0/6.d0] ! Tying point B
+        xi(:,3)=[1.d0/6.d0,1.d0/6.d0] ! Tying point C
+        xi(:,4)=[1.d0/3.d0+d     ,1.d0/3.d0-2.d0*d] ! Tying point D
+        xi(:,5)=[1.d0/3.d0-2.d0*d,1.d0/3.d0+d     ] ! Tying point E
+        xi(:,6)=[1.d0/3.d0+d     ,1.d0/3.d0+d     ] ! Tying point F
       case default
-        stop 'ERROR: mitc_interpolation_schemes does not recognize this interpolation'
+        stop 'ERROR: mitc_interpolation_scheme does not recognize this interpolation scheme.'
     end select
   end subroutine mitc_interpolation_scheme_tp
 
@@ -2440,7 +2474,7 @@ contains
         mitc_interpolation_scheme_phi(2)=xi(1)
         mitc_interpolation_scheme_phi(3)=xi(2)
       !
-      ! Linear edges. Special isotropic MITC6a shear strainsinterpolation. Lee & Bathe (2004)
+      ! Linear edges. Special isotropic MITC6a shear strains interpolation. Lee & Bathe (2004)
       !
       case (15,16)
         mitc_interpolation_scheme_phi(1)=1.d0
@@ -2456,8 +2490,15 @@ contains
         mitc_interpolation_scheme_phi(1)=1.d0
         mitc_interpolation_scheme_phi(2)=xi(1)
         mitc_interpolation_scheme_phi(3)=xi(2)
+      !
+      ! Special isotropic MITC3i (and MITC3+) shear strains interpolation. Lee & Bathe (2004), Lee & Bathe (2014).
+      !
+      case (20,21)
+        mitc_interpolation_scheme_phi(1)=1.d0
+        mitc_interpolation_scheme_phi(2)=xi(1)
+        mitc_interpolation_scheme_phi(3)=xi(2)
       case default
-        stop 'ERROR: mitc_interpolation_scheme does not recognize this interpolation'
+        stop 'ERROR: mitc_interpolation_scheme does not recognize this interpolation scheme.'
     end select
   end function mitc_interpolation_scheme_phi
 
@@ -2617,13 +2658,23 @@ contains
     !
     select case (etype)
       !
-      ! MITC3 (Lee & Bathe, 2004)
+      ! MITC3 & derivatives
       !
       case (fbem_tri3)
+!        !
+!        ! MITC3 (Lee & Bathe, 2004)
+!        !
+!        ! eps_13
+!        itype(  4)=13
+!        ! eps_23
+!        itype(  5)=14
+        !
+        ! MITC3i (Lee & Bathe, 2014)
+        !
         ! eps_13
-        itype(  4)=13
+        itype(  4)=20
         ! eps_23
-        itype(  5)=14
+        itype(  5)=21
       !
       ! MITC4 (Dvorkin & Bathe, 1984)
       !
@@ -2652,10 +2703,6 @@ contains
       ! MITC8
       !
       case (fbem_quad8)
-        ! If you want to use MITC8 as originally proposed by Bathe & Dvorkin (1986), i.e. interpolating strain
-        ! invariants, uncomment the following two lines.
-!        call fbem_fem_mitcdegshell_K_real_mitc8(etype,x_mn,v_mn,t_mn,Em,nu,kappa,ngpip,ngpth,K,V)
-!        return
 !        !
 !        ! OPTION 1
 !        !
@@ -2757,10 +2804,12 @@ contains
         ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
         ! eps_13
         itype(  4)=7
-        ipars(:,4)=[sqrt(1.d0/3.d0),sqrt(3.d0/5.d0)]
+        !ipars(:,4)=[sqrt(1.d0/3.d0),sqrt(3.d0/5.d0)] ! Original (Bucalem & Bathe, 1993)
+        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0] ! Proposed in (Bathe et al., 2003)
         ! eps_23
         itype(  5)=6
-        ipars(:,5)=[sqrt(3.d0/5.d0),sqrt(1.d0/3.d0)]
+        !ipars(:,5)=[sqrt(3.d0/5.d0),sqrt(1.d0/3.d0)] ! Original (Bucalem & Bathe, 1993)
+        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)] ! Proposed in (Bathe et al., 2003)
       case default
         stop 'MITC element not available'
     end select
@@ -2887,15 +2936,41 @@ contains
             cBpar(:,:,:,2,5) = -cBpar(:,:,:,3,4)
             cBpar(:,:,:,3,5) = 0.d0
           !
-          ! MITC6a -- shear strains (eps_13 = a1+b1*r+c1*s+...)
+          ! MITC3i -- shear strains (eps_13 = 2/3*(eps_13_B-1/2*eps_23_B)+1/3*(eps_13_C+eps_23_C)-c/3+0*r+c*s)
+          !
+          case (20)
+            if (ksc.ne.4) stop 'mitc error 20'
+            ! Linear part multiplying s (+ĉ)
+            cBpar(:,:,:,3,4) = cBtp(:,:,:,6,4)-cBtp(:,:,:,4,4)-cBtp(:,:,:,6,5)+cBtp(:,:,:,5,5)
+            ! Constant part
+            cBpar(:,:,:,1,4) = 2.d0/3.d0*(cBtp(:,:,:,2,4)-0.5d0*cBtp(:,:,:,2,5))&
+                              +1.d0/3.d0*(cBtp(:,:,:,3,4)+cBtp(:,:,:,3,5))&
+                              -1.d0/3.d0*cBpar(:,:,:,3,4)
+            ! Linear part multiplying r (0)
+            cBpar(:,:,:,2,4) = 0.d0
+          !
+          ! MITC3i -- shear strains (eps_23 = 2/3*(eps_23_A-1/2*eps_13_A)+1/3*(eps_13_C+eps_23_C)+c/3-c*r+0*s)
+          !
+          case (21)
+            if (ksc.ne.5) stop 'mitc error 21'
+            ! Linear part multiplying r (-ĉ)
+            cBpar(:,:,:,2,5) = -cBpar(:,:,:,3,4)
+            ! Constant part
+            cBpar(:,:,:,1,5) = 2.d0/3.d0*(cBtp(:,:,:,1,5)-0.5d0*cBtp(:,:,:,1,4))&
+                              +1.d0/3.d0*(cBtp(:,:,:,3,4)+cBtp(:,:,:,3,5))&
+                              +1.d0/3.d0*cBpar(:,:,:,3,4)
+            ! Linear part multiplying s (0)
+            cBpar(:,:,:,3,5) = 0.d0
+          !
+          ! MITC6a -- shear strains (pag. 952-953 Lee & Bathe, 2004) (eps_13 = a1+b1*r+c1*s+...)
           !
           case (15)
             if (ksc.ne.4) stop 'mitc error 15'
             !
-            ! Define all coefficients here
+            ! Calculate all coefficients here
             !
             ! a1
-            cBpar(:,:,:,1,4) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,1,4)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,2,4)
+            cBpar(:,:,:,1,4) = 0.5d0*((1.d0+sqrt(3.d0))*cBtp(:,:,:,1,4)+(1.d0-sqrt(3.d0))*cBtp(:,:,:,2,4))
             ! a2
             cBpar(:,:,:,1,5) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,3,5)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,4,5)
             ! b1
@@ -2908,10 +2983,10 @@ contains
             cBpar(:,:,:,6,5) = 0.d0
             ! c1
             cBpar(:,:,:,3,4) = 6.d0*cBtp(:,:,:,7,4)-3.d0*cBtp(:,:,:,7,5)+cBtp(:,:,:,5,5)+cBtp(:,:,:,6,5) &
-            -cBtp(:,:,:,5,4)-cBtp(:,:,:,6,4)-4.d0*cBpar(:,:,:,1,4)-cBpar(:,:,:,2,4)+cBpar(:,:,:,1,5)
+                              -cBtp(:,:,:,5,4)-cBtp(:,:,:,6,4)-4.d0*cBpar(:,:,:,1,4)-cBpar(:,:,:,2,4)+cBpar(:,:,:,1,5)
             ! b2
             cBpar(:,:,:,2,5) =-3.d0*cBtp(:,:,:,7,4)+6.d0*cBtp(:,:,:,7,5)-cBtp(:,:,:,5,5)-cBtp(:,:,:,6,5) &
-            +cBtp(:,:,:,5,4)+cBtp(:,:,:,6,4)+cBpar(:,:,:,1,4)-4.d0*cBpar(:,:,:,1,5)-cBpar(:,:,:,3,5)
+                              +cBtp(:,:,:,5,4)+cBtp(:,:,:,6,4)+cBpar(:,:,:,1,4)-4.d0*cBpar(:,:,:,1,5)-cBpar(:,:,:,3,5)
             ! e2
             cBpar(:,:,:,5,5) = 3.d0*cBtp(:,:,:,7,4)-6.d0*cBtp(:,:,:,7,5)+1.5d0*(cBtp(:,:,:,5,5)+cBtp(:,:,:,6,5)) &
             -0.5d0*sqrt(3.d0)*(cBtp(:,:,:,6,5)-cBtp(:,:,:,5,5))-1.5d0*(cBtp(:,:,:,5,4)+cBtp(:,:,:,6,4)) &
@@ -2925,11 +3000,11 @@ contains
             ! d2
             cBpar(:,:,:,4,5) = -cBpar(:,:,:,6,4)
           !
-          ! MITC6a -- shear strains (eps_23 = = a2+b2*r+c2*s+...)
+          ! MITC6a -- shear strains (pag. 952-953 Lee & Bathe, 2004) (eps_23 = = a2+b2*r+c2*s+...)
           !
           case (16)
             if (ksc.ne.5) stop 'mitc error 16'
-            ! Build previously
+            ! Already calculated previously
           !
           ! MITC6a -- in-plane strains (pag. 951 Lee & Bathe, 2004)
           !
@@ -2939,16 +3014,16 @@ contains
             ! Define all coefficients here
             !
             ! a1
-            cBpar(:,:,:,1,1) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,1,1)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,2,1)
+            cBpar(:,:,:,1,1) = 0.5d0*((1.d0+sqrt(3.d0))*cBtp(:,:,:,1,1)+(1.d0-sqrt(3.d0))*cBtp(:,:,:,2,1))
+            ! a2
+            cBpar(:,:,:,1,2) = 0.5d0*((1.d0+sqrt(3.d0))*cBtp(:,:,:,4,2)+(1.d0-sqrt(3.d0))*cBtp(:,:,:,5,2))
+            ! a3
+            cBpar(:,:,:,1,3) = 0.5d0*(1.d0-sqrt(3.d0))*(0.5d0*cBtp(:,:,:,7,1)+0.5d0*cBtp(:,:,:,7,2)-cBtp(:,:,:,7,3))&
+                              +0.5d0*(1.d0+sqrt(3.d0))*(0.5d0*cBtp(:,:,:,8,1)+0.5d0*cBtp(:,:,:,8,2)-cBtp(:,:,:,8,3))
             ! b1
             cBpar(:,:,:,2,1) = sqrt(3.d0)*(cBtp(:,:,:,2,1)-cBtp(:,:,:,1,1))
-            ! a2
-            cBpar(:,:,:,1,2) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,4,2)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,5,2)
             ! c2
             cBpar(:,:,:,3,2) = sqrt(3.d0)*(cBtp(:,:,:,5,2)-cBtp(:,:,:,4,2))
-            ! a3
-            cBpar(:,:,:,1,3) = (0.5d0-0.5d0*sqrt(3.d0))*(0.5d0*cBtp(:,:,:,7,1)+0.5d0*cBtp(:,:,:,7,2)-cBtp(:,:,:,7,3))&
-                              +(0.5d0+0.5d0*sqrt(3.d0))*(0.5d0*cBtp(:,:,:,8,1)+0.5d0*cBtp(:,:,:,8,2)-cBtp(:,:,:,8,3))
             ! b3
             cBpar(:,:,:,2,3) = -sqrt(3.d0)*(0.5d0*cBtp(:,:,:,8,1)+0.5d0*cBtp(:,:,:,8,2)-cBtp(:,:,:,8,3)&
                                             -(0.5d0*cBtp(:,:,:,7,1)+0.5d0*cBtp(:,:,:,7,2)-cBtp(:,:,:,7,3)))
@@ -2960,7 +3035,7 @@ contains
             cBpar(:,:,:,3,3) = sqrt(3.d0)*(0.5d0*cBtp(:,:,:,9,1)+0.5d0*cBtp(:,:,:,9,2)-cBtp(:,:,:,9,3)&
                                            -cBpar(:,:,:,1,3)-cBpar(:,:,:,2,3)*(0.5d0-0.5d0/sqrt(3.d0)))
             !
-            ! Redefine a3, b3 and c3
+            ! Redefine a3, b3 and c3 for eps_12
             !
             cBpar(:,:,:,1,3) = 0.5d0*(cBpar(:,:,:,1,1)+cBpar(:,:,:,1,2))-cBpar(:,:,:,1,3)-cBpar(:,:,:,3,3)
             cBpar(:,:,:,2,3) = 0.5d0*(cBpar(:,:,:,2,1)+cBpar(:,:,:,2,2))-cBpar(:,:,:,2,3)+cBpar(:,:,:,3,3)
@@ -3382,694 +3457,6 @@ contains
         call fbem_error_message(error_unit,0,__FILE__,__LINE__,'etype={tri3,tri6,quad4,quad8,quad9}')
     end select
   end subroutine fbem_fem_mitcdegshell_K_real
-
-  !! Calculate the stiffness matrix K for statics, with real E and K. Only MITC8 as in Bathe & Dvorkin (1986) paper.
-  subroutine fbem_fem_mitcdegshell_K_real_mitc8(etype,x_mn,v_mn,t_mn,Em,nu,kappa,ngpip,ngpth,K,V)
-    implicit none
-    ! I/O
-    integer           :: etype                                          !! Type of element (displacements interpolation): tri3, tri6, quad4, quad8, quad9.
-    real(kind=real64) :: x_mn(3,fbem_n_nodes(etype))                    !! Position vectors of the mid-plane nodes.
-    real(kind=real64) :: v_mn(3,3,fbem_n_nodes(etype))                  !! Local axes for each mid-node for the rotation degrees of freedom.
-    real(kind=real64) :: t_mn(fbem_n_nodes(etype))                      !! Thickness of each mid-node in the v_3 direction.
-    real(kind=real64) :: Em                                             !! Young's modulus
-    real(kind=real64) :: nu                                             !! Poisson's ratio
-    real(kind=real64) :: kappa(3)                                       !! Shear correction factors: kx', ky',-
-    integer           :: ngpip                                          !! Number of Gauss-Legendre integration points for in-plane coordinates (xi1,xi2) for the membrane-bending (inplane) local strain contribution.
-    integer           :: ngpth                                          !! Number of Gauss-Legendre integration points for thickness coordinate (xi3)
-    real(kind=real64) :: K(5*fbem_n_nodes(etype),5*fbem_n_nodes(etype)) !! Stiffness matrix
-    real(kind=real64) :: V                                              !! Volume of the element
-    ! Local
-    integer           :: n_mn                                  ! Number of mid-nodes
-    integer           :: kmn                                   ! Counter of mid-nodes
-    integer           :: contribution                          ! Contribution part
-    integer           :: ngp                                   ! Number of Gauss points
-    integer           :: rule                                  ! Rule of Wandzura quadrature
-    integer           :: kxi1, kxi2, kxi3, kxit, ksf           ! Integration points counters
-    real(kind=real64) :: xi1, xi2, xi3, xi(2), w1, w2, w3, wt  ! Curvilinear coordinates and quadrature weights
-    real(kind=real64) :: aux(10)                               ! Auxiliary variable needed for shape_functions module resources
-    real(kind=real64) :: phi(fbem_n_nodes(etype))              ! phi shape functions
-    real(kind=real64) :: dphidxi1(fbem_n_nodes(etype))         ! phi shape functions derivatives with respect to xi_1
-    real(kind=real64) :: dphidxi2(fbem_n_nodes(etype))         ! phi shape functions derivatives with respect to xi_2
-    real(kind=real64) :: dphidxi3(fbem_n_nodes(etype))         ! phi shape functions derivatives with respect to xi_3
-    real(kind=real64) :: varphi(fbem_n_nodes(etype))           ! varphi shape functions
-    real(kind=real64) :: dvarphidxi1(fbem_n_nodes(etype))      ! varphi shape functions derivatives with respect to xi_1
-    real(kind=real64) :: dvarphidxi2(fbem_n_nodes(etype))      ! varphi shape functions derivatives with respect to xi_2
-    real(kind=real64) :: dvarphidxi3(fbem_n_nodes(etype))      ! varphi shape functions derivatives with respect to xi_3
-    real(kind=real64) :: J(3,3), H(3,3), detJ                  ! Jacobian matrix, its inverse and the jacobian determinant
-    real(kind=real64) :: jw                                    ! det(J) * weights
-    real(kind=real64) :: T1(3), T2(3), N(3)                    ! Derivatives of position with respect to curvilinear coordinates and the normal vector to the mid-plane
-    real(kind=real64) :: ep1(3), ep2(3), ep3(3)                ! Local ortogonal axes
-    real(kind=real64) :: E(5,6)                                ! E matrix (global cartesian to local cartesian rotation matrix for tensors)
-    real(kind=real64) :: G(6,5)                                ! G matrix (curvilinear to global cartesian rotation matrix for tensors)
-    real(kind=real64) :: EG(5,5)                               ! E·G
-    real(kind=real64) :: Dc(5,5)                               ! Dc constitutive matrix (curvilinear coordinates)
-    real(kind=real64) :: Bc(5,5,fbem_n_nodes(etype))           ! Covariant element B matrix
-    real(kind=real64) :: Dp(5,5)                               ! D' constitutive matrix (cartesian local coordinates)
-    integer           :: ki,kis,kie,kj,kjs,kje,ksc,k1,k2       ! Counters and nodal DOF limits
-    real(kind=real64) :: gv1(3), gv2(3), gv3(3)                ! Covariant basis vectors
-    real(kind=real64) :: gn1(3), gn2(3), gn3(3)                ! Contravariant basis vectors
-    real(kind=real64) :: dNdxi1(3,5), dNdxi2(3,5), dNdxi3(3,5)
-    ! Covariant strains are ordered as: in-layer strains (e11, e22, e12), transverse shear strains (e13, e23)
-    integer           :: itype(5)      ! Interpolation scheme of each strain component
-    real(kind=real64) :: ipars(2,5)    ! Parameters for custom positioning of tying points
-    integer           :: n_tp(5)       ! Number of tying points of each covariant strain component
-    real(kind=real64) :: xi_tp(2,9,5)  ! Position in curvilinear coordinates tying points
-    real(kind=real64) :: phi_tp(9,5)   ! Shape functions for strain interpolation
-    !
-    ! Covariant B_ij matrix (B11,B22,B12,B13,B23) with 5 nodal DOF for each node k at each tying point (surface, thickness).
-    ! Index 1: nodal DOF (u1,u2,u3,alpha,beta)
-    ! Index 2: node (1,2,...,N)
-    ! Index 3: thickness point index
-    ! Index 4: surface point index
-    ! Index 5: covariant strain component (e11,e22,e12,e13,e23)
-    !
-    real(kind=real64) :: cBtp(5,fbem_n_nodes(etype),ngpth,9,5)
-    real(kind=real64) :: gvtp(3,3,ngpth,9) ! covariant basis at tying points: gvtp(:,1,ngpth,9) is gv1, gvtp(:,2,ngpth,9) is gv2,...
-    real(kind=real64) :: gntp(3,3,ngpth,9) ! contravariant basis at tying points: : gntp(:,1,ngpth,9) is gn1, gntp(:,2,ngpth,9) is gn2,...
-    !
-    ! Covariant B_ij used for interpolation, not necessarily at values at tying points. Necessary for MITC3 and MITC6. Here
-    ! different covariant strains at tying points are combined to form interpolation parameter a,b,c,d,...
-    !
-    real(kind=real64) :: cBpar(5,fbem_n_nodes(etype),ngpth,9,5)
-    real(kind=real64) :: cBparmitc8(5,3,3,fbem_n_nodes(etype),ngpth,9,5)
-    real(kind=real64) :: gvtpbar(3,3), gntpbar(3,3)
-    real(kind=real64) :: strain(3,3)
-    !
-    ! Initialization
-    !
-    K=0
-    V=0
-    n_mn=fbem_n_nodes(etype)
-    itype=0
-    ipars=0
-    !
-    ! Local constitutive matrix D'
-    !
-    Dp=0.d0
-    Dp(1,1)=1.d0
-    Dp(1,2)=nu
-    Dp(2,1)=nu
-    Dp(2,2)=1.d0
-    Dp(3,3)=0.5d0*(1.d0-nu)
-    Dp(4,4)=kappa(1)*0.5d0*(1.d0-nu)
-    Dp(5,5)=kappa(2)*0.5d0*(1.d0-nu)
-    Dp=Em/(1.d0-nu**2)*Dp
-    !
-    ! Define the interpolation scheme
-    !
-    select case (etype)
-      !
-      ! MITC8
-      !
-      case (fbem_quad8)
-        !
-        ! MITC8 (Bathe & Dvorkin, 1986)
-        !
-        ! eps_11
-        itype(  1)=8
-        ipars(:,1)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
-        ! eps_22
-        itype(  2)=8
-        ipars(:,2)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
-        ! eps_12
-        itype(  3)=8
-        ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
-        ! eps_13
-        itype(  4)=12
-        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
-        ! eps_23
-        itype(  5)=11
-        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
-      case default
-        stop 'MITC element not available'
-    end select
-    !
-    ! Calculate the covariant strain matrix Bij at each tying point (cBtp)
-    !
-    !
-    ! Loop through each covariant strain component
-    !
-    do ksc=1,5
-      !
-      ! Initialize
-      !
-      if (itype(ksc).gt.0) then
-        call mitc_interpolation_scheme_tp(itype(ksc),ipars(:,ksc),n_tp(ksc),xi_tp(:,:,ksc))
-      else
-        n_tp(ksc)=0
-        xi_tp(:,:,ksc)=0.d0
-      end if
-      !
-      ! Loop through each tying point
-      !
-      do ksf=1,n_tp(ksc)
-        ! xi_1, xi_2
-        xi=xi_tp(:,ksf,ksc)
-        ! In-plane shape functions and their first derivatives with respect to xi_1, xi_2 and xi_3 at (xi_1,xi_2,xi_3)
-#       define delta 0.0d0
-#       include <phi_and_dphidxik_2d.rc>
-#       undef delta
-        dphidxi3=0.d0
-        do kxi3=1,ngpth
-          ! xi_3
-          xi3=gl11_xi(kxi3,ngpth)
-          ! Thickness shape function and its derivative with respect to xi_1, xi_2 and xi_3 at (xi_1,xi_2,xi_3)
-          varphi=phi*0.5d0*xi3*t_mn
-          dvarphidxi1=dphidxi1*0.5d0*xi3*t_mn
-          dvarphidxi2=dphidxi2*0.5d0*xi3*t_mn
-          dvarphidxi3=phi*0.5d0*t_mn
-          ! Calculate Jacobian matrix at (xi_1,xi_2,xi_3)
-          J=0.d0
-          do kmn=1,n_mn
-            J(1,:)=J(1,:)+dphidxi1(kmn)*x_mn(:,kmn)+dvarphidxi1(kmn)*v_mn(:,3,kmn)
-            J(2,:)=J(2,:)+dphidxi2(kmn)*x_mn(:,kmn)+dvarphidxi2(kmn)*v_mn(:,3,kmn)
-            J(3,:)=J(3,:)+dphidxi3(kmn)*x_mn(:,kmn)+dvarphidxi3(kmn)*v_mn(:,3,kmn)
-          end do
-          ! Calculate inv(J) and det(J)
-          call fbem_invert_3x3_matrix(J,H,detJ)
-          ! Covariant basis
-          gv1=J(1,:)
-          gv2=J(2,:)
-          gv3=J(3,:)
-          gvtp(:,:,kxi3,ksf)=transpose(J)
-          ! Contravariant basis
-          gn1=H(:,1)
-          gn2=H(:,2)
-          gn3=H(:,3)
-          gntp(:,:,kxi3,ksf)=H
-          ! Build covariant B matrices
-          dNdxi1=0.d0
-          dNdxi2=0.d0
-          dNdxi3=0.d0
-          do kmn=1,n_mn
-            ! dN/dxi
-            dNdxi1(  1,1)= dphidxi1(kmn)
-            dNdxi1(  2,2)= dphidxi1(kmn)
-            dNdxi1(  3,3)= dphidxi1(kmn)
-            dNdxi1(1:3,4)= dvarphidxi1(kmn)*v_mn(:,1,kmn)
-            dNdxi1(1:3,5)=-dvarphidxi1(kmn)*v_mn(:,2,kmn)
-            dNdxi2(  1,1)= dphidxi2(kmn)
-            dNdxi2(  2,2)= dphidxi2(kmn)
-            dNdxi2(  3,3)= dphidxi2(kmn)
-            dNdxi2(1:3,4)= dvarphidxi2(kmn)*v_mn(:,1,kmn)
-            dNdxi2(1:3,5)=-dvarphidxi2(kmn)*v_mn(:,2,kmn)
-            dNdxi3(  1,1)= dphidxi3(kmn)
-            dNdxi3(  2,2)= dphidxi3(kmn)
-            dNdxi3(  3,3)= dphidxi3(kmn)
-            dNdxi3(1:3,4)= dvarphidxi3(kmn)*v_mn(:,1,kmn)
-            dNdxi3(1:3,5)=-dvarphidxi3(kmn)*v_mn(:,2,kmn)
-            ! Save
-            select case (ksc)
-              ! e_rr
-              case (1)
-                cBtp(:,kmn,kxi3,ksf,1)=matmul(gv1,dNdxi1)
-              ! e_ss
-              case (2)
-                cBtp(:,kmn,kxi3,ksf,2)=matmul(gv2,dNdxi2)
-              ! e_rs
-              case (3)
-                cBtp(:,kmn,kxi3,ksf,3)=0.5d0*(matmul(gv2,dNdxi1)+matmul(gv1,dNdxi2))
-              ! e_rt
-              case (4)
-                cBtp(:,kmn,kxi3,ksf,4)=0.5d0*(matmul(gv3,dNdxi1)+matmul(gv1,dNdxi3))
-              ! e_st
-              case (5)
-                cBtp(:,kmn,kxi3,ksf,5)=0.5d0*(matmul(gv3,dNdxi2)+matmul(gv2,dNdxi3))
-            end select
-          end do
-        end do ! Thickness
-      end do ! Surface
-    end do ! Strain component
-    !
-    ! Combine the covariant strain matrix Bij between tying points (cBpar)
-    !
-    ! cBparmitc8(dof,123,123,node,thickness,tyingpoint,1:3): inlayer
-    do ksf=1,4
-      do kxi3=1,ngpth
-        do ki=1,3
-          do kj=1,3
-            cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBtp(:,:,kxi3,ksf,1)*gntp(ki,1,kxi3,ksf)*gntp(kj,1,kxi3,ksf)&
-                                             + cBtp(:,:,kxi3,ksf,2)*gntp(ki,2,kxi3,ksf)*gntp(kj,2,kxi3,ksf)&
-                                             + cBtp(:,:,kxi3,ksf,3)*(gntp(ki,1,kxi3,ksf)*gntp(kj,2,kxi3,ksf)+gntp(ki,2,kxi3,ksf)*gntp(kj,1,kxi3,ksf))
-          end do
-        end do
-      end do
-    end do
-    !
-    ksf=5
-    do kxi3=1,ngpth
-      gvtpbar(:,1)=gvtp(:,1,kxi3,ksf)-dot_product(gvtp(:,1,kxi3,ksf),gvtp(:,2,kxi3,ksf))/dot_product(gvtp(:,2,kxi3,ksf),gvtp(:,2,kxi3,ksf))*gvtp(:,2,kxi3,ksf)
-      gvtpbar(:,2)=gvtp(:,2,kxi3,ksf)
-      gvtpbar(:,3)=gvtp(:,3,kxi3,ksf)
-      call fbem_invert_3x3_matrix(transpose(gvtpbar),gntpbar,detJ)
-      ! add eps_ss*g^s*g^s|^5
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBtp(:,:,kxi3,ksf,2)*gntpbar(ki,2)*gntpbar(kj,2)
-        end do
-      end do
-      ! Temporarily save 0.5*(eps|1+eps|2)
-      cBparmitc8(:,:,:,:,kxi3,9,1)=0.5d0*(cBparmitc8(:,:,:,:,kxi3,1,1)+cBparmitc8(:,:,:,:,kxi3,2,1))
-      ! add gr*0.5*(eps|1+eps|2)*gr*g^r*g^r
-      do ki=1,5
-        do kj=1,8
-        ! save in eps_ss|5 (not used anymore)
-        cBtp(ki,kj,kxi3,ksf,2)=(gvtpbar(1,1)*cBparmitc8(ki,1,1,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,1,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,1,kj,kxi3,9,1))*gvtpbar(1,1)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,2,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,2,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,2,kj,kxi3,9,1))*gvtpbar(2,1)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,3,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,3,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,3,kj,kxi3,9,1))*gvtpbar(3,1)
-        end do
-      end do
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBparmitc8(:,ki,kj,:,kxi3,ksf,1)+&
-                                             cBtp(:,:,kxi3,ksf,2)*gntpbar(ki,1)*gntpbar(kj,1)
-        end do
-      end do
-      ! add gr*0.5*(eps|1+eps|2)*gs*(g^r*g^s+g^s*g^r)
-      do ki=1,5
-        do kj=1,8
-        ! save in eps_ss|5 (not used anymore)
-        cBtp(ki,kj,kxi3,ksf,2)=(gvtpbar(1,1)*cBparmitc8(ki,1,1,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,1,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,1,kj,kxi3,9,1))*gvtpbar(1,2)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,2,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,2,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,2,kj,kxi3,9,1))*gvtpbar(2,2)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,3,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,3,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,3,kj,kxi3,9,1))*gvtpbar(3,2)
-        end do
-      end do
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBparmitc8(:,ki,kj,:,kxi3,ksf,1)+&
-                                             cBtp(:,:,kxi3,ksf,2)*(gntpbar(ki,1)*gntpbar(kj,2)+gntpbar(ki,2)*gntpbar(kj,1))
-        end do
-      end do
-    end do
-    !
-    ksf=7
-    do kxi3=1,ngpth
-      gvtpbar(:,1)=gvtp(:,1,kxi3,ksf)-dot_product(gvtp(:,1,kxi3,ksf),gvtp(:,2,kxi3,ksf))/dot_product(gvtp(:,2,kxi3,ksf),gvtp(:,2,kxi3,ksf))*gvtp(:,2,kxi3,ksf)
-      gvtpbar(:,2)=gvtp(:,2,kxi3,ksf)
-      gvtpbar(:,3)=gvtp(:,3,kxi3,ksf)
-      call fbem_invert_3x3_matrix(transpose(gvtpbar),gntpbar,detJ)
-      ! add eps_ss*g^s*g^s|^5
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBtp(:,:,kxi3,ksf,2)*gntpbar(ki,2)*gntpbar(kj,2)
-        end do
-      end do
-      ! Temporarily save 0.5*(eps|3+eps|4)
-      cBparmitc8(:,:,:,:,kxi3,9,1)=0.5d0*(cBparmitc8(:,:,:,:,kxi3,3,1)+cBparmitc8(:,:,:,:,kxi3,4,1))
-      ! add gr*0.5*(eps|3+eps|4)*gr*g^r*g^r
-      do ki=1,5
-        do kj=1,8
-        ! save in eps_ss|7 (not used anymore)
-        cBtp(ki,kj,kxi3,ksf,2)=(gvtpbar(1,1)*cBparmitc8(ki,1,1,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,1,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,1,kj,kxi3,9,1))*gvtpbar(1,1)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,2,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,2,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,2,kj,kxi3,9,1))*gvtpbar(2,1)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,3,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,3,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,3,kj,kxi3,9,1))*gvtpbar(3,1)
-        end do
-      end do
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBparmitc8(:,ki,kj,:,kxi3,ksf,1)+&
-                                             cBtp(:,:,kxi3,ksf,2)*gntpbar(ki,1)*gntpbar(kj,1)
-        end do
-      end do
-      ! add gr*0.5*(eps|3+eps|4)*gs*(g^r*g^s+g^s*g^r)
-      do ki=1,5
-        do kj=1,8
-        ! save in eps_ss|7 (not used anymore)
-        cBtp(ki,kj,kxi3,ksf,2)=(gvtpbar(1,1)*cBparmitc8(ki,1,1,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,1,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,1,kj,kxi3,9,1))*gvtpbar(1,2)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,2,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,2,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,2,kj,kxi3,9,1))*gvtpbar(2,2)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,3,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,3,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,3,kj,kxi3,9,1))*gvtpbar(3,2)
-        end do
-      end do
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBparmitc8(:,ki,kj,:,kxi3,ksf,1)+&
-                                             cBtp(:,:,kxi3,ksf,2)*(gntpbar(ki,1)*gntpbar(kj,2)+gntpbar(ki,2)*gntpbar(kj,1))
-        end do
-      end do
-    end do
-    !
-    ksf=6
-    do kxi3=1,ngpth
-      gvtpbar(:,1)=gvtp(:,1,kxi3,ksf)
-      gvtpbar(:,2)=gvtp(:,2,kxi3,ksf)-dot_product(gvtp(:,1,kxi3,ksf),gvtp(:,2,kxi3,ksf))/dot_product(gvtp(:,1,kxi3,ksf),gvtp(:,1,kxi3,ksf))*gvtp(:,1,kxi3,ksf)
-      gvtpbar(:,3)=gvtp(:,3,kxi3,ksf)
-      call fbem_invert_3x3_matrix(transpose(gvtpbar),gntpbar,detJ)
-      ! add eps_rr*g^rg^r|^6
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBtp(:,:,kxi3,ksf,1)*gntpbar(ki,1)*gntpbar(kj,1)
-        end do
-      end do
-      ! Temporarily save 0.5*(eps|2+eps|3)
-      cBparmitc8(:,:,:,:,kxi3,9,1)=0.5d0*(cBparmitc8(:,:,:,:,kxi3,2,1)+cBparmitc8(:,:,:,:,kxi3,3,1))
-      ! add gs*0.5*(eps|2+eps|3)*gs*g^s*g^s
-      do ki=1,5
-        do kj=1,8
-        ! save in eps_rr|6 (not used anymore)
-        cBtp(ki,kj,kxi3,ksf,1)=(gvtpbar(1,2)*cBparmitc8(ki,1,1,kj,kxi3,9,1)+&
-                                gvtpbar(2,2)*cBparmitc8(ki,2,1,kj,kxi3,9,1)+&
-                                gvtpbar(3,2)*cBparmitc8(ki,3,1,kj,kxi3,9,1))*gvtpbar(1,2)+&
-                               (gvtpbar(1,2)*cBparmitc8(ki,1,2,kj,kxi3,9,1)+&
-                                gvtpbar(2,2)*cBparmitc8(ki,2,2,kj,kxi3,9,1)+&
-                                gvtpbar(3,2)*cBparmitc8(ki,3,2,kj,kxi3,9,1))*gvtpbar(2,2)+&
-                               (gvtpbar(1,2)*cBparmitc8(ki,1,3,kj,kxi3,9,1)+&
-                                gvtpbar(2,2)*cBparmitc8(ki,2,3,kj,kxi3,9,1)+&
-                                gvtpbar(3,2)*cBparmitc8(ki,3,3,kj,kxi3,9,1))*gvtpbar(3,2)
-        end do
-      end do
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBparmitc8(:,ki,kj,:,kxi3,ksf,1)+&
-                                             cBtp(:,:,kxi3,ksf,1)*gntpbar(ki,2)*gntpbar(kj,2)
-        end do
-      end do
-      ! add gr*0.5*(eps|2+eps|3)*gs*(g^r*g^s+g^s*g^r)
-      do ki=1,5
-        do kj=1,8
-        ! save in eps_rr|6 (not used anymore)
-        cBtp(ki,kj,kxi3,ksf,1)=(gvtpbar(1,1)*cBparmitc8(ki,1,1,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,1,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,1,kj,kxi3,9,1))*gvtpbar(1,2)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,2,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,2,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,2,kj,kxi3,9,1))*gvtpbar(2,2)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,3,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,3,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,3,kj,kxi3,9,1))*gvtpbar(3,2)
-        end do
-      end do
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBparmitc8(:,ki,kj,:,kxi3,ksf,1)+&
-                                             cBtp(:,:,kxi3,ksf,1)*(gntpbar(ki,1)*gntpbar(kj,2)+gntpbar(ki,2)*gntpbar(kj,1))
-        end do
-      end do
-    end do
-    !
-    ksf=8
-    do kxi3=1,ngpth
-      gvtpbar(:,1)=gvtp(:,1,kxi3,ksf)
-      gvtpbar(:,2)=gvtp(:,2,kxi3,ksf)-dot_product(gvtp(:,1,kxi3,ksf),gvtp(:,2,kxi3,ksf))/dot_product(gvtp(:,1,kxi3,ksf),gvtp(:,1,kxi3,ksf))*gvtp(:,1,kxi3,ksf)
-      gvtpbar(:,3)=gvtp(:,3,kxi3,ksf)
-      call fbem_invert_3x3_matrix(transpose(gvtpbar),gntpbar,detJ)
-      ! add eps_rr*g^rg^r|^8
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBtp(:,:,kxi3,ksf,1)*gntpbar(ki,1)*gntpbar(kj,1)
-        end do
-      end do
-      ! Temporarily save 0.5*(eps|1+eps|4)
-      cBparmitc8(:,:,:,:,kxi3,9,1)=0.5d0*(cBparmitc8(:,:,:,:,kxi3,1,1)+cBparmitc8(:,:,:,:,kxi3,4,1))
-      ! add gs*0.5*(eps|1+eps|4)*gs*g^s*g^s
-      do ki=1,5
-        do kj=1,8
-        ! save in eps_rr|6 (not used anymore)
-        cBtp(ki,kj,kxi3,ksf,1)=(gvtpbar(1,2)*cBparmitc8(ki,1,1,kj,kxi3,9,1)+&
-                                gvtpbar(2,2)*cBparmitc8(ki,2,1,kj,kxi3,9,1)+&
-                                gvtpbar(3,2)*cBparmitc8(ki,3,1,kj,kxi3,9,1))*gvtpbar(1,2)+&
-                               (gvtpbar(1,2)*cBparmitc8(ki,1,2,kj,kxi3,9,1)+&
-                                gvtpbar(2,2)*cBparmitc8(ki,2,2,kj,kxi3,9,1)+&
-                                gvtpbar(3,2)*cBparmitc8(ki,3,2,kj,kxi3,9,1))*gvtpbar(2,2)+&
-                               (gvtpbar(1,2)*cBparmitc8(ki,1,3,kj,kxi3,9,1)+&
-                                gvtpbar(2,2)*cBparmitc8(ki,2,3,kj,kxi3,9,1)+&
-                                gvtpbar(3,2)*cBparmitc8(ki,3,3,kj,kxi3,9,1))*gvtpbar(3,2)
-        end do
-      end do
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBparmitc8(:,ki,kj,:,kxi3,ksf,1)+&
-                                             cBtp(:,:,kxi3,ksf,1)*gntpbar(ki,2)*gntpbar(kj,2)
-        end do
-      end do
-      ! add gr*0.5*(eps|1+eps|4)*gs*(g^r*g^s+g^s*g^r)
-      do ki=1,5
-        do kj=1,8
-        ! save in eps_rr|6 (not used anymore)
-        cBtp(ki,kj,kxi3,ksf,1)=(gvtpbar(1,1)*cBparmitc8(ki,1,1,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,1,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,1,kj,kxi3,9,1))*gvtpbar(1,2)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,2,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,2,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,2,kj,kxi3,9,1))*gvtpbar(2,2)+&
-                               (gvtpbar(1,1)*cBparmitc8(ki,1,3,kj,kxi3,9,1)+&
-                                gvtpbar(2,1)*cBparmitc8(ki,2,3,kj,kxi3,9,1)+&
-                                gvtpbar(3,1)*cBparmitc8(ki,3,3,kj,kxi3,9,1))*gvtpbar(3,2)
-        end do
-      end do
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,1) = cBparmitc8(:,ki,kj,:,kxi3,ksf,1)+&
-                                             cBtp(:,:,kxi3,ksf,1)*(gntpbar(ki,1)*gntpbar(kj,2)+gntpbar(ki,2)*gntpbar(kj,1))
-        end do
-      end do
-    end do
-    cBparmitc8(:,:,:,:,:,:,2)=cBparmitc8(:,:,:,:,:,:,1)
-    cBparmitc8(:,:,:,:,:,:,3)=cBparmitc8(:,:,:,:,:,:,1)
-    !
-    ! cBparmitc8(dof,123,123,node,thickness,tyingpoint,4): eps_rt
-    !
-    do ksf=1,4
-      do kxi3=1,ngpth
-        do ki=1,3
-          do kj=1,3
-            cBparmitc8(:,ki,kj,:,kxi3,ksf,4) = cBtp(:,:,kxi3,ksf,4)*gntp(ki,1,kxi3,ksf)*gntp(kj,3,kxi3,ksf)
-          end do
-        end do
-      end do
-    end do
-    ksf=5
-    do kxi3=1,ngpth
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,4) = 0.5d0*(cBtp(:,:,kxi3,6,4)+cBtp(:,:,kxi3,7,4))*gntp(ki,1,kxi3,ksf)*gntp(kj,3,kxi3,ksf)
-        end do
-      end do
-    end do
-    !
-    ! cBparmitc8(dof,123,123,node,thickness,tyingpoint,5): eps_st
-    !
-    do ksf=1,4
-      do kxi3=1,ngpth
-        do ki=1,3
-          do kj=1,3
-            cBparmitc8(:,ki,kj,:,kxi3,ksf,5) = cBtp(:,:,kxi3,ksf,5)*gntp(ki,2,kxi3,ksf)*gntp(kj,3,kxi3,ksf)
-          end do
-        end do
-      end do
-    end do
-    ksf=5
-    do kxi3=1,ngpth
-      do ki=1,3
-        do kj=1,3
-          cBparmitc8(:,ki,kj,:,kxi3,ksf,5) = 0.5d0*(cBtp(:,:,kxi3,6,5)+cBtp(:,:,kxi3,7,5))*gntp(ki,2,kxi3,ksf)*gntp(kj,3,kxi3,ksf)
-        end do
-      end do
-    end do
-    !
-    ! Numerical integration
-    !
-    do kxi1=1,ngpip
-      xi1=gl11_xi(kxi1,ngpip)
-      w1=gl11_w(kxi1,ngpip)
-      do kxi2=1,ngpip
-        xi2=gl11_xi(kxi2,ngpip)
-        w2=gl11_w(kxi2,ngpip)
-        !
-        ! In-plane shape functions and their first derivatives with respect to xi_1, xi_2 and xi_3 at (xi_1,xi_2,xi_3)
-        ! Displacement interpolation
-        !
-        xi(1)=xi1
-        xi(2)=xi2
-#       define delta 0.0d0
-#       include <phi_and_dphidxik_2d.rc>
-#       undef delta
-        dphidxi3=0.d0
-        !
-        ! Shape functions of the substitute strains intepolations
-        !
-        phi_tp=0.d0
-        do ksc=1,5
-          if (itype(ksc).gt.0) phi_tp(:,ksc)=mitc_interpolation_scheme_phi(itype(ksc),ipars(:,ksc),xi)
-        end do
-        ! Thickness direction
-        do kxi3=1,ngpth
-          xi3=gl11_xi(kxi3,ngpth)
-          w3=gl11_w(kxi3,ngpth)
-          !
-          ! Thickness shape function and its derivative with respect to xi_1, xi_2 and xi_3 at (xi_1,xi_2,xi_3)
-          ! Displacement interpolation
-          !
-          varphi=phi*0.5d0*xi3*t_mn
-          dvarphidxi1=dphidxi1*0.5d0*xi3*t_mn
-          dvarphidxi2=dphidxi2*0.5d0*xi3*t_mn
-          dvarphidxi3=phi*0.5d0*t_mn
-          ! Calculate position vector x, and Jacobian matrix at (xi_1,xi_2,xi_3)
-          J=0.d0
-          do kmn=1,n_mn
-            J(1,:)=J(1,:)+dphidxi1(kmn)*x_mn(:,kmn)+dvarphidxi1(kmn)*v_mn(:,3,kmn)
-            J(2,:)=J(2,:)+dphidxi2(kmn)*x_mn(:,kmn)+dvarphidxi2(kmn)*v_mn(:,3,kmn)
-            J(3,:)=J(3,:)+dphidxi3(kmn)*x_mn(:,kmn)+dvarphidxi3(kmn)*v_mn(:,3,kmn)
-          end do
-          ! Calculate inv(J) and det(J)
-          call fbem_invert_3x3_matrix(J,H,detJ)
-          ! Covariant basis
-          gv1=J(1,:)
-          gv2=J(2,:)
-          gv3=J(3,:)
-          ! Contravariant basis
-          gn1=H(:,1)
-          gn2=H(:,2)
-          gn3=H(:,3)
-          ! Calculate local orthogonal system of coordinates (ep_1,ep_2,ep_3) at (xi_1,xi_2,xi_3)
-          ! Tangents T1 and T2
-          T1=J(1,:)
-          T2=J(2,:)
-          ! Calculate N (normal vector) as T1 x T2 at (xi_1,xi_2,0)
-          N(1)=T1(2)*T2(3)-T1(3)*T2(2)
-          N(2)=T1(3)*T2(1)-T1(1)*T2(3)
-          N(3)=T1(1)*T2(2)-T1(2)*T2(1)
-          ! ep_3 = n
-          ep3=N/sqrt(dot_product(N,N))
-          ! ep_1 = t1
-          ep1=T1/sqrt(dot_product(T1,T1))
-          ! ep_2 = ep_3 x ep_1
-          ep2(1)=ep3(2)*ep1(3)-ep3(3)*ep1(2)
-          ep2(2)=ep3(3)*ep1(1)-ep3(1)*ep1(3)
-          ep2(3)=ep3(1)*ep1(2)-ep3(2)*ep1(1)
-          ! Global (x) to local (x') tensor transformation matrix
-          E=0.d0
-          E(1,1:3)=ep1**2
-          E(1,4)=ep1(1)*ep1(2)
-          E(1,5)=ep1(2)*ep1(3)
-          E(1,6)=ep1(1)*ep1(3)
-          E(2,1:3)=ep2**2
-          E(2,4)=ep2(1)*ep2(2)
-          E(2,5)=ep2(2)*ep2(3)
-          E(2,6)=ep2(1)*ep2(3)
-          E(3,1)=ep1(1)*ep2(1)
-          E(3,2)=ep1(2)*ep2(2)
-          E(3,3)=ep1(3)*ep2(3)
-          E(4,1)=ep1(1)*ep3(1)
-          E(4,2)=ep1(2)*ep3(2)
-          E(4,3)=ep1(3)*ep3(3)
-          E(5,1)=ep2(1)*ep3(1)
-          E(5,2)=ep2(2)*ep3(2)
-          E(5,3)=ep2(3)*ep3(3)
-          E(3:5,1:3)=2.d0*E(3:5,1:3)
-          E(3,4)=ep1(1)*ep2(2)+ep1(2)*ep2(1)
-          E(3,5)=ep1(2)*ep2(3)+ep1(3)*ep2(2)
-          E(3,6)=ep1(1)*ep2(3)+ep1(3)*ep2(1)
-          E(4,4)=ep1(1)*ep3(2)+ep1(2)*ep3(1)
-          E(4,5)=ep1(2)*ep3(3)+ep1(3)*ep3(2)
-          E(4,6)=ep1(1)*ep3(3)+ep1(3)*ep3(1)
-          E(5,4)=ep2(1)*ep3(2)+ep2(2)*ep3(1)
-          E(5,5)=ep2(2)*ep3(3)+ep2(3)*ep3(2)
-          E(5,6)=ep2(1)*ep3(3)+ep2(3)*ep3(1)
-          ! Derivative transformation matrix for curvilinear to global cartesian tensor transformation
-          G=0.d0
-          G(1:3,1)=gn1*gn1
-          G(1:3,2)=gn2*gn2
-          G(1:3,3)=2.d0*gn1*gn2
-          G(1:3,4)=2.d0*gn1*gn3
-          G(1:3,5)=2.d0*gn2*gn3
-          G(  4,1)=gn1(1)*gn1(2)
-          G(  4,2)=gn2(1)*gn2(2)
-          G(  4,3)=gn1(1)*gn2(2)+gn2(1)*gn1(2)
-          G(  4,4)=gn1(1)*gn3(2)+gn3(1)*gn1(2)
-          G(  4,5)=gn2(1)*gn3(2)+gn3(1)*gn2(2)
-          G(  5,1)=gn1(2)*gn1(3)
-          G(  5,2)=gn2(2)*gn2(3)
-          G(  5,3)=gn1(2)*gn2(3)+gn2(2)*gn1(3)
-          G(  5,4)=gn1(2)*gn3(3)+gn3(2)*gn1(3)
-          G(  5,5)=gn2(2)*gn3(3)+gn3(2)*gn2(3)
-          G(  6,1)=gn1(1)*gn1(3)
-          G(  6,2)=gn2(1)*gn2(3)
-          G(  6,3)=gn1(1)*gn2(3)+gn2(1)*gn1(3)
-          G(  6,4)=gn1(1)*gn3(3)+gn3(1)*gn1(3)
-          G(  6,5)=gn2(1)*gn3(3)+gn3(1)*gn2(3)
-          G(4:6,:)=2.d0*G(4:6,:)
-          EG=matmul(E,G)
-          ! Build covariant B matrices
-          Bc=0
-          gvtpbar(:,1)=gv1
-          gvtpbar(:,2)=gv2
-          gvtpbar(:,3)=gv3
-          do kmn=1,n_mn
-            do ksc=1,5
-              select case (ksc)
-                case (1)
-                  k1=1
-                  k2=1
-                case (2)
-                  k1=2
-                  k2=2
-                case (3)
-                  k1=1
-                  k2=2
-                case (4)
-                  k1=1
-                  k2=3
-                case (5)
-                  k1=2
-                  k2=3
-              end select
-              do ki=1,5
-                strain=0
-                do ksf=1,n_tp(ksc)
-                  strain=strain+phi_tp(ksf,ksc)*cBparmitc8(ki,:,:,kmn,kxi3,ksf,ksc)
-                end do
-                cBpar(ki,kmn,kxi3,1,ksc)=&
-                       (gvtpbar(1,k1)*strain(1,1)+gvtpbar(2,k1)*strain(2,1)+gvtpbar(3,k1)*strain(3,1))*gvtpbar(1,k2)+&
-                       (gvtpbar(1,k1)*strain(1,2)+gvtpbar(2,k1)*strain(2,2)+gvtpbar(3,k1)*strain(3,2))*gvtpbar(2,k2)+&
-                       (gvtpbar(1,k1)*strain(1,3)+gvtpbar(2,k1)*strain(2,3)+gvtpbar(3,k1)*strain(3,3))*gvtpbar(3,k2)
-                Bc(ksc,ki,kmn)=Bc(ksc,ki,kmn)+cBpar(ki,kmn,kxi3,1,ksc)
-              end do
-            end do
-          end do
-          ! det(J) * weights
-          jw=detJ*w1*w2*w3
-          ! Volume
-          V=V+jw
-          ! Constitutive matrix D (curvilinear coordinates)
-          Dc=matmul(transpose(EG),matmul(Dp,EG))
-          ! Build the element stiffness matrix
-          do ki=1,n_mn
-            kis=(ki-1)*5+1
-            kie=kis+4
-            do kj=1,n_mn
-              kjs=(kj-1)*5+1
-              kje=kjs+4
-              K(kis:kie,kjs:kje)=K(kis:kie,kjs:kje)+matmul(transpose(Bc(:,:,ki)),matmul(Dc,Bc(:,:,kj)))*jw
-            end do
-          end do
-        end do ! xi_3
-      end do ! xi_2
-    end do ! xi_1
-  end subroutine fbem_fem_mitcdegshell_K_real_mitc8
 
   !! Calculate the mass matrix M
   subroutine fbem_fem_degshell_M(etype,x_midnodes,v_midnode,t_midnodes,rho,ngp,ngpth,M)
@@ -5098,10 +4485,11 @@ contains
 !  end subroutine fbem_fem_degshell_stress_resultants
 
   ! Stress resultants using selected interpolation. Remember Fsigma must be later multiplied by E (Young modulus)
-  subroutine fbem_fem_degshell_stress_resultants(etype,x_mn,v_mn,t_mn,x1ref,nu,kappa,setype,sedelta,Fsigma)
+  subroutine fbem_fem_degshell_stress_resultants(etype,fe_option,x_mn,v_mn,t_mn,x1ref,nu,kappa,setype,sedelta,Fsigma)
     implicit none
     ! I/O
     integer           :: etype                                          !! Type of element (displacements interpolation): tri3, tri6, quad4, quad8, quad9.
+    integer           :: fe_option                                      !! 0: standard, 1: MITC
     real(kind=real64) :: x_mn(3,fbem_n_nodes(etype))                    !! Position vectors of the mid-plane nodes.
     real(kind=real64) :: v_mn(3,3,fbem_n_nodes(etype))                  !! Local axes for each mid-node for the rotation degrees of freedom.
     real(kind=real64) :: t_mn(3,fbem_n_nodes(etype))                    !! Thickness of each mid-node in each direction (only v_3 makes sense).
@@ -5185,47 +4573,55 @@ contains
     Dp(4,4)=kappa(1)*0.5d0*(1.d0-nu)
     Dp(5,5)=kappa(2)*0.5d0*(1.d0-nu)
     Dp=1.d0/(1.d0-nu**2)*Dp
-    ! Interpolate from stress at nodes
-    setype=etype
-    sedelta=0
-    ! Interpolate from stress at Gauss points
-    select case (etype)
-      case (fbem_tri3)
-        setype=fbem_tri1
-        sedelta=0.d0
-        !setype=fbem_tri3
-        !sedelta=0.5d0
-      case (fbem_quad4)
-        setype=fbem_quad1
-        sedelta=0.d0
-        !setype=fbem_quad4
-        !sedelta=0.42264973d0
-      case (fbem_tri6)
-        setype=fbem_tri1
-        sedelta=0.d0
-        !setype=fbem_tri3
-        !sedelta=0.5d0
-        !setype=fbem_tri4
-        !sedelta=0.6d0
-        !setype=fbem_tri6
-        !sedelta=0.274728d0
-      case (fbem_quad8)
-        setype=fbem_quad1
-        sedelta=0.d0
-        !setype=fbem_quad4
-        !sedelta=0.42264973d0
-        !setype=fbem_quad9
-        !sedelta=0.22540333d0
-      case (fbem_quad9)
-        !setype=fbem_quad1
-        !sedelta=0.d0
-        setype=fbem_quad4
-        sedelta=0.42264973d0
-        !setype=fbem_quad9
-        !sedelta=0.22540333d0
-      case default
-        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'etype={tri3,tri6,quad4,quad8,quad9}')
-    end select
+    ! MITC elements
+    if (fe_option.eq.1) then
+      ! Interpolate from stresses at Gauss points
+      select case (etype)
+        case (fbem_tri3)
+          setype=fbem_tri1
+          sedelta=0.d0
+        case (fbem_quad4)
+          setype=fbem_quad1
+          sedelta=0.d0
+        case (fbem_tri6)
+          setype=fbem_tri1
+          sedelta=0.d0
+        case (fbem_quad8)
+          setype=fbem_quad1
+          sedelta=0.d0
+        case (fbem_quad9)
+          setype=fbem_quad4
+          sedelta=0.42264973d0
+        case default
+          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'etype={tri3,tri6,quad4,quad8,quad9}')
+      end select
+    ! Standard elements
+    else
+      ! Interpolate from stresses at Gauss points
+      select case (etype)
+        case (fbem_tri3)
+          setype=fbem_tri1
+          sedelta=0.d0
+        case (fbem_quad4)
+          setype=fbem_quad1
+          sedelta=0.d0
+        case (fbem_tri6)
+          !setype=fbem_tri1
+          !sedelta=0.d0
+          setype=fbem_tri4
+          sedelta=0.6d0
+        case (fbem_quad8)
+          !setype=fbem_quad1
+          !sedelta=0.d0
+          setype=fbem_quad4
+          sedelta=0.42264973d0
+        case (fbem_quad9)
+          setype=fbem_quad4
+          sedelta=0.42264973d0
+        case default
+          call fbem_error_message(error_unit,0,__FILE__,__LINE__,'etype={tri3,tri6,quad4,quad8,quad9}')
+      end select
+    end if
     ! Fsigma contents: values at mesh nodes interpolated from MITC interpolation scheme
     ! Local stress resultants matrix at element nodes
     allocate(Fsigma(8,5*n_mn,fbem_n_nodes(setype)))
@@ -5233,151 +4629,165 @@ contains
     !
     ! Impose strain fields from MITC schemes.
     !
-    select case (etype)
-      !
-      ! MITC3 (Lee & Bathe, 2004)
-      !
-      case (fbem_tri3)
-        ! eps_13
-        itype(  4)=13
-        ! eps_23
-        itype(  5)=14
-      !
-      ! MITC4 (Dvorkin & Bathe, 1984)
-      !
-      case (fbem_quad4)
-        ! eps_13
-        itype(  4)=3
-        ipars(:,4)=[0.d0,1.d0]
-        ! eps_23
-        itype(  5)=2
-        ipars(:,5)=[1.d0,0.d0]
-      !
-      ! MITC6a (Lee & Bathe, 2004)
-      !
-      case (fbem_tri6)
-        ! eps_11
-        itype(  1)=17
-        ! eps_22
-        itype(  2)=18
-        ! eps_12
-        itype(  3)=19
-        ! eps_13
-        itype(  4)=15
-        ! eps_23
-        itype(  5)=16
-      !
-      ! MITC8
-      !
-      case (fbem_quad8)
-!        !
-!        ! OPTION 1
-!        !
-!        ! MITC8 tying scheme (Bathe & Dvorkin, 1986) but using directly covariant strains.
-!        !
-!        ! eps_11
-!        itype(  1)=8
-!        ipars(:,1)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
-!        ! eps_22
-!        itype(  2)=8
-!        ipars(:,2)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
-!        ! eps_12
-!        itype(  3)=8
-!        ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
-!        ! eps_13
-!        itype(  4)=12
-!        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
-!        ! eps_23
-!        itype(  5)=11
-!        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
-!        !
-!        ! OPTION 2
-!        !
-!        ! Tying scheme as MITC9
-!        !
-!        ! eps_11
-!        itype(  1)=7
-!        ipars(:,1)=[sqrt(1.d0/3.d0),1.d0]
-!        ! eps_22
-!        itype(  2)=6
-!        ipars(:,2)=[1.d0,sqrt(1.d0/3.d0)]
-!        ! eps_12
-!        itype(  3)=4
-!        ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
-!        ! eps_13
-!        itype(  4)=7
-!        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
-!        ! eps_23
-!        itype(  5)=6
-!        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
-!        !
-!        ! OPTION 3
-!        !
-!        ! Tying scheme as proposed by Jung (2013) An 8-Node Shell Element for Nonlinear Analysis
-!        ! of Shells Using the Refined Combination of Membrane and Shear Interpolation Functions
-!        !
-!        ! GAMMA PATTERN
-!        !
-!        ! eps_11
-!        !itype(  1)=7
-!        !ipars(:,1)=[sqrt(1.d0/3.d0),1.d0]
-!        ! eps_22
-!        !itype(  2)=6
-!        !ipars(:,2)=[1.d0,sqrt(1.d0/3.d0)]
-!        ! eps_12
-!        !itype(  3)=4
-!        !ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
-!        ! eps_13
-!        itype(  4)=10
-!        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
-!        ! eps_23
-!        itype(  5)=9
-!        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
+    if (fe_option.eq.1) then
+      select case (etype)
         !
-        ! OPTION 4
+        ! MITC3 & derivatives
         !
-        ! Tying scheme as proposed by Jung (2013) An 8-Node Shell Element for Nonlinear Analysis
-        ! of Shells Using the Refined Combination of Membrane and Shear Interpolation Functions
+        case (fbem_tri3)
+  !        !
+  !        ! MITC3 (Lee & Bathe, 2004)
+  !        !
+  !        ! eps_13
+  !        itype(  4)=13
+  !        ! eps_23
+  !        itype(  5)=14
+          !
+          ! MITC3i (Lee & Bathe, 2014)
+          !
+          ! eps_13
+          itype(  4)=20
+          ! eps_23
+          itype(  5)=21
         !
-        ! GAMMA* PATTERN
+        ! MITC4 (Dvorkin & Bathe, 1984)
         !
-        ! eps_11
-        itype(  1)=7
-        ipars(:,1)=[sqrt(1.d0/3.d0),1.d0]
-        ! eps_22
-        itype(  2)=6
-        ipars(:,2)=[1.d0,sqrt(1.d0/3.d0)]
-        ! eps_12
-        itype(  3)=4
-        ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
-        ! eps_13
-        itype(  4)=12
-        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
-        ! eps_23
-        itype(  5)=11
-        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
-      !
-      ! MITC9 (Bucalem & Bathe, 1993)
-      !
-      case (fbem_quad9)
-        ! eps_11
-        itype(  1)=7
-        ipars(:,1)=[sqrt(1.d0/3.d0),sqrt(3.d0/5.d0)]
-        ! eps_22
-        itype(  2)=6
-        ipars(:,2)=[sqrt(3.d0/5.d0),sqrt(1.d0/3.d0)]
-        ! eps_12
-        itype(  3)=4
-        ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
-        ! eps_13
-        itype(  4)=7
-        ipars(:,4)=[sqrt(1.d0/3.d0),sqrt(3.d0/5.d0)]
-        ! eps_23
-        itype(  5)=6
-        ipars(:,5)=[sqrt(3.d0/5.d0),sqrt(1.d0/3.d0)]
-      case default
-        stop 'MITC element not available'
-    end select
+        case (fbem_quad4)
+          ! eps_13
+          itype(  4)=3
+          ipars(:,4)=[0.d0,1.d0]
+          ! eps_23
+          itype(  5)=2
+          ipars(:,5)=[1.d0,0.d0]
+        !
+        ! MITC6a (Lee & Bathe, 2004)
+        !
+        case (fbem_tri6)
+          ! eps_11
+          itype(  1)=17
+          ! eps_22
+          itype(  2)=18
+          ! eps_12
+          itype(  3)=19
+          ! eps_13
+          itype(  4)=15
+          ! eps_23
+          itype(  5)=16
+        !
+        ! MITC8
+        !
+        case (fbem_quad8)
+  !        !
+  !        ! OPTION 1
+  !        !
+  !        ! MITC8 tying scheme (Bathe & Dvorkin, 1986) but using directly covariant strains.
+  !        !
+  !        ! eps_11
+  !        itype(  1)=8
+  !        ipars(:,1)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+  !        ! eps_22
+  !        itype(  2)=8
+  !        ipars(:,2)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+  !        ! eps_12
+  !        itype(  3)=8
+  !        ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+  !        ! eps_13
+  !        itype(  4)=12
+  !        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
+  !        ! eps_23
+  !        itype(  5)=11
+  !        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
+  !        !
+  !        ! OPTION 2
+  !        !
+  !        ! Tying scheme as MITC9
+  !        !
+  !        ! eps_11
+  !        itype(  1)=7
+  !        ipars(:,1)=[sqrt(1.d0/3.d0),1.d0]
+  !        ! eps_22
+  !        itype(  2)=6
+  !        ipars(:,2)=[1.d0,sqrt(1.d0/3.d0)]
+  !        ! eps_12
+  !        itype(  3)=4
+  !        ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+  !        ! eps_13
+  !        itype(  4)=7
+  !        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
+  !        ! eps_23
+  !        itype(  5)=6
+  !        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
+  !        !
+  !        ! OPTION 3
+  !        !
+  !        ! Tying scheme as proposed by Jung (2013) An 8-Node Shell Element for Nonlinear Analysis
+  !        ! of Shells Using the Refined Combination of Membrane and Shear Interpolation Functions
+  !        !
+  !        ! GAMMA PATTERN
+  !        !
+  !        ! eps_11
+  !        !itype(  1)=7
+  !        !ipars(:,1)=[sqrt(1.d0/3.d0),1.d0]
+  !        ! eps_22
+  !        !itype(  2)=6
+  !        !ipars(:,2)=[1.d0,sqrt(1.d0/3.d0)]
+  !        ! eps_12
+  !        !itype(  3)=4
+  !        !ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+  !        ! eps_13
+  !        itype(  4)=10
+  !        ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
+  !        ! eps_23
+  !        itype(  5)=9
+  !        ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
+          !
+          ! OPTION 4
+          !
+          ! Tying scheme as proposed by Jung (2013) An 8-Node Shell Element for Nonlinear Analysis
+          ! of Shells Using the Refined Combination of Membrane and Shear Interpolation Functions
+          !
+          ! GAMMA* PATTERN
+          !
+          ! eps_11
+          itype(  1)=7
+          ipars(:,1)=[sqrt(1.d0/3.d0),1.d0]
+          ! eps_22
+          itype(  2)=6
+          ipars(:,2)=[1.d0,sqrt(1.d0/3.d0)]
+          ! eps_12
+          itype(  3)=4
+          ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+          ! eps_13
+          itype(  4)=12
+          ipars(:,4)=[sqrt(1.d0/3.d0),1.d0]
+          ! eps_23
+          itype(  5)=11
+          ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)]
+        !
+        ! MITC9 (Bucalem & Bathe, 1993)
+        !
+        case (fbem_quad9)
+          ! eps_11
+          itype(  1)=7
+          ipars(:,1)=[sqrt(1.d0/3.d0),sqrt(3.d0/5.d0)]
+          ! eps_22
+          itype(  2)=6
+          ipars(:,2)=[sqrt(3.d0/5.d0),sqrt(1.d0/3.d0)]
+          ! eps_12
+          itype(  3)=4
+          ipars(:,3)=[sqrt(1.d0/3.d0),sqrt(1.d0/3.d0)]
+          ! eps_13
+          itype(  4)=7
+          !ipars(:,4)=[sqrt(1.d0/3.d0),sqrt(3.d0/5.d0)] ! Original (Bucalem & Bathe, 1993)
+          ipars(:,4)=[sqrt(1.d0/3.d0),1.d0] ! Proposed in (Bathe et al., 2003)
+          ! eps_23
+          itype(  5)=6
+          !ipars(:,5)=[sqrt(3.d0/5.d0),sqrt(1.d0/3.d0)] ! Original (Bucalem & Bathe, 1993)
+          ipars(:,5)=[1.d0,sqrt(1.d0/3.d0)] ! Proposed in (Bathe et al., 2003)
+        case default
+          stop 'MITC element not available'
+      end select
+    end if
     !
     ! Calculate the covariant strain matrix Bij at each tying point (cBtp)
     !
@@ -5500,15 +4910,41 @@ contains
             cBpar(:,:,:,2,5) = -cBpar(:,:,:,3,4)
             cBpar(:,:,:,3,5) = 0.d0
           !
-          ! MITC6a -- shear strains (eps_13 = a1+b1*r+c1*s+...)
+          ! MITC3i -- shear strains (eps_13 = 2/3*(eps_13_B-1/2*eps_23_B)+1/3*(eps_13_C+eps_23_C)-c/3+0*r+c*s)
+          !
+          case (20)
+            if (ksc.ne.4) stop 'mitc error 20'
+            ! Linear part multiplying s (+ĉ)
+            cBpar(:,:,:,3,4) = cBtp(:,:,:,6,4)-cBtp(:,:,:,4,4)-cBtp(:,:,:,6,5)+cBtp(:,:,:,5,5)
+            ! Constant part
+            cBpar(:,:,:,1,4) = 2.d0/3.d0*(cBtp(:,:,:,2,4)-0.5d0*cBtp(:,:,:,2,5))&
+                              +1.d0/3.d0*(cBtp(:,:,:,3,4)+cBtp(:,:,:,3,5))&
+                              -1.d0/3.d0*cBpar(:,:,:,3,4)
+            ! Linear part multiplying r (0)
+            cBpar(:,:,:,2,4) = 0.d0
+          !
+          ! MITC3i -- shear strains (eps_23 = 2/3*(eps_23_A-1/2*eps_13_A)+1/3*(eps_13_C+eps_23_C)+c/3-c*r+0*s)
+          !
+          case (21)
+            if (ksc.ne.5) stop 'mitc error 21'
+            ! Linear part multiplying r (-ĉ)
+            cBpar(:,:,:,2,5) = -cBpar(:,:,:,3,4)
+            ! Constant part
+            cBpar(:,:,:,1,5) = 2.d0/3.d0*(cBtp(:,:,:,1,5)-0.5d0*cBtp(:,:,:,1,4))&
+                              +1.d0/3.d0*(cBtp(:,:,:,3,4)+cBtp(:,:,:,3,5))&
+                              +1.d0/3.d0*cBpar(:,:,:,3,4)
+            ! Linear part multiplying s (0)
+            cBpar(:,:,:,3,5) = 0.d0
+          !
+          ! MITC6a -- shear strains (pag. 952-953 Lee & Bathe, 2004) (eps_13 = a1+b1*r+c1*s+...)
           !
           case (15)
             if (ksc.ne.4) stop 'mitc error 15'
             !
-            ! Define all coefficients here
+            ! Calculate all coefficients here
             !
             ! a1
-            cBpar(:,:,:,1,4) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,1,4)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,2,4)
+            cBpar(:,:,:,1,4) = 0.5d0*((1.d0+sqrt(3.d0))*cBtp(:,:,:,1,4)+(1.d0-sqrt(3.d0))*cBtp(:,:,:,2,4))
             ! a2
             cBpar(:,:,:,1,5) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,3,5)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,4,5)
             ! b1
@@ -5521,10 +4957,10 @@ contains
             cBpar(:,:,:,6,5) = 0.d0
             ! c1
             cBpar(:,:,:,3,4) = 6.d0*cBtp(:,:,:,7,4)-3.d0*cBtp(:,:,:,7,5)+cBtp(:,:,:,5,5)+cBtp(:,:,:,6,5) &
-            -cBtp(:,:,:,5,4)-cBtp(:,:,:,6,4)-4.d0*cBpar(:,:,:,1,4)-cBpar(:,:,:,2,4)+cBpar(:,:,:,1,5)
+                              -cBtp(:,:,:,5,4)-cBtp(:,:,:,6,4)-4.d0*cBpar(:,:,:,1,4)-cBpar(:,:,:,2,4)+cBpar(:,:,:,1,5)
             ! b2
             cBpar(:,:,:,2,5) =-3.d0*cBtp(:,:,:,7,4)+6.d0*cBtp(:,:,:,7,5)-cBtp(:,:,:,5,5)-cBtp(:,:,:,6,5) &
-            +cBtp(:,:,:,5,4)+cBtp(:,:,:,6,4)+cBpar(:,:,:,1,4)-4.d0*cBpar(:,:,:,1,5)-cBpar(:,:,:,3,5)
+                              +cBtp(:,:,:,5,4)+cBtp(:,:,:,6,4)+cBpar(:,:,:,1,4)-4.d0*cBpar(:,:,:,1,5)-cBpar(:,:,:,3,5)
             ! e2
             cBpar(:,:,:,5,5) = 3.d0*cBtp(:,:,:,7,4)-6.d0*cBtp(:,:,:,7,5)+1.5d0*(cBtp(:,:,:,5,5)+cBtp(:,:,:,6,5)) &
             -0.5d0*sqrt(3.d0)*(cBtp(:,:,:,6,5)-cBtp(:,:,:,5,5))-1.5d0*(cBtp(:,:,:,5,4)+cBtp(:,:,:,6,4)) &
@@ -5538,11 +4974,11 @@ contains
             ! d2
             cBpar(:,:,:,4,5) = -cBpar(:,:,:,6,4)
           !
-          ! MITC6a -- shear strains (eps_23 = = a2+b2*r+c2*s+...)
+          ! MITC6a -- shear strains (pag. 952-953 Lee & Bathe, 2004) (eps_23 = = a2+b2*r+c2*s+...)
           !
           case (16)
             if (ksc.ne.5) stop 'mitc error 16'
-            ! Build previously
+            ! Already calculated previously
           !
           ! MITC6a -- in-plane strains (pag. 951 Lee & Bathe, 2004)
           !
@@ -5552,16 +4988,16 @@ contains
             ! Define all coefficients here
             !
             ! a1
-            cBpar(:,:,:,1,1) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,1,1)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,2,1)
+            cBpar(:,:,:,1,1) = 0.5d0*((1.d0+sqrt(3.d0))*cBtp(:,:,:,1,1)+(1.d0-sqrt(3.d0))*cBtp(:,:,:,2,1))
+            ! a2
+            cBpar(:,:,:,1,2) = 0.5d0*((1.d0+sqrt(3.d0))*cBtp(:,:,:,4,2)+(1.d0-sqrt(3.d0))*cBtp(:,:,:,5,2))
+            ! a3
+            cBpar(:,:,:,1,3) = 0.5d0*(1.d0-sqrt(3.d0))*(0.5d0*cBtp(:,:,:,7,1)+0.5d0*cBtp(:,:,:,7,2)-cBtp(:,:,:,7,3))&
+                              +0.5d0*(1.d0+sqrt(3.d0))*(0.5d0*cBtp(:,:,:,8,1)+0.5d0*cBtp(:,:,:,8,2)-cBtp(:,:,:,8,3))
             ! b1
             cBpar(:,:,:,2,1) = sqrt(3.d0)*(cBtp(:,:,:,2,1)-cBtp(:,:,:,1,1))
-            ! a2
-            cBpar(:,:,:,1,2) = (0.5d0+0.5d0*sqrt(3.d0))*cBtp(:,:,:,4,2)+(0.5d0-0.5d0*sqrt(3.d0))*cBtp(:,:,:,5,2)
             ! c2
             cBpar(:,:,:,3,2) = sqrt(3.d0)*(cBtp(:,:,:,5,2)-cBtp(:,:,:,4,2))
-            ! a3
-            cBpar(:,:,:,1,3) = (0.5d0-0.5d0*sqrt(3.d0))*(0.5d0*cBtp(:,:,:,7,1)+0.5d0*cBtp(:,:,:,7,2)-cBtp(:,:,:,7,3))&
-                              +(0.5d0+0.5d0*sqrt(3.d0))*(0.5d0*cBtp(:,:,:,8,1)+0.5d0*cBtp(:,:,:,8,2)-cBtp(:,:,:,8,3))
             ! b3
             cBpar(:,:,:,2,3) = -sqrt(3.d0)*(0.5d0*cBtp(:,:,:,8,1)+0.5d0*cBtp(:,:,:,8,2)-cBtp(:,:,:,8,3)&
                                             -(0.5d0*cBtp(:,:,:,7,1)+0.5d0*cBtp(:,:,:,7,2)-cBtp(:,:,:,7,3)))
@@ -5573,7 +5009,7 @@ contains
             cBpar(:,:,:,3,3) = sqrt(3.d0)*(0.5d0*cBtp(:,:,:,9,1)+0.5d0*cBtp(:,:,:,9,2)-cBtp(:,:,:,9,3)&
                                            -cBpar(:,:,:,1,3)-cBpar(:,:,:,2,3)*(0.5d0-0.5d0/sqrt(3.d0)))
             !
-            ! Redefine a3, b3 and c3
+            ! Redefine a3, b3 and c3 for eps_12
             !
             cBpar(:,:,:,1,3) = 0.5d0*(cBpar(:,:,:,1,1)+cBpar(:,:,:,1,2))-cBpar(:,:,:,1,3)-cBpar(:,:,:,3,3)
             cBpar(:,:,:,2,3) = 0.5d0*(cBpar(:,:,:,2,1)+cBpar(:,:,:,2,2))-cBpar(:,:,:,2,3)+cBpar(:,:,:,3,3)

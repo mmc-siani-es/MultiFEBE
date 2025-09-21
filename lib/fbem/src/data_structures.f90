@@ -465,27 +465,29 @@ module fbem_data_structures
     real(kind=real64), allocatable    :: mass_matrix(:,:)               !! Mass matrix for point loads (defined as in the nodal axes)
     integer                           :: fe_type                        !! For 1D FE:
                                                                         !!   (0) Degenerated beam (degbeam)
-                                                                        !!   (1) Euler-Bernoulli beam (strbeam_eb)
-                                                                        !!   (2) Timoshenko beam (strbeam_t)
+                                                                        !!   (1) Euler-Bernoulli straight beam (strbeam_eb)
+                                                                        !!   (2) Timoshenko straight beam (strbeam_t)
                                                                         !!   (3) Bar (bar)
                                                                         !!   (4) Discrete translational spring-dashpot (distra)
                                                                         !!   (5) Discrete rotational/translational spring-dashpot (disrotra)
                                                                         !!   (6) Discrete spring-dashpot (spring-dashpot)
                                                                         !!
                                                                         !! For 2D FE in 3D:
-                                                                        !!   (0) Degenerated shell
+                                                                        !!   (0) Degenerated shell (degshell)
                                                                         !!
                                                                         !! For 3D FE:
                                                                         !!   (0) Solid
+                                                                        !!
     integer                           :: fe_options(1)                  !! Finite element options:
                                                                         !!   - strbeam:
                                                                         !!     fe_options(1): 0 (line3 with no mid-node rotation), 1 (line3 with mid-node rotation)
                                                                         !!   - distra and disrotra
                                                                         !!     fe_options(1): 1 (coupled electromechanical spring (moving coil) distra_em and disrotra_em)
+                                                                        !!   - degshell:
+                                                                        !!     fe_options(1): 0 (standard formulation), 1 (MITC)
     !
     ! Integration setup for finite elements
     !
-    logical                           :: mitc                           !! True for using MITC elements (where it corresponds)
     integer                           :: K_intmode                      !! Integration mode (K matrix): 0 (full), (1) reduced, (2) selective, (3) user-defined
     integer                           :: K_intngp(3)                    !! Number of Gauss points for user-defined integration mode (K matrix).
     integer                           :: M_intmode                      !! Integration mode (M matrix): 0 (full), (1) reduced, (2) selective, (3) user-defined

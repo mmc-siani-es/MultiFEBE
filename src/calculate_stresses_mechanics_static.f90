@@ -831,7 +831,8 @@ subroutine calculate_stresses_mechanics_static
                   end do
                   ap=matmul(transpose(Lc),a)
                   ! Calculate the STRESS RESULTANTS INTERPOLATION SCHEME
-                  call fbem_fem_degshell_stress_resultants(element(se_int)%type,element(se_int)%x_gn,element(se_int)%v_midnode,&
+                  call fbem_fem_degshell_stress_resultants(element(se_int)%type,element(se_int)%fe_options(1),&
+                                                           element(se_int)%x_gn,element(se_int)%v_midnode,&
                                                            element(se_int)%tv_midnode,x1ref,nu,element(se_int)%ksh,&
                                                            setype,sedelta,Fsigma)
                   allocate (F(8,fbem_n_nodes(setype)))
@@ -1137,16 +1138,6 @@ subroutine calculate_stresses_mechanics_static
 
     end if
   end do ! Loop through the REGIONS
-
-
-
-
-
-
-
-
-
-
 
   ! Ending message
   if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'END calculating stresses at FE regions')

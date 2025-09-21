@@ -293,7 +293,7 @@ subroutine read_element_options(input_fileunit)
           end if
 
         else
-          call fbem_error_message(error_unit,0,section_name,nl,'invalid syntax in this line of the section.')
+          call fbem_error_message(error_unit,0,section_name,nl,'invalid type of entity in this line of the section.')
         end if
       end if
       ! Increment line counter

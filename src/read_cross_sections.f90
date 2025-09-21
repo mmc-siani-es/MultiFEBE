@@ -380,7 +380,7 @@ subroutine read_cross_sections(fileunit)
       ! Falta leer factor de correccion de cortante customizado
       ! Meter aqui tambien la lectura del vector de referencia para el eje x'
       !
-      if ((trim(tmp_class).eq.'shell').or.(trim(tmp_class).eq.'degshell')) then
+      if ((trim(tmp_class).eq.'shell').or.(trim(tmp_class).eq.'degshell').or.(trim(tmp_class).eq.'degshell_std').or.(trim(tmp_class).eq.'degshell_mitc')) then
         valid=.true.
         if (problem%n.ne.3) then
           call fbem_error_message(error_unit,0,section_name,0,'degshell can only be used for 3D analysis')
@@ -858,12 +858,17 @@ subroutine read_cross_sections(fileunit)
             element(se)%em_L=em_pars(3)
           end if
 
-
           !
           ! DEGSHELL
           !
-          if (((trim(tmp_class).eq.'shell').or.(trim(tmp_class).eq.'degshell')).and.(element(se)%n_dimension.eq.2)) then
+          if (((trim(tmp_class).eq.'shell').or.(trim(tmp_class).eq.'degshell').or.(trim(tmp_class).eq.'degshell_std')&
+               .or.(trim(tmp_class).eq.'degshell_mitc')).and.(element(se)%n_dimension.eq.2)) then
             element(se)%fe_type=0
+            ! By default, MITC interpolation
+            element(se)%fe_options(1)=1
+            if (trim(tmp_class).eq.'degshell_std') then
+              element(se)%fe_options(1)=0
+            end if
             if (.not.allocated(element(se)%tn_midnode)) then
               allocate (element(se)%tn_midnode(3,element(se)%n_nodes))
               element(se)%tn_midnode=0
@@ -877,7 +882,6 @@ subroutine read_cross_sections(fileunit)
             element(se)%ksh(1)=5.d0/6.d0
             element(se)%ksh(2)=5.d0/6.d0
             element(se)%ksh(3)=0.d0
-            element(se)%mitc=.true.
             element(se)%K_intmode=0
             element(se)%K_intngp =0
             element(se)%M_intmode=0

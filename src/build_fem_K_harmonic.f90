@@ -373,7 +373,7 @@ subroutine build_fem_K_harmonic(kf,se,ndof_Kinout,Kinout)
           ndof_K=6*element(se)%n_nodes
           allocate (K(ndof_K,ndof_K))
           K=0
-          call fbem_fem_degshell_K_harmonic(omega,element(se)%type,element(se)%mitc,&
+          call fbem_fem_degshell_K_harmonic(omega,element(se)%type,element(se)%fe_options(1),&
                                           element(se)%x_gn,element(se)%v_midnode,element(se)%tv_midnode,element(se)%node_n_dof,&
                                           E,nu,element(se)%ksh,rho,&
                                           element(se)%K_intmode,element(se)%K_intngp,element(se)%M_intmode,element(se)%M_intngp,K)
