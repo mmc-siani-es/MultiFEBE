@@ -1,5 +1,5 @@
 ! ---------------------------------------------------------------------
-! Copyright (C) 2014-2022 Universidad de Las Palmas de Gran Canaria:
+! Copyright (C) 2014-2025 Universidad de Las Palmas de Gran Canaria:
 !                         Jacob D.R. Bordon
 !                         Guillermo M. Alamo
 !                         Juan J. Aznarez
@@ -21,10 +21,12 @@
 
 
 !! @author Jacob David Rodriguez Bordon (jacobdavid.rodriguezbordon@ulpgc.es)
+!!         Samuel González Jiménez
 !!
 !! @version 2.0
 !!
 !! <b> Subroutine that reads the cross sections from a file. </b>
+!!
 !!
 subroutine read_cross_sections(fileunit)
 
@@ -39,6 +41,8 @@ subroutine read_cross_sections(fileunit)
 
   ! Problem variables module
   use problem_variables
+  use csv_module, only: csv_file, csv_type_integer, csv_type_double
+
 
   ! Local variables
   implicit none
@@ -65,6 +69,16 @@ subroutine read_cross_sections(fileunit)
   integer                        :: ke, se
   integer                        :: kn, sn
   logical                        :: valid
+  ! For degshell_variable_thickness
+  integer, allocatable                  :: fneids(:)
+  real(kind=real64), allocatable        :: thickness_val(:) 
+  real(kind=real64)                     :: default_thickness
+  character(len=fbem_string_max_length) :: thickness_filename
+  integer                               :: knodel, eid, iid, vloc
+  type(csv_file)                        :: thickness_csv
+  integer                               :: iostat_var
+  logical                               :: status_ok
+  
 
   ! Return if not needed
   if (n_fe_regions.eq.0) return
@@ -403,6 +417,55 @@ subroutine read_cross_sections(fileunit)
           read(word,*) xp_ref(3)
         else
           call fbem_error_message(error_unit,0,section_name,i,'incorrect number of arguments')
+        end if
+      end if
+      
+      !
+      ! DEGSHELL WITH VARIABLE THICKNESS
+      !
+      !
+      ! Falta leer factor de correccion de cortante customizado
+      ! Meter aqui tambien la lectura del vector de referencia para el eje x'
+      !
+      if ((trim(tmp_class).eq.'shell_variable_thickness').or.(trim(tmp_class).eq.'degshell_variable_thickness')&
+         .or.(trim(tmp_class).eq.'degshell_variable_thickness_std').or.(trim(tmp_class).eq.'degshell_variable_thickness_mitc')) then
+        valid=.true.
+        if (problem%n.ne.3) then
+          call fbem_error_message(error_unit,0,section_name,0,'degshell can only be used for 3D analysis')
+        end if
+        read(fileunit,*) tmp_class, tmp_n_fe_subregions, (tmp_fe_subregion(ks),ks=1,tmp_n_fe_subregions), default_thickness, thickness_filename
+        backspace (fileunit)
+        read(fileunit,'(a)') line
+        call fbem_trim2b(line)
+        nw=fbem_count_words(line)
+        if (nw.eq.(4+tmp_n_fe_subregions)) then
+          xp_ref=0
+          call fbem_warning_message(error_unit,0,section_name,i,'this is an old file format, it may be deprecated in the future.')
+          call fbem_warning_message(error_unit,0,section_name,i,'undefined xp_ref for degshell, it will be automatically defined.')
+        elseif (nw.eq.(3+tmp_n_fe_subregions+4)) then
+          word=fbem_extract_word(line,4+tmp_n_fe_subregions+1)
+          read(word,*) xp_ref(1)
+          word=fbem_extract_word(line,4+tmp_n_fe_subregions+2)
+          read(word,*) xp_ref(2)
+          word=fbem_extract_word(line,4+tmp_n_fe_subregions+3)
+          read(word,*) xp_ref(3)
+        else
+          call fbem_error_message(error_unit,0,section_name,i,'incmakeorrect number of arguments')
+        end if
+         
+        ! Importing IDs and thicknesses of the nodes
+        call thickness_csv%initialize(delimiter=' ')
+        call thickness_csv%read(filename=thickness_filename, status_ok=status_ok)
+        if (.not. status_ok) then
+          call fbem_error_message(error_unit,0,section_name,i,'An unexpected error happened while loading "'//trim(thickness_filename)//'"')
+        end if 
+        call thickness_csv%get(icol=1,r=fneids, status_ok=status_ok)
+        if (.not. status_ok) then
+          call fbem_error_message(error_unit,0,section_name,i,'Error reading column 1 of "'//trim(thickness_filename)//'"')
+        end if
+        call thickness_csv%get(icol=2, r=thickness_val, status_ok=status_ok)
+        if (.not. status_ok) then
+          call fbem_error_message(error_unit,0,section_name,i,'Error reading column 2 of "'//trim(thickness_filename)//'"')
         end if
       end if
 
@@ -878,6 +941,51 @@ subroutine read_cross_sections(fileunit)
               element(se)%ep=0
             end if
             element(se)%tn_midnode(3,:)=thickness(3)
+            element(se)%ep(:,1)=xp_ref
+            element(se)%ksh(1)=5.d0/6.d0
+            element(se)%ksh(2)=5.d0/6.d0
+            element(se)%ksh(3)=0.d0
+            element(se)%K_intmode=0
+            element(se)%K_intngp =0
+            element(se)%M_intmode=0
+            element(se)%M_intngp =0
+            element(se)%Q_intmode=0
+            element(se)%Q_intngp =0
+          end if
+         
+         ! 
+         ! DEGSHELL WITH VARIABLE THICKNESS
+         !
+          if ((trim(tmp_class).eq.'shell_variable_thickness').or.(trim(tmp_class).eq.'degshell_variable_thickness')&
+            .or.(trim(tmp_class).eq.'degshell_variable_thickness_std').or.(trim(tmp_class).eq.'degshell_variable_thickness_mitc')&
+            .and.(element(se)%n_dimension.eq.2)) then
+            element(se)%fe_type=0
+            ! By default, MITC interpolation
+            element(se)%fe_options(1)=1
+            if (trim(tmp_class).eq.'degshell_std') then
+              element(se)%fe_options(1)=0
+            end if
+            if (.not.allocated(element(se)%tn_midnode)) then
+              allocate (element(se)%tn_midnode(3,element(se)%n_nodes))
+              element(se)%tn_midnode=0
+            end if
+            if (.not.allocated(element(se)%ep)) then
+              allocate(element(se)%ep(3,3))
+              element(se)%ep=0
+            end if
+            
+            ! Assign variable thickness to each node
+            do knodel=1,element(se)%n_nodes
+                iid=element(se)%node(knodel)
+                eid=node(iid)%id
+                vloc=findloc(fneids,eid, dim=1)
+                if (vloc /= 0) then
+                  element(se)%tn_midnode(3,knodel)=thickness_val(vloc)
+                else
+                  element(se)%tn_midnode(3,knodel)=default_thickness
+                end if
+            end do
+            
             element(se)%ep(:,1)=xp_ref
             element(se)%ksh(1)=5.d0/6.d0
             element(se)%ksh(2)=5.d0/6.d0

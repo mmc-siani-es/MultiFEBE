@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com), and this
 project adheres to [Semantic Versioning](https://semver.org).
 
+## [2.0.3] - In progress
+### Added
+- 2025-10-20 (By Samuel González Jiménez). Implement variable shell thicknesses. It required reading from a csv file the thickness at each shell node.
+
+### Changed
+- None
 
 ## [2.0.2] - 2025-09-21
 ### Added
@@ -15,8 +21,8 @@ project adheres to [Semantic Versioning](https://semver.org).
 - MITC3 formulation is updated to MITC3i new scheme.
 - Bug in shape functions of tri4 (triangular element with centroid node with cubic bubble function).
 - Manual has been updated.
-- Include BE body loads including point loads in time harmonic analysis of fluid & elastic solid. 
-- Update calculation of internal points, including how results are exported. 
+- Include BE body loads including point loads in time harmonic analysis of fluid & elastic solid.
+- Update calculation of internal points, including how results are exported.
 - Update stress tensor calculation along boundaries.
 
 ## [2.0.1] - 2023-02-24

@@ -6,7 +6,6 @@ project(multifebe VERSION 2.0.2) # The version number must be changed here for e
 
 enable_language(Fortran)
 
-# Fails when trying static compilation
 if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
     set(CMAKE_Fortran_FLAGS         "${CMAKE_Fortran_FLAGS} -std=gnu -ffree-line-length-none -Wall -Wextra -cpp -fimplicit-none")
     set(CMAKE_Fortran_FLAGS_DEBUG   "-g -fcheck=all -fbacktrace -ffpe-trap=invalid,zero,overflow -fno-inline -Og")
@@ -42,11 +41,14 @@ target_link_libraries(multifebe ${CMAKE_CURRENT_SOURCE_DIR}/lib/sdf-0.75-RC8/lib
 add_dependencies(multifebe libsdf.a)
 
 #
-# Build and link to fortran-csv-module
+# Build and link to csv-fortran
+# Fortran CSV Module
+# https://github.com/jacobwilliams/csv-fortran
+# Copyright (c) 2017-2022, Jacob Williams
 #
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/fortran-csv-module)
-target_include_directories(multifebe PUBLIC ${CMAKE_BINARY_DIR}/lib/fortran-csv-module/fcsv_include)
-target_link_libraries(multifebe ${CMAKE_BINARY_DIR}/lib/fortran-csv-module/libfcsv.a)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/csv-fortran)
+target_include_directories(multifebe PUBLIC ${CMAKE_BINARY_DIR}/lib/csv-fortran/fcsv_include)
+target_link_libraries(multifebe ${CMAKE_BINARY_DIR}/lib/csv-fortran/libfcsv.a)
 add_dependencies(multifebe fcsv)
 
 #
