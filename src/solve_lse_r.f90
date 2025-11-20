@@ -53,7 +53,7 @@ subroutine solve_lse_r(n_dof,A,ipiv,Aodim,Ao,equed,r,c,n_rhs,b,factorize,scaling
   character(len=1)               :: norm
   real(kind=real64)              :: anorm
   real(kind=real64)              :: rcond
-  real(kind=real64)              :: rwork(n_dof)
+  real(kind=real64)              :: rwork(2*n_dof)
   real(kind=real64)              :: work(4*n_dof)
   integer                        :: info
   character(len=1)               :: trans
@@ -163,18 +163,14 @@ subroutine solve_lse_r(n_dof,A,ipiv,Aodim,Ao,equed,r,c,n_rhs,b,factorize,scaling
     end do
     call dgecon(norm,n_dof,A,n_dof,anorm,rcond,work,rwork,info)
     if (info.eq.0) then
-      if (verbose_level.ge.2) then
-        call fbem_timestamp_w_message(output_unit,2,'Condition number correctly estimated')
-      end if
-    else
-      call fbem_timestamp_message(output_unit,2)
-      write(output_unit,'(a13,i11)') 'zgecon info: ', info
-      call fbem_error_message(error_unit,0,__FILE__,__LINE__,'condition number calculation has failed')
-    end if
-    if (verbose_level.ge.2) then
       call fbem_timestamp_message(output_unit,2)
       write(output_unit,'(a17,e25.16)') 'Condition number:', 1.0d0/rcond
+    else
+      call fbem_timestamp_message(output_unit,2)
+      write(output_unit,'(a13,i11)') 'dgecon info: ', info
+      call fbem_error_message(error_unit,0,__FILE__,__LINE__,'condition number calculation has failed')
     end if
+    write(20,*) 1.0d0/rcond
   end if
 
   ! ----------- !
@@ -202,7 +198,7 @@ subroutine solve_lse_r(n_dof,A,ipiv,Aodim,Ao,equed,r,c,n_rhs,b,factorize,scaling
   ! ------------ !
 
   if (refine) then
-    call dgerfs(trans,n_dof,n_rhs,Ao,n_dof,A,n_dof,ipiv,bcopy,n_dof,b,n_dof,ferr,berr,work,rwork,info)
+    call dgerfs(trans,n_dof,n_rhs,Ao,Aodim,A,n_dof,ipiv,bcopy,n_dof,b,n_dof,ferr,berr,work,rwork,info)
     if (info.eq.0) then
       if (verbose_level.ge.2) then
         do i=1,n_rhs
