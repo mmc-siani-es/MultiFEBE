@@ -73,47 +73,62 @@ contains
     ! Local
     complex(kind=real64) :: k           ! Wavenumber
     complex(kind=real64) :: p1          ! p a r=1 de la solucion fundamental
-    real(kind=real64)    :: rv(rn), r
+    complex(kind=real64) :: pars_P(4)
+    complex(kind=real64) :: pars_Q(4)
+    complex(kind=real64) :: z(1), KnR(0:2,1)
+    real(kind=real64)    :: rv(rn), r, logr, d1r
     real(kind=real64)    :: drdx(rn)
     real(kind=real64)    :: drdn
     k=omega/c
-
     rv=x-x0
     r=sqrt(dot_product(rv,rv))
     drdx=rv/r
     drdn=dot_product(drdx,n)
-
-    if (space.eq.2) stop 'not yet'
-
     select case (rn)
       case (2)
-
-
-
-!        d1r=1.0d0/r
-!        logr=log(r)
-!        z(1)=c_im*pars%k*r
-!        call fbem_BesselKnR_decomposed(1,z,KnR)
-
-!        P=pars%P(1)*logr+pars%P(2)+pars%P(3)*KnR(0,1)
-
-!        Q=pars%Q(1)*d1r+(pars%Q(2)*logr+pars%Q(3))*r+pars%Q(4)*KnR(1,1)
-
-
-!        p_inc =
-!        Un_inc =
-!        h=h+Q*drdn*pphijw
-!        g=g+P*sphijw
-
-
-
-        stop 'not yet'
-
-
+        ! Coefficients of p* and q*
+        ! P
+        pars_P(1)=-c_1_2pi
+        pars_P(2)=-c_1_2pi*(log(0.5d0*c_im*k)+c_gamma)
+        pars_P(3)= c_1_2pi
+        ! Q
+        pars_Q(1)=-c_1_2pi
+        pars_Q(2)= c_1_2pi*0.5d0*k**2
+        pars_Q(3)= c_1_2pi*0.5d0*k**2*(log(0.5d0*c_im*k)+c_gamma-0.5d0)
+        pars_Q(4)=-c_1_2pi*c_im*k
+        if (abs(A).ne.0) then
+          ! Pressure at r = 1
+          d1r=1.0d0
+          logr=log(1.d0)
+          z(1)=c_im*k*1.d0
+          call fbem_BesselKnR_decomposed(1,z,KnR)
+          p1=pars_P(1)*logr+pars_P(2)+pars_P(3)*KnR(0,1)
+          ! Pressure p and normal displacement Un
+          d1r=1.0d0/r
+          logr=log(r)
+          z(1)=c_im*k*r
+          call fbem_BesselKnR_decomposed(1,z,KnR)
+          p_inc=A/p1*(pars_P(1)*logr+pars_P(2)+pars_P(3)*KnR(0,1))
+          Un_inc=A/p1/(rho*omega**2)*(pars_Q(1)*d1r+(pars_Q(2)*logr+pars_Q(3))*r+pars_Q(4)*KnR(1,1))*drdn
+        else
+          d1r=1.0d0/r
+          logr=log(r)
+          z(1)=c_im*k*r
+          call fbem_BesselKnR_decomposed(1,z,KnR)
+          p_inc=(pars_P(1)*logr+pars_P(2)+pars_P(3)*KnR(0,1))
+          Un_inc=1.d0/(rho*omega**2)*(pars_Q(1)*d1r+(pars_Q(2)*logr+pars_Q(3))*r+pars_Q(4)*KnR(1,1))*drdn
+        end if
       case (3)
-        p1=c_1_4pi*exp(-c_im*k*1.d0)
-        p_inc=A/p1*c_1_4pi*exp(-c_im*k*r)/r
-        Un_inc=-A/p1/(rho*omega**2)*c_1_4pi*(1.d0/r+c_im*k)/r*drdn*exp(-c_im*k*r)
+        if (abs(A).ne.0) then
+          ! Pressure at r = 1
+          p1 = c_1_4pi*exp(-c_im*k*1.d0)
+          ! Pressure p and normal displacement Un
+          p_inc=A/p1*c_1_4pi*exp(-c_im*k*r)/r
+          Un_inc=-A/p1/(rho*omega**2)*c_1_4pi*(1.d0/r+c_im*k)/r*drdn*exp(-c_im*k*r)
+        else
+          p_inc=c_1_4pi*exp(-c_im*k*r)/r
+          Un_inc=-1.d0/(rho*omega**2)*c_1_4pi*(1.d0/r+c_im*k)/r*drdn*exp(-c_im*k*r)
+        end if
     end select
   end subroutine fbem_harpot_pointwave
 
