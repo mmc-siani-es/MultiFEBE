@@ -1446,6 +1446,9 @@ subroutine calculate_stresses_mechanics_harmonic(kf)
   ! CALCULATE FEM NODAL AVERAGED STRESSES
   ! ================================================================================================================================
   ! For element node, the average is taken only between elements of the same FE SUBREGION.
+  !
+  ! CAUTION: CHECKING OR TRANSFORMATION OF LOCAL CARTESIAN COORDINATES AT THE NODE
+  !          SHARED BY MULTIPLE ELEMENTS IS NOT IMPLEMENTED.
 
   ! Loop through the REGIONS
   do kr=1,n_regions
