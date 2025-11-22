@@ -2069,7 +2069,7 @@ subroutine build_auxiliary_variables_mechanics_harmonic
                     case (fbem_potential)
                       !
                       ! Index of variables:
-                      ! - node(sn)%value_c(1,1): a
+                      ! - node(sn)%value_c(1,1): A
                       ! - node(sn)%value_c(2,1): Un
                       !
                       allocate (node(sn)%value_c(2,1))
@@ -2106,7 +2106,6 @@ subroutine build_auxiliary_variables_mechanics_harmonic
                 ! ----------------------------------
 
                 case (fbem_bl_coupling_beam_tip)
-
                   stop 'not yet'
 
                 ! ---------------------------------------------------------
@@ -2434,7 +2433,6 @@ subroutine build_auxiliary_variables_mechanics_harmonic
             ! ----------------------------------
 
             case (fbem_bl_coupling_beam_tip)
-
 
             ! ---------------------------------------------------------
             ! (FE BEAM - BE LINE LOAD) AND (FE SHELL - BE SURFACE LOAD)
