@@ -1,5 +1,5 @@
 ! ---------------------------------------------------------------------
-! Copyright (C) 2014-2022 Universidad de Las Palmas de Gran Canaria:
+! Copyright (C) 2014-2025 Universidad de Las Palmas de Gran Canaria:
 !                         Jacob D.R. Bordon
 !                         Guillermo M. Alamo
 !                         Juan J. Aznarez
@@ -18,7 +18,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ! ---------------------------------------------------------------------
-
 
 subroutine build_lse_mechanics_bem_harpot(kf,kr)
 
@@ -98,16 +97,15 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
   if (verbose_level.ge.2) then
     write(fmtstr,*) '(1x,a6,1x,i',fbem_nchar_int(region(kr)%id),',1x,a27)'
     call fbem_trimall(fmtstr)
+    call fbem_timestamp_message(output_unit,2)
     write(output_unit,fmtstr) 'Region', region(kr)%id, '(BE region, inviscid fluid)'
   end if
 
   ! Frequency
   omega=frequency(kf)
 
-  ! ¿?¿?¿
-  ! PONER ESTO EN UNA FUNCION, OJO! ESTA TAMBIEN EN CAMPO INCIDENTE
-  ! ¿?¿?¿?
-
+  ! TODO: put this into a function, it also is present in the calculate incident fields and other
+  ! calculations (calculate stresses)
 
   ! Save the region properties to local variables
   rho=region(kr)%property_r(1)
@@ -124,70 +122,9 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
       call fbem_bem_harpot3d_calculate_parameters(rho,c,omega,p3d)
   end select
 
+  ! Export waves propagation speeds
+  if (export_wsp) call export_region_wsp_harpot(kf,kr,c)
 
-  ! ============================== !
-  ! EXPORT WAVE PROPAGATION SPEEDS !
-  ! ============================== !
-
-  if (export_wsp) then
-    output_fileunit=fbem_get_valid_unit()
-    tmp_filename=trim(output_filename)//'.wsp'
-    call fbem_trim2b(tmp_filename)
-    if ((kf.eq.1).and.(kr.eq.1)) then
-      open(unit=output_fileunit,file=trim(tmp_filename),action='write',recl=fbem_file_record_length)
-      write(output_fileunit,'(a)'  ) '# Program      : multifebe'
-      write(output_fileunit,'(a)'  ) '# Version      : 1.0'
-      write(output_fileunit,'(a)'  ) '# File_format  : wsp'
-      write(output_fileunit,'(a)'  ) '# Specification: 1'
-      write(output_fileunit,'(a,a)') '# Input_file   : ', trim(input_filename)
-      write(output_fileunit,'(a,i1)')'# Problem n    : ', problem%n
-      write(output_fileunit,'(a,a)') '# Description  : ', trim(problem%description)
-      write(tmp_string,*) timestamp_date_start(1:4),'-',timestamp_date_start(5:6),'-',timestamp_date_start(7:8),' ',&
-                          timestamp_time_start(1:2),':',timestamp_time_start(3:4),':',timestamp_time_start(5:10)
-      call fbem_trim2b(tmp_string)
-      write(output_fileunit,'(a,a)') '# Timestamp    : ', trim(tmp_string)
-      write(output_fileunit,*)
-      ! Column description
-      write(output_fileunit,'(a)'  ) '# Columns  Description'
-      write(output_fileunit,'(a)'  ) '# 1-2      Region id and region type (1: inviscid fluid, 2: viscoelastic, 3: poroelastic)'
-      if (frequency_units.eq.'f') then
-        write(output_fileunit,'(a)'  ) '# 3        Frequency (Hz)'
-      else
-        write(output_fileunit,'(a)'  ) '# 3        Frequency (rad/s)'
-      end if
-      select case (complex_notation)
-      case (1)
-        write(output_fileunit,'(a)'  )   '# 4-5      If column 2 == 1 (inviscid fluid region): Abs(c), Arg(c)'
-        write(output_fileunit,'(a)'  )   '# 4-7      If column 2 == 2 (viscoelastic region): Abs(cp), Arg(cp), Abs(cs), Arg(cs)'
-        write(output_fileunit,'(a)'  )   '# 4-9      If column 2 == 3 (poroelastic region): Abs(cp1), Arg(cp1), Abs(cp2), Arg(cp2), Abs(cs), Arg(cs)'
-      case (2)
-        write(output_fileunit,'(a)'  )   '# 4-5      If column 2 == 1 (inviscid fluid region): Re(c), Im(c)'
-        write(output_fileunit,'(a)'  )   '# 4-7      If column 2 == 2 (viscoelastic region): Re(cp), Im(cp), Re(cs), Im(cs)'
-        write(output_fileunit,'(a)'  )   '# 4-9      If column 2 == 3 (poroelastic region): Re(cp1), Im(cp1), Re(cp2), Im(cp2), Re(cs), Im(cs)'
-      end select
-    else
-      open(unit=output_fileunit,file=trim(tmp_filename),access='append',recl=fbem_file_record_length)
-    end if
-    write(fmtstr,*) '(2',fmt_integer,')'
-    call fbem_trimall(fmtstr)
-    write (output_fileunit,fmtstr,advance='no') region(kr)%id, 1
-    write(fmtstr,*) '(1',fmt_real,')'
-    call fbem_trimall(fmtstr)
-    if (frequency_units.eq.'f') then
-      write (output_fileunit,fmtstr,advance='no') omega*c_1_2pi
-    else
-      write (output_fileunit,fmtstr,advance='no') omega
-    end if
-    write(fmtstr,*) '(2',fmt_real,')'
-    call fbem_trimall(fmtstr)
-    select case (complex_notation)
-      case (1)
-        write(output_fileunit,fmtstr) abs(c), fbem_zarg(c)
-      case (2)
-        write(output_fileunit,fmtstr) dreal(c), dimag(c)
-    end select
-    close(unit=output_fileunit)
-  end if
 
   ! ==================================== !
   ! CALCULATE AND ASSEMBLE BEM INTEGRALS !
@@ -201,9 +138,11 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
     write(output_unit,fmtstr) 'START assembling region',region(kr)%id
   end if
 
-  !
-  ! Loop through the BOUNDARIES of the REGION for INTEGRATION
-  !
+  ! --------------------------------------------
+  ! CALCULATE AND ASSEMBLE ELEMENT BEM INTEGRALS
+  ! --------------------------------------------
+
+  ! REGION BOUNDARIES
   do kb_int=1,region(kr)%n_boundaries
     sb_int=region(kr)%boundary(kb_int)
     sb_int_reversion=region(kr)%boundary_reversion(kb_int)
@@ -212,23 +151,26 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
     do ke_int=1,part(sp_int)%n_elements
       se_int=part(sp_int)%element(ke_int)
       se_int_n_nodes=element(se_int)%n_nodes
-      call build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,p2d,p3d)
+      call build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,p2d,p3d,.true.)
+    end do
+    !$omp end parallel do
+  end do
+  ! REGION BODY LOADS
+  do kb_int=1,region(kr)%n_be_bodyloads
+    sb_int=region(kr)%be_bodyload(kb_int)
+    sp_int=be_bodyload(sb_int)%part
+    !$omp parallel do schedule (dynamic) default (shared) private (se_int,se_int_n_nodes)
+    do ke_int=1,part(sp_int)%n_elements
+      se_int=part(sp_int)%element(ke_int)
+      se_int_n_nodes=element(se_int)%n_nodes
+      call build_lse_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nodes,p2d,p3d,.true.)
     end do
     !$omp end parallel do
   end do
 
-  ! Message
-  if (verbose_level.ge.2) then
-    write(fmtstr,*) '(a21,1x,i',fbem_nchar_int(region(kr)%id),')'
-    call fbem_trimall(fmtstr)
-    call fbem_timestamp_message(output_unit,2)
-    write(output_unit,fmtstr) 'END assembling region',region(kr)%id
-  end if
-
   ! ================================= !
   ! CALCULATE AND ASSEMBLE FREE-TERMS !
   ! ================================= !
-
 
   ! Falta modificar esto para half-space f.s.
 
@@ -633,6 +575,7 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
         ! The collocation establishes the equations (rows).
         ! The integration establishes the variables (columns).
         if (assemble) then
+          ! Aqui faltaria tratamiento si cae en la superficie libre
           select case (boundary(sb_int)%coupling)
             case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
               select case (boundary(sb_int)%class)
@@ -669,12 +612,28 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
 
   end do ! Loop through the BOUNDARIES of the REGION
 
-  ! Ending message
-  if (verbose_level.ge.2) write(output_unit,'(1x,a)') 'done.'
+  ! -----------------------------------
+  ! INTEGRATION of REGION BE BODY LOADS
+  ! -----------------------------------
+
+  do kb_int=1,region(kr)%n_be_bodyloads
+    sb_int=region(kr)%be_bodyload(kb_int)
+    sp_int=be_bodyload(sb_int)%part
+    if (be_bodyload(sb_int)%coupling.eq.0) cycle
+    stop 'Not yet coupling of acoustic BE body loads'
+  end do ! Loop through the BE BODY LOADS of the REGION
+
+  ! Message
+  if (verbose_level.ge.2) then
+    write(fmtstr,*) '(a21,1x,i',fbem_nchar_int(region(kr)%id),')'
+    call fbem_trimall(fmtstr)
+    call fbem_timestamp_message(output_unit,2)
+    write(output_unit,fmtstr) 'END assembling region',region(kr)%id
+  end if
 
 end subroutine build_lse_mechanics_bem_harpot
 
-subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,p2d,p3d)
+subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,p2d,p3d,g_assemble)
 
   ! Fortran 2003 intrinsic module
   use iso_fortran_env
@@ -703,6 +662,7 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
   integer                            :: se_int_n_nodes
   type(fbem_bem_harpot3d_parameters) :: p3d
   type(fbem_bem_harpot2d_parameters) :: p2d
+  logical                            :: g_assemble
   ! Local variables
   integer                :: ks
   type(fbem_bem_element) :: se_int_data
@@ -725,6 +685,7 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
   complex(kind=real64)   :: p_inc(se_int_n_nodes), Un_inc(se_int_n_nodes)
   ! Kernels for SBIE integration
   complex(kind=real64)   :: h (se_int_n_nodes), g (se_int_n_nodes)
+  complex(kind=real64)   :: ht(se_int_n_nodes), gt(se_int_n_nodes)
   complex(kind=real64)   :: hp(se_int_n_nodes), gp(se_int_n_nodes)
   complex(kind=real64)   :: hm(se_int_n_nodes), gm(se_int_n_nodes)
   ! Kernels for HBIE integration
@@ -785,8 +746,17 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
   end select
 
   !
-  ! Loop through symmetrical elements
+  ! Loop through SYMMETRICAL ELEMENTS for INTEGRATION
   !
+
+  !
+  ! Crear temporales:
+  ! n_symelements, n_symplanes, symplane_m,symplane_s,symplane_t,symplane_r
+  !
+  ! Si el elemento pertenece completamente al plano de simetria, hay que "desactivar" dicho
+  ! plano de simetria para la integracion de ecuaciones.
+  !
+
   do ks=1,n_symelements
     ! SYMMETRY SETUP
     call fbem_symmetry_multipliers(ks,problem%n,n_symplanes,symplane_m,symplane_s,symplane_t,symplane_r,&
@@ -798,6 +768,10 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
     end do
     ! Initialize precalculated datasets
     call se_int_data%init_precalculated_datasets(n_precalsets,precalset_gln)
+
+    ! ========================= !
+    ! COLLOCATION AT BOUNDARIES !
+    ! ========================= !
 
     !
     ! Loop through the BOUNDARIES of the REGION for COLLOCATION
@@ -826,19 +800,18 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
           ! Initialize assemble flag
           assemble=.false.
 
+          ! --------------------------------------------------- !
+          ! SBIE & HBIE AT THE SAME NON-NODAL COLLOCATION POINT !
+          ! --------------------------------------------------- !
+
           ! True for dual formulations (Burton & Miller and DBEM) when the collocation point for SBIE and HBIE is the same.
           if (node(sn_col)%dual_is_common) then
-
-            ! ==========================================
-            !  SBIE & HBIE AT THE SAME COLLOCATION POINT
-            ! ==========================================
-
-            ! Initialize
+            ! INITIALIZE
             assemble=.true.
-            ! CALCULATE KERNELS
             x_i=element(se_col)%x_i_hbie(:,kn_col)
             n_i=element(se_col)%n_i_hbie(:,kn_col)
             if (sb_col_reversion) n_i=-n_i
+            ! CALCULATE INFLUENCE MATRICES
             select case (problem%n)
               case (2)
                 call fbem_bem_harpot2d_shbie_auto(se_int_data,se_int_reversion,x_i,n_i,p2d,qsi_parameters,qsi_ns_max,h,g,m,l)
@@ -870,7 +843,7 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
                   l=l+lp
               end select
             end if
-            ! BUILD KERNELS ACCORDING TO SYMMETRY
+            ! MODIFY INFLUENCE MATRICES ACCORDING TO SYMMETRY CONFIGURATION
             if (ks.gt.1) then
               h(:)=symconf_s*h(:)
               g(:)=symconf_s*g(:)
@@ -903,19 +876,16 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
 
           else
 
-            ! ======
-            !  SBIE
-            ! ======
-
-            ! If the collocation node has SBIE formulation, then the SBIE kernels of the integration element have to be
-            ! calculated.
+            ! ------------------------------- !
+            ! SBIE AT NODAL COLLOCATION POINT !
+            ! ------------------------------- !
 
             if (node(sn_col)%sbie.eq.fbem_sbie.and.(.not.node_collocated(sn_col))) then
-              ! Initialize
+              ! INITIALIZE
               assemble=.true.
               node_collocated(sn_col)=.true.
-              ! CALCULATE KERNELS
               x_i=element(se_col)%x_i_sbie(:,kn_col)
+              ! CALCULATE INFLUENCE MATRICES
               select case (problem%n)
                 case (2)
                   call fbem_bem_harpot2d_sbie_auto(se_int_data,se_int_reversion,x_i,p2d,qsi_parameters,qsi_ns_max,h,g)
@@ -957,17 +927,17 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
               end if
             end if
 
-            ! ==========
-            !  SBIE MCA
-            ! ==========
+            ! ----------------------------------- !
+            ! SBIE AT NON-NODAL COLLOCATION POINT !
+            ! ----------------------------------- !
 
             ! If the collocation node has SBIE MCA formulation, then the SBIE MCA kernels of the integration element have to be
             ! calculated.
             if (node(sn_col)%sbie.eq.fbem_sbie_mca) then
-              ! Initialize
+              ! INITIALIZE
               assemble=.true.
-              ! CALCULATE KERNELS
               x_i=element(se_col)%x_i_sbie_mca(:,kn_col)
+              ! CALCULATE INFLUENCE MATRICES
               select case (problem%n)
                 case (2)
                   call fbem_bem_harpot2d_sbie_auto(se_int_data,se_int_reversion,x_i,p2d,qsi_parameters,qsi_ns_max,h,g)
@@ -1009,18 +979,18 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
               end if
             end if
 
-            ! ======
-            !  HBIE
-            ! ======
+            ! ----------------------------------- !
+            ! HBIE AT NON-NODAL COLLOCATION POINT !
+            ! ----------------------------------- !
 
             ! If the collocation node has HBIE (MCA) formulation, then the HBIE equation has to be integrated.
             if (node(sn_col)%hbie.eq.fbem_hbie) then
-              ! Initialize
+              ! INITIALIZE
               assemble=.true.
-              ! CALCULATE KERNELS
               x_i=element(se_col)%x_i_hbie(:,kn_col)
               n_i=element(se_col)%n_i_hbie(:,kn_col)
               if (sb_col_reversion) n_i=-n_i
+              ! CALCULATE INFLUENCE MATRICES
               select case (problem%n)
                 case (2)
                   call fbem_bem_harpot2d_hbie_auto(se_int_data,se_int_reversion,x_i,n_i,p2d,qsi_parameters,qsi_ns_max,m,l)
@@ -1095,7 +1065,7 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
           ! Note: The flux variable is the normal displacement Un=1/(rho*omega**2)*dp/dn.
           ! The collocation establishes the equations (rows).
           ! The integration establishes the variables (columns).
-          if (assemble) then
+          if (assemble.and.g_assemble) then
             !$omp critical
             select case (boundary(sb_col)%coupling)
               case (fbem_boundary_coupling_be,fbem_boundary_coupling_be_fe)
@@ -1123,11 +1093,364 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
           end if
 
         end do ! Loop through the NODES of the ELEMENT for COLLOCATION
-
       end do ! Loop through the ELEMENTS of the BOUNDARY for COLLOCATION
-
     end do ! Loop through the BOUNDARIES of the REGION for COLLOCATION
+
+    ! ======================= !
+    ! COLLOCATION AT BE LOADS !
+    ! ======================= !
+
+    !
+    ! Loop through the BE LOADS of the REGION for COLLOCATION
+    !
+    node_collocated=.false.
+    do kb_col=1,region(kr)%n_be_bodyloads
+      sb_col=region(kr)%be_bodyload(kb_col)
+      sp_col=be_bodyload(sb_col)%part
+      select case (be_bodyload(sb_col)%coupling)
+
+        ! ========================
+        ! 3D: BEAM - LINE LOAD
+        ! ========================
+
+        case (fbem_bl_coupling_beam_line)
+          stop 'not yet'
+
+        ! ========================
+        ! 2D: BEAM - LINE LOAD
+        ! 3D: SHELL - SURFACE LOAD
+        ! ========================
+
+        case (fbem_bl_coupling_shell_surface)
+          stop 'not yet'
+
+      end select
+
+    end do ! Loop through the BE LOADS of the REGION for COLLOCATION
 
   end do ! Loop through SYMMETRICAL ELEMENTS
 
 end subroutine build_lse_mechanics_bem_harpot_element
+
+!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+subroutine build_lse_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nodes,p2d,p3d,g_assemble)
+
+  ! Fortran 2003 intrinsic module
+  use iso_fortran_env
+
+  ! fbem modules
+  use fbem_data_structures
+  use fbem_string_handling
+  use fbem_numerical
+  use fbem_symmetry
+  use fbem_bem_general
+  use fbem_bem_harpot2d
+  use fbem_bem_harpot3d
+
+  ! Module of problem variables
+  use problem_variables
+
+  ! No implicit variables
+  implicit none
+
+  ! I/O variables
+  real(kind=real64)                   :: omega
+  integer                             :: kr
+  integer                             :: sb_int
+  integer                             :: se_int
+  integer                             :: se_int_n_nodes
+  type(fbem_bem_harpot3d_parameters)  :: p3d
+  type(fbem_bem_harpot2d_parameters)  :: p2d
+  logical                             :: g_assemble
+  ! Local variables
+  integer                :: ks
+  integer                :: ik
+  type(fbem_bem_element) :: se_int_data
+  integer                :: kb_col, sb_col
+  logical                :: sb_col_reversion
+  integer                :: sp_col
+  integer                :: ke_col, se_col
+  integer                :: se_col_n_nodes
+  integer                :: kn_col, sn_col
+  integer                :: kn, kcp
+  real(kind=real64), allocatable :: xi_i(:)
+  real(kind=real64)      :: x_i(problem%n), n_i(problem%n), ep1(3), ep2(3), ep3(3)
+  integer                :: se_fe
+  real(kind=real64)      :: A, Iy, Iz, r_integration
+  ! Dataset at integration points
+  logical                :: node_collocated(n_nodes)
+  ! Region properties
+  real(kind=real64)      :: rho, d1J
+  complex(kind=real64)   :: c
+  complex(kind=real64)   :: k
+  ! Integrals for SBIE and HBIE integration
+  complex(kind=real64), allocatable :: g(:), gt(:), gp(:), l(:)
+  ! Multiplier for Dual Burton & Miller formulation
+  real(kind=real64)      :: alpha
+  ! Symmetry plane configuration for the current element
+  integer                :: se_n_symplanes
+  integer                :: se_n_symelements
+  real(kind=real64)      :: se_symplane_m(3,3)
+  real(kind=real64)      :: se_symplane_s(3)
+  real(kind=real64)      :: se_symplane_t(3,3)
+  real(kind=real64)      :: se_symplane_r(3,3)
+  ! Associated with symmetry
+  real(kind=real64)      :: symconf_m(problem%n), symconf_t(problem%n), symconf_r(problem%n), symconf_s
+  logical                :: reversed
+  ! Assembling control variable
+  logical                :: assemble
+
+  ! Save the region properties to local variables
+  rho=region(kr)%property_r(1)
+  select case (problem%n)
+    case (2)
+      c=p2d%c
+    case (3)
+      c=p3d%c
+  end select
+  k=omega/c
+  d1J=rho*omega**2
+
+  ! Initialize calculation element
+  call se_int_data%init
+  se_int_data%gtype=element(se_int)%type_g
+  se_int_data%d=element(se_int)%n_dimension
+  se_int_data%n_gnodes=element(se_int)%n_nodes
+  se_int_data%n=problem%n
+  allocate (se_int_data%x(problem%n,se_int_n_nodes))
+  se_int_data%x=element(se_int)%x_gn
+  se_int_data%ptype=element(se_int)%type_f1
+  se_int_data%ptype_delta=element(se_int)%delta_f
+  se_int_data%n_pnodes=element(se_int)%n_nodes
+  se_int_data%stype=element(se_int)%type_f2
+  se_int_data%stype_delta=element(se_int)%delta_f
+  se_int_data%n_snodes=element(se_int)%n_nodes
+  se_int_data%cl=element(se_int)%csize
+  se_int_data%gln_far=element(se_int)%n_phi
+  allocate (se_int_data%bball_centre(problem%n))
+  se_int_data%bball_centre=element(se_int)%bball_centre
+  se_int_data%bball_radius=element(se_int)%bball_radius
+  allocate (g (se_int_data%n_snodes))
+  allocate (gt(se_int_data%n_snodes))
+  allocate (gp(se_int_data%n_snodes))
+  allocate (l (se_int_data%n_snodes))
+
+  ! ACTIVE SYMMETRY PLANES FOR THE CURRENT ELEMENT
+  call build_symplane_bodyload_elements(se_int,se_n_symplanes,se_n_symelements,se_symplane_m,se_symplane_s,se_symplane_t,se_symplane_r)
+
+  !
+  ! Loop through SYMMETRICAL ELEMENTS for INTEGRATION
+  !
+  do ks=1,se_n_symelements
+    ! SYMMETRY SETUP
+    call fbem_symmetry_multipliers(ks,problem%n,se_n_symplanes,se_symplane_m,se_symplane_s,se_symplane_t,se_symplane_r,&
+                                   symconf_m,symconf_s,symconf_t,symconf_r,reversed)
+    do kn=1,se_int_n_nodes
+      se_int_data%x(:,kn)=symconf_m*element(se_int)%x_gn(:,kn)
+    end do
+    ! INITIALIZE PRECALCULATED DATASETS
+    call se_int_data%init_precalculated_datasets(n_precalsets,precalset_gln)
+
+    ! ========================= !
+    ! COLLOCATION AT BOUNDARIES !
+    ! ========================= !
+
+    !
+    ! Loop through the BOUNDARIES of the REGION for COLLOCATION
+    !
+    node_collocated=.false.
+    do kb_col=1,region(kr)%n_boundaries
+      sb_col=region(kr)%boundary(kb_col)
+      sb_col_reversion=region(kr)%boundary_reversion(kb_col)
+      sp_col=boundary(sb_col)%part
+      !
+      ! Loop through the ELEMENTS of the BOUNDARY for COLLOCATION
+      !
+      do ke_col=1,part(sp_col)%n_elements
+        se_col=part(sp_col)%element(ke_col)
+        se_col_n_nodes=element(se_col)%n_nodes
+        !
+        ! Loop through the NODES of the ELEMENT for COLLOCATION
+        !
+        do kn_col=1,se_col_n_nodes
+          ! COLLOCATION NODE
+          sn_col=element(se_col)%node(kn_col)
+          assemble=.false.
+
+          ! --------------------------------------------------- !
+          ! SBIE & HBIE AT THE SAME NON-NODAL COLLOCATION POINT !
+          ! --------------------------------------------------- !
+
+          if (node(sn_col)%dual_is_common) then
+            ! INITIALIZE
+            assemble=.true.
+            x_i=element(se_col)%x_i_hbie(:,kn_col)
+            n_i=element(se_col)%n_i_hbie(:,kn_col)
+            if (sb_col_reversion) n_i=-n_i
+            ! CALCULATE INFLUENCE MATRICES
+            select case (problem%n)
+              case (2)
+                call fbem_bem_harpot2d_sbie_bl_auto(se_int_data,x_i,p2d,qsi_parameters,qsi_ns_max,g)
+                call fbem_bem_harpot2d_hbie_bl_auto(se_int_data,x_i,n_i,p2d,qsi_parameters,qsi_ns_max,l)
+              case (3)
+                call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,g)
+                call fbem_bem_harpot3d_hbie_bl_auto(se_int_data,x_i,n_i,p3d,qsi_parameters,qsi_ns_max,l)
+            end select
+            ! MODIFY INFLUENCE MATRICES ACCORDING TO SYMMETRY CONFIGURATION
+            g(:)=symconf_s*g(:)
+            l(:)=symconf_s*l(:)
+            ! BURTON&MILLER FORMULATION
+            if (node(sn_col)%dual.eq.fbem_dual_burton_miller) then
+              alpha=node(sn_col)%alpha
+              g=g+alpha*c_im/c*l
+            end if
+
+          else
+
+            ! ------------------------------- !
+            ! SBIE AT NODAL COLLOCATION POINT !
+            ! ------------------------------- !
+
+            if (node(sn_col)%sbie.eq.fbem_sbie.and.(.not.node_collocated(sn_col))) then
+              ! INITIALIZE
+              assemble=.true.
+              node_collocated(sn_col)=.true.
+              x_i=element(se_col)%x_i_sbie(:,kn_col)
+              ! CALCULATE INFLUENCE MATRICES
+              select case (problem%n)
+                case (2)
+                  call fbem_bem_harpot2d_sbie_bl_auto(se_int_data,x_i,p2d,qsi_parameters,qsi_ns_max,g)
+                case (3)
+                  call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,g)
+              end select
+              ! MODIFY INFLUENCE MATRICES ACCORDING TO SYMMETRY CONFIGURATION
+              g(:)=symconf_s*g(:)
+            end if
+
+            ! ----------------------------------- !
+            ! SBIE AT NON-NODAL COLLOCATION POINT !
+            ! ----------------------------------- !
+
+            if (node(sn_col)%sbie.eq.fbem_sbie_mca) then
+              ! INITIALIZE
+              assemble=.true.
+              x_i=element(se_col)%x_i_sbie_mca(:,kn_col)
+              ! CALCULATE INFLUENCE MATRICES
+              select case (problem%n)
+                case (2)
+                  call fbem_bem_harpot2d_sbie_bl_auto(se_int_data,x_i,p2d,qsi_parameters,qsi_ns_max,g)
+                case (3)
+                  call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,g)
+              end select
+              ! MODIFY INFLUENCE MATRICES ACCORDING TO SYMMETRY CONFIGURATION
+              g(:)=symconf_s*g(:)
+            end if
+
+            ! ----------------------------------- !
+            ! HBIE AT NON-NODAL COLLOCATION POINT !
+            ! ----------------------------------- !
+
+            if (node(sn_col)%hbie.eq.fbem_hbie) then
+              ! INITIALIZE
+              assemble=.true.
+              x_i=element(se_col)%x_i_hbie(:,kn_col)
+              n_i=element(se_col)%n_i_hbie(:,kn_col)
+              if (sb_col_reversion) n_i=-n_i
+              ! CALCULATE INFLUENCE MATRICES
+              select case (problem%n)
+                case (2)
+                  call fbem_bem_harpot2d_hbie_bl_auto(se_int_data,x_i,n_i,p2d,qsi_parameters,qsi_ns_max,l)
+                case (3)
+                  call fbem_bem_harpot3d_hbie_bl_auto(se_int_data,x_i,n_i,p3d,qsi_parameters,qsi_ns_max,l)
+              end select
+              ! MODIFY INFLUENCE MATRICES ACCORDING TO SYMMETRY CONFIGURATION
+              l(:)=symconf_s*l(:)
+              ! HBIE
+              if (node(sn_col)%dual.eq.0) then
+                g=l
+              end if
+              ! BURTON & MILLER FORMULATION
+              if (node(sn_col)%dual.eq.fbem_dual_burton_miller) then
+                alpha=node(sn_col)%alpha
+                g=g+alpha*c_im/c*l
+              end if
+
+            end if
+
+          end if
+
+          ! ======== !
+          ! ASSEMBLE !
+          ! ======== !
+
+          ! The collocation establishes the equations (rows).
+          ! The integration establishes the variables (columns).
+          if (assemble.and.g_assemble) then
+            !$omp critical
+            select case (boundary(sb_col)%coupling)
+              case (fbem_boundary_coupling_be)
+                select case (boundary(sb_col)%class)
+                  case (fbem_boundary_class_ordinary)
+                    call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,1,g)
+                  case (fbem_boundary_class_cracklike)
+                    call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,1,g)
+                    call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,2,l)
+                end select
+              case (fbem_boundary_coupling_be_fe)
+                select case (boundary(sb_col)%class)
+                  case (fbem_boundary_class_ordinary)
+                    call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,1,g)
+                  case (fbem_boundary_class_cracklike)
+                    call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,1,g)
+                    call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,2,l)
+                end select
+              case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
+                if (sb_col_reversion) then
+                  call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,2,g)
+                else
+                  call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,1,g)
+                end if
+            end select
+            !$omp end critical
+          end if
+
+        end do ! Loop through the NODES of the ELEMENT for COLLOCATION
+      end do ! Loop through the ELEMENTS of the BOUNDARY for COLLOCATION
+    end do ! Loop through the BOUNDARIES of the REGION for COLLOCATION
+
+    ! ======================= !
+    ! COLLOCATION AT BE LOADS !
+    ! ======================= !
+
+    !
+    ! Loop through the BE LOADS of the REGION for COLLOCATION
+    !
+    node_collocated=.false.
+    do kb_col=1,region(kr)%n_be_bodyloads
+      sb_col=region(kr)%be_bodyload(kb_col)
+      sp_col=be_bodyload(sb_col)%part
+      select case (be_bodyload(sb_col)%coupling)
+
+        ! ========================
+        ! 3D: BEAM - LINE LOAD
+        ! ========================
+
+        case (fbem_bl_coupling_beam_line)
+          stop 'not yet'
+
+        ! ========================
+        ! 2D: BEAM - LINE LOAD
+        ! 3D: SHELL - SURFACE LOAD
+        ! ========================
+
+        case (fbem_bl_coupling_shell_surface)
+          stop 'not yet'
+
+      end select ! Switch between BE LOAD COUPLING
+
+    end do ! Loop through the BE LOADS of the REGION for COLLOCATION
+
+  end do ! Loop through SYMMETRICAL ELEMENTS for INTEGRATION
+
+end subroutine build_lse_mechanics_bem_harpot_bl

@@ -217,8 +217,6 @@ subroutine build_lse_mechanics_bem_harela(kf,kr)
     write(output_unit,fmtstr) 'START assembling region',region(kr)%id
   end if
 
-
-
   ! --------------------------------------------
   ! CALCULATE AND ASSEMBLE ELEMENT BEM INTEGRALS
   ! --------------------------------------------
@@ -1094,7 +1092,6 @@ subroutine build_lse_mechanics_bem_harela_element(omega,kr,sb_int,sb_int_reversi
   ! plano de simetria para la integracion de ecuaciones.
   !
 
-
   do ks=1,n_symelements
     ! SYMMETRY SETUP
     call fbem_symmetry_multipliers(ks,problem%n,n_symplanes,symplane_m,symplane_s,symplane_t,symplane_r,&
@@ -1713,7 +1710,7 @@ subroutine build_lse_mechanics_bem_harela_bl(omega,kr,sb_int,se_int,se_int_n_nod
               g(:,:,ik)=symconf_t(ik)*g(:,:,ik)
               l(:,:,ik)=symconf_t(ik)*l(:,:,ik)
             end do
-            ! BUILD INFLUENCE MATRICES WITH +N and -N
+            ! BURTON&MILLER FORMULATION
             if (node(sn_col)%dual.eq.fbem_dual_burton_miller) then
               alpha=node(sn_col)%alpha
               g=g+alpha*c_im/c2*l

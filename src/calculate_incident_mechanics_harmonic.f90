@@ -128,18 +128,12 @@ subroutine calculate_incident_mechanics_harmonic(kf)
   do kif=1,n_incidentfields
     if ((incidentfield(kif)%class.eq.fbem_plane).and.(incidentfield(kif)%space.eq.fbem_multilayered_half_space)) then
 
-
       ! se asume campos incidentes con todos los materiales iguales
       if (material(incidentfield(kif)%layer_material(1))%type.eq.'biot_poroelastic_medium') then
-
-
 
         !
         ! Hay que meter la dependencia de normal positiva o negativa de la superficie libre como en el caso elastodinamico
         !
-
-
-
 
         if (.not.allocated(incidentfield(kif)%layer_A)) allocate(incidentfield(kif)%layer_A(3,2,8,incidentfield(kif)%n_layers))
         if (.not.allocated(incidentfield(kif)%layer_k)) allocate(incidentfield(kif)%layer_k(3,incidentfield(kif)%n_layers))

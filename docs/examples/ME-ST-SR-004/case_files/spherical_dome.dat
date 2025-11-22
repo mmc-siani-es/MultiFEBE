@@ -1,0 +1,53 @@
+[problem]
+type = mechanics
+analysis = static
+n = 3D
+
+[settings]
+mesh_file_mode = 2 "spherical_dome.msh"
+
+[symmetry planes]
+plane_n1: symmetry
+plane_n2: symmetry
+
+[export]
+nso_nodes= 1, 1
+
+[fe subregions]
+1
+1 1 0 0
+
+[materials]
+1
+1 elastic_solid E 6.825d7 nu 0.3d0
+
+[regions]
+1
+1 fe
+1 1
+material 1
+0
+
+[cross sections]
+1
+degshell 1 1 0.04d0 0. 0. 1.d0
+
+[groups]
+2
+1 nodes ball interior 10.d0  0. 0. 0.01d0 1 
+2 nodes ball interior  0. 10.d0 0. 0.01d0 1
+
+[conditions over nodes]
+group 1: 1   1.d0
+         0   0.d0
+         0   0.d0
+         0   0.d0
+         1   0.d0
+         0   0.d0
+group 2: 0   0.d0
+         1  -1.d0
+         1   0.d0
+         1   0.d0
+         0   0.d0
+         0   0.d0
+

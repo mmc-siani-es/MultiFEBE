@@ -1,5 +1,5 @@
 ! ---------------------------------------------------------------------
-! Copyright (C) 2014-2022 Universidad de Las Palmas de Gran Canaria:
+! Copyright (C) 2014-2025 Universidad de Las Palmas de Gran Canaria:
 !                         Jacob D.R. Bordon
 !                         Guillermo M. Alamo
 !                         Juan J. Aznarez
@@ -18,7 +18,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ! ---------------------------------------------------------------------
-
 
 subroutine calculate_internal_points_mechanics_bem_harpot(kf,kr)
 
@@ -48,11 +47,13 @@ subroutine calculate_internal_points_mechanics_bem_harpot(kf,kr)
   integer                           :: kr
   ! Local variables
   real(kind=real64)                 :: omega
-  integer                           :: kip, sip
+  integer                           :: kip, sip, kn, sn
   integer                           :: kb_int, sb_int
   logical                           :: sb_int_reversion
+  integer                           :: sp_int
   integer                           :: ke_int, se_int
   integer                           :: se_int_n_nodes
+  real(kind=real64)                 :: rd(problem%n), x_i(problem%n)
   ! Region properties
   real(kind=real64)                  :: rho
   complex(kind=real64)               :: c, k
@@ -71,6 +72,9 @@ subroutine calculate_internal_points_mechanics_bem_harpot(kf,kr)
   ! Frequency
   omega=frequency(kf)
 
+  ! TODO: put this into a function, it also is present in the calculate incident fields and other
+  ! calculations (calculate stresses)
+
   ! Save the region properties to local variables
   rho=region(kr)%property_r(1)
   c=region(kr)%property_c(4)
@@ -88,54 +92,35 @@ subroutine calculate_internal_points_mechanics_bem_harpot(kf,kr)
   ! OBTAIN DIFFRACTED FIELD INTERNAL POINT VALUES !
   ! ============================================= !
 
-  !
-  ! Loop through the BOUNDARIES of the REGION for INTEGRATION
-  !
+  ! --------------------------------------------
+  ! CALCULATE AND ASSEMBLE ELEMENT BEM INTEGRALS
+  ! --------------------------------------------
+
+  ! REGION BOUNDARIES
   do kb_int=1,region(kr)%n_boundaries
-    ! INTEGRATION BOUNDARY
     sb_int=region(kr)%boundary(kb_int)
     sb_int_reversion=region(kr)%boundary_reversion(kb_int)
-
-    ! Message
-    if (verbose_level.ge.3) then
-      write(fmtstr,*) '(2x,a20,1x,i',fbem_nchar_int(boundary(sb_int)%id),',1x,a8)'
-      call fbem_trimall(fmtstr)
-      if (sb_int_reversion) then
-        write(output_unit,fmtstr) 'Integrating boundary', boundary(sb_int)%id, '(-n) ...'
-      else
-        write(output_unit,fmtstr) 'Integrating boundary', boundary(sb_int)%id, '(+n) ...'
-      end if
-    end if
-
-    !
-    ! Loop through the ELEMENTS of the BOUNDARY for INTEGRATION
-    !
+    sp_int=boundary(sb_int)%part
     !$omp parallel do schedule (dynamic) default (shared) private (se_int,se_int_n_nodes,fmtstr)
-    do ke_int=1,part(boundary(sb_int)%part)%n_elements
+    do ke_int=1,part(sp_int)%n_elements
       se_int=part(boundary(sb_int)%part)%element(ke_int)
       se_int_n_nodes=element(se_int)%n_nodes
-
-      ! Message
-      if (verbose_level.ge.4) then
-        write(fmtstr,*) '(3x,a19,1x,i',fbem_nchar_int(element(se_int)%id),',1x,a3)'
-        call fbem_trimall(fmtstr)
-        if (sb_int_reversion) then
-          write(output_unit,fmtstr) 'Integrating element', element(se_int)%id, '...'
-        else
-          write(output_unit,fmtstr) 'Integrating element', element(se_int)%id, '...'
-        end if
-      end if
-
-      ! Build and assemble the element
       call calculate_internal_points_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,p2d,p3d)
-
-      ! Ending message
-      if (verbose_level.ge.4) write(output_unit,'(3x,a)') 'done.'
-
-    end do ! Loop through the ELEMENTS of the BOUNDARY for INTEGRATION
+    end do
     !$omp end parallel do
-
-  end do ! Loop through the BOUNDARIES of the REGION for INTEGRATION
+  end do
+  ! REGION BODY LOADS
+  do kb_int=1,region(kr)%n_be_bodyloads
+    sb_int=region(kr)%be_bodyload(kb_int)
+    sp_int=be_bodyload(sb_int)%part
+    !$omp parallel do schedule (dynamic) default (shared) private (se_int,se_int_n_nodes)
+    do ke_int=1,part(sp_int)%n_elements
+      se_int=part(sp_int)%element(ke_int)
+      se_int_n_nodes=element(se_int)%n_nodes
+      call calculate_internal_points_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nodes,p2d,p3d)
+    end do
+    !$omp end parallel do
+  end do
 
   ! ===============================================
   ! CALCULATE THE TOTAL FIELD AT THE INTERNAL POINT
@@ -146,7 +131,31 @@ subroutine calculate_internal_points_mechanics_bem_harpot(kf,kr)
     internalpoint(sip)%value_c(:,:)=internalpoint(sip)%value_c(:,:)+internalpoint(sip)%incident_c(:,:)
   end do
 
+  !
+  ! Copia los valores nodales a los puntos internos en ellos (solo variable primaria)
+  ! se podria hacer con la secundaria (cogiendo gradiente de desplazamientos y construyendo
+  ! el tensor de tensiones en el contorno)
+  !
+
+  do kip=1,region(kr)%n_internalpoints
+    sip=region(kr)%internalpoint(kip)
+    x_i=internalpoint(sip)%x
+    do kb_int=1,region(kr)%n_boundaries
+      sb_int=region(kr)%boundary(kb_int)
+      do kn=1,part(boundary(sb_int)%part)%n_nodes
+        sn=part(boundary(sb_int)%part)%node(kn)
+        rd=x_i-node(sn)%x
+        if (sqrt(dot_product(rd,rd))/element(node(sn)%element(1))%csize.lt.1.d-12) then
+          internalpoint(sip)%value_c=0
+          internalpoint(sip)%value_c(1,0)=node(sn)%value_c(1,1)
+        end if
+      end do
+    end do
+  end do
+
 end subroutine calculate_internal_points_mechanics_bem_harpot
+
+! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 subroutine calculate_internal_points_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,p2d,p3d)
 
@@ -456,3 +465,158 @@ subroutine calculate_internal_points_mechanics_bem_harpot_element(omega,kr,sb_in
   end do ! Loop through SYMMETRICAL ELEMENTS
 
 end subroutine calculate_internal_points_mechanics_bem_harpot_element
+
+! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+subroutine calculate_internal_points_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nodes,p2d,p3d)
+
+  ! Fortran 2003 intrinsic module
+  use iso_fortran_env
+
+  ! fbem modules
+  use fbem_data_structures
+  use fbem_string_handling
+  use fbem_numerical
+  use fbem_symmetry
+  use fbem_bem_general
+  use fbem_bem_harpot2d
+  use fbem_bem_harpot3d
+
+  ! Module of problem variables
+  use problem_variables
+
+  ! No implicit variables
+  implicit none
+
+  ! I/O variables
+  real(kind=real64)                   :: omega
+  integer                             :: kr
+  integer                             :: sb_int
+  integer                             :: se_int
+  integer                             :: se_int_n_nodes
+  type(fbem_bem_harpot3d_parameters)  :: p3d
+  type(fbem_bem_harpot2d_parameters)  :: p2d
+  ! Local variables
+  integer                :: ks
+  integer                :: il, ik, kc
+  integer                :: kn_int, sn_int
+  type(fbem_bem_element) :: se_int_data
+  integer                :: kip, sip
+  integer                :: kn
+  real(kind=real64)      :: x_i(problem%n), n_i(problem%n)
+  ! Kernels for SBIE integration
+  complex(kind=real64)   :: g (se_int_n_nodes)
+  ! Kernels for HBIE integration
+  complex(kind=real64)   :: l (se_int_n_nodes)
+  ! Symmetry plane configuration for the current element
+  integer                :: se_n_symplanes
+  integer                :: se_n_symelements
+  real(kind=real64)      :: se_symplane_m(3,3)
+  real(kind=real64)      :: se_symplane_s(3)
+  real(kind=real64)      :: se_symplane_t(3,3)
+  real(kind=real64)      :: se_symplane_r(3,3)
+  ! Associated with symmetry
+  real(kind=real64)      :: symconf_m(problem%n), symconf_t(problem%n), symconf_r(problem%n), symconf_s
+  logical                :: reversed
+
+  ! Initialize calculation element
+  call se_int_data%init
+  se_int_data%gtype=element(se_int)%type_g
+  se_int_data%d=element(se_int)%n_dimension
+  se_int_data%n_gnodes=se_int_n_nodes
+  se_int_data%n=problem%n
+  allocate (se_int_data%x(problem%n,se_int_n_nodes))
+  se_int_data%x=element(se_int)%x_gn
+  se_int_data%ptype=element(se_int)%type_f1
+  se_int_data%ptype_delta=element(se_int)%delta_f
+  se_int_data%n_pnodes=se_int_n_nodes
+  se_int_data%stype=element(se_int)%type_f2
+  se_int_data%stype_delta=element(se_int)%delta_f
+  se_int_data%n_snodes=se_int_n_nodes
+  se_int_data%cl=element(se_int)%csize
+  se_int_data%gln_far=element(se_int)%n_phi
+  allocate (se_int_data%bball_centre(problem%n))
+  se_int_data%bball_centre=element(se_int)%bball_centre
+  se_int_data%bball_radius=element(se_int)%bball_radius
+  ! Copy the incident field over the element
+  ! not needed..
+
+  ! ACTIVE SYMMETRY PLANES FOR THE CURRENT ELEMENT
+  call build_symplane_bodyload_elements(se_int,se_n_symplanes,se_n_symelements,se_symplane_m,se_symplane_s,se_symplane_t,se_symplane_r)
+
+  !
+  ! Loop through symmetrical elements
+  !
+  do ks=1,se_n_symelements
+    ! SYMMETRY SETUP
+    call fbem_symmetry_multipliers(ks,problem%n,se_n_symplanes,se_symplane_m,se_symplane_s,se_symplane_t,se_symplane_r,&
+                                   symconf_m,symconf_s,symconf_t,symconf_r,reversed)
+    do kn=1,se_int_n_nodes
+      se_int_data%x(:,kn)=symconf_m*element(se_int)%x_gn(:,kn)
+    end do
+    ! Initialize precalculated datasets
+    call se_int_data%init_precalculated_datasets(n_precalsets,precalset_gln)
+
+    !
+    ! Loop through INTERNAL POINTS
+    !
+    do kip=1,region(kr)%n_internalpoints
+      sip=region(kr)%internalpoint(kip)
+      x_i=internalpoint(sip)%x
+
+      ! ------------ !
+      ! DISPLACEMENT !
+      ! ------------ !
+
+      ! CALCULATE KERNELS
+      select case (problem%n)
+        case (2)
+          call fbem_bem_harpot2d_sbie_bl_auto(se_int_data,x_i,p2d,qsi_parameters,qsi_ns_max,g)
+        case (3)
+          call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,g)
+      end select
+      ! BUILD KERNELS ACCORDING TO SYMMETRY
+      if (ks.gt.1) then
+        g(:)=symconf_s*g(:)
+      end if
+      ! ASSEMBLE
+      !$omp critical
+      do kn_int=1,se_int_n_nodes
+        sn_int=element(se_int)%node(kn_int)
+        internalpoint(sip)%value_c(1,0)=internalpoint(sip)%value_c(1,0)+g(kn_int)*node(sn_int)%value_c(1,1)
+      end do
+      !$omp end critical
+
+      ! -------- !
+      ! TRACTION !
+      ! -------- !
+
+      do kc=1,problem%n
+        ! UNIT NORMAL
+        n_i=0.0d0
+        n_i(kc)=1.0d0
+        ! CALCULATE KERNELS
+        select case (problem%n)
+          case (2)
+            call fbem_bem_harpot2d_hbie_bl_auto(se_int_data,x_i,n_i,p2d,qsi_parameters,qsi_ns_max,l)
+          case (3)
+            call fbem_bem_harpot3d_hbie_bl_auto(se_int_data,x_i,n_i,p3d,qsi_parameters,qsi_ns_max,l)
+        end select
+        ! BUILD KERNELS ACCORDING TO SYMMETRY
+        if (ks.gt.1) then
+          l(:)=symconf_s*l(:)
+        end if
+        ! ASSEMBLE
+        !$omp critical
+        do kn_int=1,se_int_n_nodes
+          sn_int=element(se_int)%node(kn_int)
+          internalpoint(sip)%value_c(1,kc)=internalpoint(sip)%value_c(1,kc)+l(kn_int)*node(sn_int)%value_c(1,1)
+        end do
+        !$omp end critical
+      end do
+
+    end do ! Loop through INTERNAL POINTS
+
+  end do ! Loop through SYMMETRICAL ELEMENTS
+
+end subroutine calculate_internal_points_mechanics_bem_harpot_bl

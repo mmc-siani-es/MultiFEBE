@@ -158,7 +158,7 @@ subroutine calculate_internal_points_mechanics_bem_harela(kf,kr)
     sb_int_reversion=region(kr)%boundary_reversion(kb_int)
     sp_int=boundary(sb_int)%part
     !$omp parallel do schedule (dynamic) default (shared) private (se_int,se_int_n_nodes,fmtstr)
-    do ke_int=1,part(boundary(sb_int)%part)%n_elements
+    do ke_int=1,part(sp_int)%n_elements
       se_int=part(sp_int)%element(ke_int)
       se_int_n_nodes=element(se_int)%n_nodes
       call calculate_internal_points_mechanics_bem_harela_element(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,p2d,p3d)
@@ -210,6 +210,8 @@ subroutine calculate_internal_points_mechanics_bem_harela(kf,kr)
   end do
 
 end subroutine calculate_internal_points_mechanics_bem_harela
+
+! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 subroutine calculate_internal_points_mechanics_bem_harela_element(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,p2d,p3d)
 
@@ -503,6 +505,8 @@ subroutine calculate_internal_points_mechanics_bem_harela_element(omega,kr,sb_in
   end do ! Loop through SYMMETRICAL ELEMENTS
 
 end subroutine calculate_internal_points_mechanics_bem_harela_element
+
+! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 subroutine calculate_internal_points_mechanics_bem_harela_bl(omega,kr,sb_int,se_int,se_int_n_nodes,p2d,p3d)
 
