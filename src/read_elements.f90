@@ -44,6 +44,7 @@ subroutine read_elements(fileunit,mode)
   use fbem_string_handling
   use fbem_shape_functions
   use fbem_data_structures
+  use fbem_gmsh
 
   ! Problem variables module
   use problem_variables
@@ -70,7 +71,7 @@ subroutine read_elements(fileunit,mode)
       call fbem_search_section(fileunit,section_name,found)
     case (2)
       section_name='Elements'
-      call fbem_search_section_gmsh(fileunit,section_name,found)
+      call fbem_gmsh_search_section(fileunit,section_name,found)
   end select
   if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'SEARCHING section ['//trim(section_name)//']')
   if (found) then
@@ -191,7 +192,7 @@ subroutine read_elements(fileunit,mode)
       case (1)
         call fbem_search_section(fileunit,section_name,found)
       case (2)
-        call fbem_search_section_gmsh(fileunit,section_name,found)
+        call fbem_gmsh_search_section(fileunit,section_name,found)
     end select
     ke=0
     read(fileunit,*) tmp_n_elements

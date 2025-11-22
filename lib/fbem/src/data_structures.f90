@@ -122,6 +122,7 @@ module fbem_data_structures
   ! Public subroutines
   !
   ! CONNECTIVITY
+  !public :: fbem_set_eid_to_iid, fbem_get_iid ! habria que hacerlo con clases derivadas (tema manejo eid e iid)
   public :: fbem_node_nodes_connectivity
   public :: fbem_node_elements_connectivity
   public :: fbem_node_parts_connectivity

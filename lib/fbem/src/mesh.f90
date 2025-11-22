@@ -32,6 +32,7 @@ module fbem_mesh_module
   ! fbem modules
   use fbem_numerical
   use fbem_string_handling
+  use fbem_gmsh
   use fbem_shape_functions
   use fbem_data_structures
 
@@ -101,6 +102,29 @@ contains
     if (allocated(mesh%node_iid   )) deallocate(mesh%node_iid   )
   end subroutine destroy
 
+  subroutine set_eid_to_iid(entity_str,n_eid,eid,eid_min,eid_max,iid)
+    implicit none
+    character(len=32)                 :: entity_str
+    integer, intent(in)               :: n_eid
+    integer, intent(in)               :: eid(n_eid)
+    integer, intent(out)              :: eid_min
+    integer, intent(out)              :: eid_max
+    integer, intent(out), allocatable :: iid(:)
+    integer :: i
+    eid_min=minval(eid)
+    eid_max=maxval(eid)
+    if (allocated(iid)) deallocate(iid)
+    allocate (iid(eid_min:eid_max))
+    iid=0
+    do i=1,n_eid
+      if (iid(eid(i)).ne.0) then
+        call fbem_error_message(error_unit,0,trim(entity_str),eid(i),'is repeated.')
+      else
+        iid(eid(i))=i
+      end if
+    end do
+  end subroutine set_eid_to_iid
+
   subroutine read_from_file(mesh,n,tol,filename,format)
     implicit none
     ! I/O
@@ -153,7 +177,7 @@ contains
     !
     if (format_tag.eq.2) then
       section_name='MeshFormat'
-      call fbem_search_section_gmsh(fileunit,section_name,found)
+      call fbem_gmsh_search_section(fileunit,section_name,found)
       if (found) then
         read(fileunit,'(a)') linestr
         nwords=fbem_count_words(linestr)
@@ -180,7 +204,7 @@ contains
         call fbem_search_section(fileunit,section_name,found)
       case (2)
         section_name='PhysicalNames'
-        call fbem_search_section_gmsh(fileunit,section_name,found)
+        call fbem_gmsh_search_section(fileunit,section_name,found)
     end select
     if (found) then
       ! READ THE NUMBER OF PARTS
@@ -245,7 +269,7 @@ contains
         call fbem_search_section(fileunit,section_name,found)
       case (2)
         section_name='Elements'
-        call fbem_search_section_gmsh(fileunit,section_name,found)
+        call fbem_gmsh_search_section(fileunit,section_name,found)
     end select
     if (found) then
       ! READ THE NUMBER OF ELEMENTS
@@ -387,7 +411,7 @@ contains
         call fbem_search_section(fileunit,section_name,found)
       case (2)
         section_name='Nodes'
-        call fbem_search_section_gmsh(fileunit,section_name,found)
+        call fbem_gmsh_search_section(fileunit,section_name,found)
     end select
     if (found) then
       ! READ THE NUMBER OF NODES

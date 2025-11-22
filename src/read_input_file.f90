@@ -39,6 +39,7 @@ subroutine read_input_file
   use fbem_geometry
   use fbem_string_handling
   use fbem_data_structures
+  use fbem_gmsh
 
   ! Problem variables module
   use problem_variables
@@ -55,14 +56,19 @@ subroutine read_input_file
   integer                               :: iostat_var
   character(len=fbem_string_max_length) :: iomsg_var
 
+
+
+
+  ! test
+  !type(fbem_gmsh_mesh) :: gmsh_mesh
+  !call gmsh_mesh%read(trim(input_filename))
+
+
   ! ===============
   ! OPEN INPUT FILE
   ! ===============
 
-  if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'OPENING input file "'//trim(input_filename)//'"')
-  input_fileunit=fbem_get_valid_unit()
-  open(unit=input_fileunit,file=input_filename,action='read',status='old',recl=fbem_file_record_length,iostat=iostat_var,iomsg=iomsg_var)
-  if (iostat_var.ne.0) call fbem_error_message(error_unit,0,'iostat',iostat_var,trim(iomsg_var))
+  call fbem_open_file_to_read(input_filename,'This is the main input file.',input_fileunit)
 
   ! ===============
   ! READ INPUT FILE
@@ -83,14 +89,9 @@ subroutine read_input_file
     if (len_trim(frequencies_filename).eq.0) then
       call read_frequencies(input_fileunit)
     else
-      if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'OPENING frequency file "'//trim(frequencies_filename)//'"')
-      aux_fileunit=fbem_get_valid_unit()
-      open(unit=aux_fileunit,file=frequencies_filename,action='read',status='old',recl=fbem_file_record_length,iostat=iostat_var,iomsg=iomsg_var)
-      if (iostat_var.ne.0) call fbem_error_message(error_unit,0,'iostat',iostat_var,trim(iomsg_var))
+      call fbem_open_file_to_read(frequencies_filename,'This is the frequencies input file.',aux_fileunit)
       call read_frequencies(aux_fileunit)
-      if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'CLOSING frequency file "'//trim(frequencies_filename)//'"')
-      close(unit=aux_fileunit,iostat=iostat_var,iomsg=iomsg_var)
-      if (iostat_var.ne.0) call fbem_error_message(error_unit,0,'iostat',iostat_var,trim(iomsg_var))
+      call fbem_close_file(frequencies_filename,aux_fileunit)
     end if
 
     call read_incident_mechanics_harmonic(input_fileunit)
@@ -115,16 +116,11 @@ subroutine read_input_file
       call read_elements(input_fileunit,1)
       call read_nodes(input_fileunit,1)
     case (1,2)
-      if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'OPENING mesh file "'//trim(mesh_filename)//'"')
-      aux_fileunit=fbem_get_valid_unit()
-      open(unit=aux_fileunit,file=mesh_filename,action='read',status='old',recl=fbem_file_record_length,iostat=iostat_var,iomsg=iomsg_var)
-      if (iostat_var.ne.0) call fbem_error_message(error_unit,0,'iostat',iostat_var,trim(iomsg_var))
+      call fbem_open_file_to_read(mesh_filename,'This is the mesh file.',aux_fileunit)
       call read_parts(aux_fileunit,mesh_file_mode)
       call read_elements(aux_fileunit,mesh_file_mode)
       call read_nodes(aux_fileunit,mesh_file_mode)
-      if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'CLOSING mesh file "'//trim(mesh_filename)//'"')
-      close(unit=aux_fileunit,iostat=iostat_var,iomsg=iomsg_var)
-      if (iostat_var.ne.0) call fbem_error_message(error_unit,0,'iostat',iostat_var,trim(iomsg_var))
+      call fbem_close_file(mesh_filename,aux_fileunit)
     case  default
       call fbem_error_message(error_unit,1,'mesh_file_mode',0,'wrong type of mesh mode')
   end select

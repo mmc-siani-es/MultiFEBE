@@ -54,7 +54,6 @@ module fbem_string_handling
   public :: fbem_count_words
   public :: fbem_extract_word
   public :: fbem_search_section
-  public :: fbem_search_section_gmsh
   public :: fbem_search_keyword
   ! TO-DO: in another module called fbem_file_handling or similar
   public :: fbem_get_valid_unit
@@ -64,6 +63,8 @@ module fbem_string_handling
   public :: fbem_path_is_relative
   public :: fbem_get_dirname
   public :: fbem_file_exists
+  public :: fbem_open_file_to_read
+  public :: fbem_close_file
 
   ! Parameters
   integer, parameter, public :: fbem_stdcharlen         =32   !! Standard length for entities names
@@ -671,51 +672,6 @@ contains
     end do
   end subroutine fbem_search_section
 
-  !! It finds the first line in a file that matches "$section". The file position remains in the next line.
-  subroutine fbem_search_section_gmsh(selected_unit,section,found)
-    implicit none
-    ! I/O
-    integer                                :: selected_unit !! Unit of the file
-    character(len=*)                       :: section       !! Section name to be found. It can't contain blanks.
-    logical                                :: found         !! True if the section has been found, false otherwise.
-    ! Local
-    character(len=fbem_file_record_length) :: line          ! Line
-    integer                                :: word_length   ! Word length
-    integer                                :: file_line     ! Current line, at the end, it takes the line where the section line is located.
-    integer                                :: ios           ! Error flag
-    ! Rewind to the begin of file
-    rewind(selected_unit)
-    file_line=0
-    ! Initialize
-    found=.false.
-    ! Reading process
-    do
-      ! Read line
-      read(selected_unit,'(a)',iostat=ios) line
-      if (is_iostat_end(ios)) then
-        exit
-      end if
-      ! If at the beginning of the file, check if BOM is present.
-      if (file_line.eq.0) then
-        if ((ichar(line(1:1)).eq.239).and.(ichar(line(2:2)).eq.187).and.(ichar(line(3:3)).eq.191)) line(1:3)=''
-      end if
-      file_line=file_line+1
-      ! Clean the line from spaces at the start and at the end
-      call fbem_trim(line)
-      ! Check if the line starts with '$'
-      if (line(1:1).eq.'$') then
-        word_length=len_trim(line)
-        ! Pick up the string after '$'
-        line=line(2:word_length)
-        ! Check if the section name is the same
-        if (trim(line).eq.trim(section)) then
-          found=.true.
-          exit
-        end if
-      end if
-    end do
-  end subroutine fbem_search_section_gmsh
-
   !! It finds a line in a file that starts with "keyword<separator>", where starting, ending and duplicated blanks before the
   !! separator are ignored. The file position remains just after the separator. The finding process stops if a line starting with
   !! "[" is found, i.e. it is done within a section.
@@ -778,6 +734,9 @@ contains
       if (doexit.eqv.(.true.)) exit
     end do
   end subroutine fbem_search_keyword
+
+! ==================================================================================================================================
+! FILE HANDLING
 
   !! Find a valid unit
   function fbem_get_valid_unit()
@@ -882,16 +841,47 @@ contains
 
   function fbem_file_exists(filename)
     implicit none
-    character(len=*) :: filename
-    logical          :: fbem_file_exists
+    character(len=*), intent(in) :: filename
+    logical                      :: fbem_file_exists
     inquire(file=trim(adjustl(filename)),exist=fbem_file_exists)
   end function fbem_file_exists
+
+  subroutine fbem_open_file_to_read(filename,annotation,fileunit)
+    implicit none
+    character(len=*), intent(in)          :: filename
+    character(len=*), intent(in)          :: annotation
+    integer, intent(out)                  :: fileunit
+    integer                               :: iostat_var
+    character(len=fbem_string_max_length) :: iomsg_var
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'OPENING file "'//trim(filename)//'". '//trim(annotation))
+    fileunit = fbem_get_valid_unit()
+    open(unit=fileunit,file=trim(adjustl(filename)),action='read',status='old',recl=fbem_file_record_length,&
+         iostat=iostat_var,iomsg=iomsg_var)
+    if (iostat_var.ne.0) call fbem_error_message(error_unit,0,trim(filename),iostat_var,trim(iomsg_var))
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'File "'//trim(filename)//'" correctly OPENED')
+  end subroutine fbem_open_file_to_read
+
+  subroutine fbem_close_file(filename,fileunit)
+    implicit none
+    character(len=*), intent(in)          :: filename
+    integer, intent(in)                   :: fileunit
+    integer                               :: iostat_var
+    character(len=fbem_string_max_length) :: iomsg_var
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'CLOSING file "'//trim(filename)//'"')
+    close(unit=fileunit,iostat=iostat_var,iomsg=iomsg_var)
+    if (iostat_var.ne.0) call fbem_error_message(error_unit,0,trim(filename),iostat_var,trim(iomsg_var))
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'File "'//trim(filename)//'" correctly CLOSED')
+  end subroutine fbem_close_file
+
+! ==================================================================================================================================
+
+
+
 
 ! ----------------------------------------------------------------------------------------------------------------------------------
 !
 ! TESTS
 !
-
 !  subroutine wordparse_test()
 !    implicit none
 !    character(len=72) :: line_string
@@ -915,5 +905,7 @@ contains
 !      write(*,*)
 !    end do
 !  end subroutine wordparse_test
+! ----------------------------------------------------------------------------------------------------------------------------------
+
 
 end module fbem_string_handling
