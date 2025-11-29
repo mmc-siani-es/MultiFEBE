@@ -91,18 +91,14 @@ subroutine assemble_bem_harpot_equation(omega,kr,sb_int,sb_int_reversion,se_int,
                 col=node(sn_int)%col(1,1)
                 A_c(row,col)=A_c(row,col)+hp(kn_int)
                 b_c(row,1)=b_c(row,1)+gp(kn_int)*node(sn_int)%cvalue_c(1,1,1)
-              ! p unknown, Un=-i/(rho*c*omega)p
-              case (2)
+              ! 2: p unknown, Un = -i/(rho*c*omega)p (Sommerfeld)
+              ! 3: p unknown, Un = -i/(rho*c*omega)*beta*p (constant beta)
+              ! 4: p unknown, Un = -i/(rho*c*omega)*beta*p (Delany & Bazley model)
+              case (2,3,4)
                 rho=region(kr)%property_r(1)
                 c=region(kr)%property_c(4)
                 col=node(sn_int)%col(1,1)
-                A_c(row,col)=A_c(row,col)+hp(kn_int)+c_im/rho/c/omega*gp(kn_int)
-              ! p unknown, Un=-(i/(rho*c*omega)+1/(2*R*rho*omega^2))p
-              case (3)
-                rho=region(kr)%property_r(1)
-                c=region(kr)%property_c(4)
-                col=node(sn_int)%col(1,1)
-                A_c(row,col)=A_c(row,col)+hp(kn_int)+(c_im/rho/c/omega+1.d0/(2.d0*node(sn_int)%cvalue_c(1,1,1)*rho*omega**2))*gp(kn_int)
+                A_c(row,col)=A_c(row,col)+hp(kn_int)+c_im/rho/c/omega*node(sn_int)%cvalue_c(1,1,1)*gp(kn_int)
             end select
           end do
 
@@ -115,31 +111,51 @@ subroutine assemble_bem_harpot_equation(omega,kr,sb_int,sb_int_reversion,se_int,
           row=node(sn_col)%row(1,eq_index)
           do kn_int=1,se_int_n_nodes
             sn_int=element(se_int)%node(kn_int)
+            !
             ! Face +
+            !
             select case (node(sn_int)%ctype(1,1))
-              ! p known, Un unknown
+              ! p^+ known, Un^+ unknown
               case (0)
                 col=node(sn_int)%col(2,1)
                 A_c(row,col)=A_c(row,col)-gp(kn_int)
                 b_c(row,1)=b_c(row,1)-hp(kn_int)*node(sn_int)%cvalue_c(1,1,1)
-              ! Un known, p unknown
+              ! Un^+ known, p^+ unknown
               case (1)
                 col=node(sn_int)%col(1,1)
                 A_c(row,col)=A_c(row,col)+hp(kn_int)
                 b_c(row,1)=b_c(row,1)+gp(kn_int)*node(sn_int)%cvalue_c(1,1,1)
+              ! 2: p^+ unknown, Un^+ = -i/(rho*c*omega)p^+ (Sommerfeld)
+              ! 3: p^+ unknown, Un^+ = -i/(rho*c*omega)*beta*p^+ (constant beta)
+              ! 4: p^+ unknown, Un^+ = -i/(rho*c*omega)*beta*p^+ (Delany & Bazley model)
+              case (2,3,4)
+                rho=region(kr)%property_r(1)
+                c=region(kr)%property_c(4)
+                col=node(sn_int)%col(1,1)
+                A_c(row,col)=A_c(row,col)+hp(kn_int)+c_im/rho/c/omega*node(sn_int)%cvalue_c(1,1,1)*gp(kn_int)
             end select
+            !
             ! Face -
+            !
             select case (node(sn_int)%ctype(1,2))
-              ! p known, Un unknown
+              ! p^- known, Un^- unknown
               case (0)
                 col=node(sn_int)%col(2,2)
                 A_c(row,col)=A_c(row,col)-gm(kn_int)
                 b_c(row,1)=b_c(row,1)-hm(kn_int)*node(sn_int)%cvalue_c(1,1,2)
-              ! Un known, p unknown
+              ! Un^- known, p^- unknown
               case (1)
                 col=node(sn_int)%col(1,2)
                 A_c(row,col)=A_c(row,col)+hm(kn_int)
                 b_c(row,1)=b_c(row,1)+gm(kn_int)*node(sn_int)%cvalue_c(1,1,2)
+              ! 2: p^- unknown, Un^- = -i/(rho*c*omega)p^- (Sommerfeld)
+              ! 3: p^- unknown, Un^- = -i/(rho*c*omega)*beta*p^- (constant beta)
+              ! 4: p^- unknown, Un^- = -i/(rho*c*omega)*beta*p^- (Delany & Bazley model)
+              case (2,3,4)
+                rho=region(kr)%property_r(1)
+                c=region(kr)%property_c(4)
+                col=node(sn_int)%col(1,2)
+                A_c(row,col)=A_c(row,col)+hm(kn_int)+c_im/rho/c/omega*node(sn_int)%cvalue_c(1,1,2)*gm(kn_int)
             end select
           end do
 

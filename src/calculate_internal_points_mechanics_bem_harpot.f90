@@ -504,10 +504,12 @@ subroutine calculate_internal_points_mechanics_bem_harpot_bl(omega,kr,sb_int,se_
   integer                :: kip, sip
   integer                :: kn
   real(kind=real64)      :: x_i(problem%n), n_i(problem%n)
+  ! Region properties
+  real(kind=real64)      :: d1J
   ! Kernels for SBIE integration
-  complex(kind=real64)   :: g (se_int_n_nodes)
+  complex(kind=real64)   :: g(se_int_n_nodes), gp(se_int_n_nodes)
   ! Kernels for HBIE integration
-  complex(kind=real64)   :: l (se_int_n_nodes)
+  complex(kind=real64)   :: l(se_int_n_nodes), lp(se_int_n_nodes)
   ! Symmetry plane configuration for the current element
   integer                :: se_n_symplanes
   integer                :: se_n_symelements
@@ -518,6 +520,9 @@ subroutine calculate_internal_points_mechanics_bem_harpot_bl(omega,kr,sb_int,se_
   ! Associated with symmetry
   real(kind=real64)      :: symconf_m(problem%n), symconf_t(problem%n), symconf_r(problem%n), symconf_s
   logical                :: reversed
+
+  ! 1/J=rho*omega**2
+  d1J=region(kr)%property_r(1)*omega**2
 
   ! Initialize calculation element
   call se_int_data%init
@@ -564,9 +569,9 @@ subroutine calculate_internal_points_mechanics_bem_harpot_bl(omega,kr,sb_int,se_
       sip=region(kr)%internalpoint(kip)
       x_i=internalpoint(sip)%x
 
-      ! ------------ !
-      ! DISPLACEMENT !
-      ! ------------ !
+      ! -------- !
+      ! PRESSURE !
+      ! -------- !
 
       ! CALCULATE KERNELS
       select case (problem%n)
@@ -575,6 +580,24 @@ subroutine calculate_internal_points_mechanics_bem_harpot_bl(omega,kr,sb_int,se_
         case (3)
           call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,g)
       end select
+      ! Additional kernels for half-space fundamental solution
+      if (region(kr)%space.eq.fbem_half_space) then
+        x_i(abs(region(kr)%halfspace_n))=2.d0*region(kr)%halfspace_x-x_i(abs(region(kr)%halfspace_n))
+        select case (problem%n)
+          case (2)
+            call fbem_bem_harpot2d_sbie_bl_auto(se_int_data,x_i,p2d,qsi_parameters,qsi_ns_max,gp)
+          case (3)
+            call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,gp)
+        end select
+        select case (region(kr)%halfspace_bc)
+          ! p=0
+          case (0)
+            g=g-gp
+          ! Un=0
+          case (1)
+            g=g+gp
+        end select
+      end if
       ! BUILD KERNELS ACCORDING TO SYMMETRY
       if (ks.gt.1) then
         g(:)=symconf_s*g(:)
@@ -587,9 +610,9 @@ subroutine calculate_internal_points_mechanics_bem_harpot_bl(omega,kr,sb_int,se_
       end do
       !$omp end critical
 
-      ! -------- !
-      ! TRACTION !
-      ! -------- !
+      ! ------------------- !
+      ! NORMAL DISPLACEMENT !
+      ! ------------------- !
 
       do kc=1,problem%n
         ! UNIT NORMAL
@@ -602,11 +625,32 @@ subroutine calculate_internal_points_mechanics_bem_harpot_bl(omega,kr,sb_int,se_
           case (3)
             call fbem_bem_harpot3d_hbie_bl_auto(se_int_data,x_i,n_i,p3d,qsi_parameters,qsi_ns_max,l)
         end select
+        ! Additional kernels for half-space fundamental solution
+        if (region(kr)%space.eq.fbem_half_space) then
+          x_i(abs(region(kr)%halfspace_n))=2.d0*region(kr)%halfspace_x-x_i(abs(region(kr)%halfspace_n))
+          n_i(abs(region(kr)%halfspace_n))=-n_i(abs(region(kr)%halfspace_n))
+          select case (problem%n)
+            case (2)
+              call fbem_bem_harpot2d_hbie_bl_auto(se_int_data,x_i,n_i,p2d,qsi_parameters,qsi_ns_max,lp)
+            case (3)
+              call fbem_bem_harpot3d_hbie_bl_auto(se_int_data,x_i,n_i,p3d,qsi_parameters,qsi_ns_max,lp)
+          end select
+          select case (region(kr)%halfspace_bc)
+            ! p=0
+            case (0)
+              l=l-lp
+            ! Un=0
+            case (1)
+              l=l+lp
+          end select
+        end if
         ! BUILD KERNELS ACCORDING TO SYMMETRY
         if (ks.gt.1) then
           l(:)=symconf_s*l(:)
         end if
         ! ASSEMBLE
+        ! Note: The flux variable is the normal displacement Un=1/(rho*omega**2)*dp/dn.
+        l=l/d1J
         !$omp critical
         do kn_int=1,se_int_n_nodes
           sn_int=element(se_int)%node(kn_int)

@@ -44,6 +44,7 @@ subroutine build_lse_mechanics_harmonic(kf)
   use fbem_fem_beams
   use fbem_fem_shells
   use fbem_fem_solids
+  use fbem_acoustics
 
   ! Module of problem variables
   use problem_variables
@@ -55,7 +56,7 @@ subroutine build_lse_mechanics_harmonic(kf)
   integer                        :: kf
   ! Local variables
   real(kind=real64)              :: omega
-  integer                        :: kr
+  integer                        :: kr, kb, sp
   integer                        :: kn
   integer                        :: knm
   real(kind=real64), allocatable :: T(:,:)
@@ -73,6 +74,393 @@ subroutine build_lse_mechanics_harmonic(kf)
   A_c=0.
   b_c=0.
   omega=frequency(kf)
+
+  ! ==========================================================================================
+  ! CALCULATE FREQUENCY-DEPENDANT B.C.
+  ! ==========================================================================================
+
+  ! Loop through BOUNDARIES
+  do kb=1,n_boundaries
+    sp=boundary(kb)%part
+    select case (boundary(kb)%coupling)
+
+      ! ============================================================================================================================
+      ! BE BOUNDARY
+      ! ============================================================================================================================
+
+      case (fbem_boundary_coupling_be)
+        select case (boundary(kb)%class)
+
+          ! =================
+          ! ORDINARY BOUNDARY
+          ! =================
+
+          case (fbem_boundary_class_ordinary)
+            select case (region(boundary(kb)%region(1))%type)
+
+              ! --------------
+              ! INVISCID FLUID
+              ! --------------
+
+              case (fbem_potential)
+                do kn=1,part(sp)%n_nodes
+                  sn=part(sp)%node(kn)
+                  ! 4: Un = -i/(rho*c*omega)*beta*p (Delany & Bazley model)
+                  !    Two values: sigma (specific flow-resistance per unit thickness), t (layer thickness)
+                  if (node(sn)%ctype(1,1).eq.4) then
+                    if (node(sn)%cvalue_i(1,1,1).eq.0) then
+                      node(sn)%cvalue_c(1,1,1)=fbem_delanybazley1970_thin_beta_n(region(boundary(kb)%region(1))%property_r(1),&
+                                                                                 region(boundary(kb)%region(1))%property_r(4),&
+                                                                                 node(sn)%cvalue_r(1,1,1),&
+                                                                                 node(sn)%cvalue_r(1,2,1),&
+                                                                                 omega/(2.d0*c_pi))
+                    else
+                      node(sn)%cvalue_c(1,1,1)=fbem_delanybazley1970_thin_beta_st(region(boundary(kb)%region(1))%property_r(1),&
+                                                                                  region(boundary(kb)%region(1))%property_r(4),&
+                                                                                  node(sn)%cvalue_r(1,1,1),&
+                                                                                  node(sn)%cvalue_r(1,2,1),&
+                                                                                  omega/(2.d0*c_pi))
+                    end if
+                  else
+                    ! N/A
+                  end if
+                end do
+
+              ! ------------------
+              ! VISCOELASTIC SOLID
+              ! ------------------
+
+              case (fbem_viscoelastic)
+                ! N/A
+
+              ! -----------------
+              ! POROELASTIC MEDIUM
+              ! -----------------
+
+              case (fbem_poroelastic)
+                ! N/A
+
+            end select
+
+          ! ===================
+          ! CRACK-LIKE BOUNDARY
+          ! ===================
+
+          case (fbem_boundary_class_cracklike)
+            select case (region(boundary(kb)%region(1))%type)
+
+              ! --------------
+              ! INVISCID FLUID
+              ! --------------
+
+              case (fbem_potential)
+
+                do kn=1,part(sp)%n_nodes
+                  sn=part(sp)%node(kn)
+                  !
+                  ! Face +
+                  !
+                  ! 4: Un^+ = -i/(rho*c*omega)*beta*p^+ (Delany & Bazley model)
+                  !    Two values: sigma (specific flow-resistance per unit thickness), t (layer thickness)
+                  if (node(sn)%ctype(1,1).eq.4) then
+                    if (node(sn)%cvalue_i(1,1,1).eq.0) then
+                      node(sn)%cvalue_c(1,1,1)=fbem_delanybazley1970_thin_beta_n(region(boundary(kb)%region(1))%property_r(1),&
+                                                                                 region(boundary(kb)%region(1))%property_r(4),&
+                                                                                 node(sn)%cvalue_r(1,1,1),&
+                                                                                 node(sn)%cvalue_r(1,2,1),&
+                                                                                 omega/(2.d0*c_pi))
+                    else
+                      node(sn)%cvalue_c(1,1,1)=fbem_delanybazley1970_thin_beta_st(region(boundary(kb)%region(1))%property_r(1),&
+                                                                                  region(boundary(kb)%region(1))%property_r(4),&
+                                                                                  node(sn)%cvalue_r(1,1,1),&
+                                                                                  node(sn)%cvalue_r(1,2,1),&
+                                                                                  omega/(2.d0*c_pi))
+                    end if
+                  else
+                    ! N/A
+                  end if
+                  !
+                  ! Face -
+                  !
+                  ! 4: Un^- = -i/(rho*c*omega)*beta*p^- (Delany & Bazley model)
+                  !    Two values: sigma (specific flow-resistance per unit thickness), t (layer thickness)
+                  if (node(sn)%ctype(1,2).eq.4) then
+                    if (node(sn)%cvalue_i(1,1,2).eq.0) then
+                      node(sn)%cvalue_c(1,1,2)=fbem_delanybazley1970_thin_beta_n(region(boundary(kb)%region(1))%property_r(1),&
+                                                                                 region(boundary(kb)%region(1))%property_r(4),&
+                                                                                 node(sn)%cvalue_r(1,1,2),&
+                                                                                 node(sn)%cvalue_r(1,2,2),&
+                                                                                 omega/(2.d0*c_pi))
+                    else
+                      node(sn)%cvalue_c(1,1,2)=fbem_delanybazley1970_thin_beta_st(region(boundary(kb)%region(1))%property_r(1),&
+                                                                                  region(boundary(kb)%region(1))%property_r(4),&
+                                                                                  node(sn)%cvalue_r(1,1,2),&
+                                                                                  node(sn)%cvalue_r(1,2,2),&
+                                                                                  omega/(2.d0*c_pi))
+                    end if
+                  else
+                    ! N/A
+                  end if
+                end do
+
+
+              ! ------------------
+              ! VISCOELASTIC SOLID
+              ! ------------------
+
+              case (fbem_viscoelastic)
+                ! N/A
+
+              ! -----------------
+              ! POROELASTIC MEDIA
+              ! -----------------
+
+              case (fbem_poroelastic)
+                ! N/A
+
+            end select
+
+        end select
+
+      ! ============================================================================================================================
+      ! BE-BE BOUNDARY
+      ! ============================================================================================================================
+
+      case (fbem_boundary_coupling_be_be)
+        select case (region(boundary(kb)%region(1))%type)
+          case (fbem_potential)
+            select case (region(boundary(kb)%region(2))%type)
+
+              ! ---------------------------------------
+              ! INVISCID FLUID (1) - INVISCID FLUID (2)
+              ! ---------------------------------------
+
+              case (fbem_potential)
+                ! N/A
+
+              ! -------------------------------------------
+              ! INVISCID FLUID (1) - VISCOELASTIC SOLID (2)
+              ! -------------------------------------------
+
+              case (fbem_viscoelastic)
+                ! N/A
+
+              ! ------------------------------------------
+              ! INVISCID FLUID (1) - POROELASTIC MEDIA (2)
+              ! ------------------------------------------
+
+              case (fbem_poroelastic)
+                ! N/A
+
+            end select
+
+          case (fbem_viscoelastic)
+            select case (region(boundary(kb)%region(2))%type)
+
+              ! -------------------------------------------
+              ! VISCOELASTIC SOLID (1) - INVISCID FLUID (2)
+              ! -------------------------------------------
+
+              case (fbem_potential)
+                ! N/A
+
+              ! -----------------------------------------------
+              ! VISCOELASTIC SOLID (1) - VISCOELASTIC SOLID (2)
+              ! -----------------------------------------------
+
+              case (fbem_viscoelastic)
+                ! N/A
+
+              ! ----------------------------------------------
+              ! VISCOELASTIC SOLID (1) - POROELASTIC MEDIA (2)
+              ! ----------------------------------------------
+
+              case (fbem_poroelastic)
+                ! N/A
+
+            end select
+
+          case (fbem_poroelastic)
+            select case (region(boundary(kb)%region(2))%type)
+
+              ! ------------------------------------------
+              ! POROELASTIC MEDIA (1) - INVISCID FLUID (2)
+              ! ------------------------------------------
+
+              case (fbem_potential)
+                ! N/A
+
+              ! ----------------------------------------------
+              ! POROELASTIC MEDIA (1) - VISCOELASTIC SOLID (2)
+              ! ----------------------------------------------
+
+              case (fbem_viscoelastic)
+                ! N/A
+
+              ! ---------------------------------------------
+              ! POROELASTIC MEDIA (1) - POROELASTIC MEDIA (2)
+              ! ---------------------------------------------
+
+              case (fbem_poroelastic)
+                ! N/A
+
+            end select
+        end select
+
+      ! ============================================================================================================================
+      ! BE-FE BOUNDARY
+      ! ============================================================================================================================
+
+      case (fbem_boundary_coupling_be_fe)
+        select case (boundary(kb)%class)
+
+          ! ================= !
+          ! ORDINARY BOUNDARY !
+          ! ================= !
+
+          case (fbem_boundary_class_ordinary)
+            select case (region(boundary(kb)%region(1))%type)
+
+              ! -------------- !
+              ! INVISCID FLUID !
+              ! -------------- !
+
+              case (fbem_potential)
+                ! N/A
+
+              ! ------------------ !
+              ! VISCOELASTIC SOLID !
+              ! ------------------ !
+
+              case (fbem_viscoelastic)
+                ! N/A
+
+              ! ----------------- !
+              ! POROELASTIC MEDIUM !
+              ! ----------------- !
+
+              case (fbem_poroelastic)
+                ! N/A
+
+            end select
+
+          ! =================== !
+          ! CRACK-LIKE BOUNDARY !
+          ! =================== !
+
+          case (fbem_boundary_class_cracklike)
+            select case (region(boundary(kb)%region(1))%type)
+
+              ! -------------- !
+              ! INVISCID FLUID !
+              ! -------------- !
+
+              case (fbem_potential)
+                ! N/A
+
+              ! ------------------ !
+              ! VISCOELASTIC SOLID !
+              ! ------------------ !
+
+              case (fbem_viscoelastic)
+                ! N/A
+
+              ! ----------------- !
+              ! POROELASTIC MEDIUM !
+              ! ----------------- !
+
+              case (fbem_poroelastic)
+                ! N/A
+
+            end select
+        end select
+
+      ! ============================================================================================================================
+      ! BE-FE-BE BOUNDARY
+      ! ============================================================================================================================
+
+      case (fbem_boundary_coupling_be_fe_be)
+        select case (region(boundary(kb)%region(1))%type)
+          case (fbem_potential)
+            select case (region(boundary(kb)%region(2))%type)
+
+              ! ---------------------------------------
+              ! INVISCID FLUID (1) - INVISCID FLUID (2)
+              ! ---------------------------------------
+
+              case (fbem_potential)
+                ! N/A
+
+              ! -------------------------------------------
+              ! INVISCID FLUID (1) - VISCOELASTIC SOLID (2)
+              ! -------------------------------------------
+
+              case (fbem_viscoelastic)
+                ! N/A
+
+              ! ------------------------------------------
+              ! INVISCID FLUID (1) - POROELASTIC MEDIA (2)
+              ! ------------------------------------------
+
+              case (fbem_poroelastic)
+                ! N/A
+
+            end select
+
+          case (fbem_viscoelastic)
+            select case (region(boundary(kb)%region(2))%type)
+
+              ! -------------------------------------------
+              ! VISCOELASTIC SOLID (1) - INVISCID FLUID (2)
+              ! -------------------------------------------
+
+              case (fbem_potential)
+                ! N/A
+
+              ! -----------------------------------------------
+              ! VISCOELASTIC SOLID (1) - VISCOELASTIC SOLID (2)
+              ! -----------------------------------------------
+
+              case (fbem_viscoelastic)
+                ! N/A
+
+              ! ----------------------------------------------
+              ! VISCOELASTIC SOLID (1) - POROELASTIC MEDIA (2)
+              ! ----------------------------------------------
+
+              case (fbem_poroelastic)
+                ! N/A
+
+            end select
+
+          case (fbem_poroelastic)
+            select case (region(boundary(kb)%region(2))%type)
+
+              ! ------------------------------------------
+              ! POROELASTIC MEDIA (1) - INVISCID FLUID (2)
+              ! ------------------------------------------
+
+              case (fbem_potential)
+                ! N/A
+
+              ! ----------------------------------------------
+              ! POROELASTIC MEDIA (1) - VISCOELASTIC SOLID (2)
+              ! ----------------------------------------------
+
+              case (fbem_viscoelastic)
+                ! N/A
+
+              ! ---------------------------------------------
+              ! POROELASTIC MEDIA (1) - POROELASTIC MEDIA (2)
+              ! ---------------------------------------------
+
+              case (fbem_poroelastic)
+                ! N/A
+
+            end select
+        end select
+    end select
+  end do ! Loop through BOUNDARIES
 
   ! ==========================================================================================
   ! BUILD AND ASSEMBLE BEM INFLUENCE MATRICES AND FEM STIFFNESS MATRICES AND DISTRIBUTED LOADS

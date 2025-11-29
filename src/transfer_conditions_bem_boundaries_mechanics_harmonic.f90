@@ -38,7 +38,7 @@ subroutine transfer_conditions_bem_boundaries_mechanics_harmonic
   ! Local variables
   integer           :: kb, sp
   integer           :: kn, sn
-  integer           :: k
+  integer           :: k, kf
   real(kind=real64) :: center(3), axis(3), x(3), urot(3)
 
   if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'START transferring conditions (BEM boundaries->BEM nodes)')
@@ -70,10 +70,15 @@ subroutine transfer_conditions_bem_boundaries_mechanics_harmonic
                 do kn=1,part(sp)%n_nodes
                   sn=part(sp)%node(kn)
                   allocate (node(sn)%ctype(1,1))
+                  allocate (node(sn)%cvalue_i(1,1,1))
+                  allocate (node(sn)%cvalue_r(1,2,1))
                   allocate (node(sn)%cvalue_c(1,1,1))
                   node(sn)%ctype=boundary(kb)%ctype
+                  node(sn)%cvalue_i=boundary(kb)%cvalue_i
+                  node(sn)%cvalue_r=boundary(kb)%cvalue_r
                   node(sn)%cvalue_c=boundary(kb)%cvalue_c
                 end do
+
 
               ! ------------------
               ! VISCOELASTIC SOLID
@@ -149,10 +154,15 @@ subroutine transfer_conditions_bem_boundaries_mechanics_harmonic
                 do kn=1,part(sp)%n_nodes
                   sn=part(sp)%node(kn)
                   allocate (node(sn)%ctype(1,2))
+                  allocate (node(sn)%cvalue_i(1,1,2))
+                  allocate (node(sn)%cvalue_r(1,2,2))
                   allocate (node(sn)%cvalue_c(1,1,2))
                   node(sn)%ctype=boundary(kb)%ctype
+                  node(sn)%cvalue_i=boundary(kb)%cvalue_i
+                  node(sn)%cvalue_r=boundary(kb)%cvalue_r
                   node(sn)%cvalue_c=boundary(kb)%cvalue_c
                 end do
+
 
               ! ------------------
               ! VISCOELASTIC SOLID

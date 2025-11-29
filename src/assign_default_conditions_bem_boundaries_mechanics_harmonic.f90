@@ -63,6 +63,8 @@ subroutine assign_default_conditions_bem_boundaries_mechanics_harmonic
                 case (fbem_potential)
                   ! Allocate structure members
                   allocate (boundary(i)%ctype(1,1))
+                  allocate (boundary(i)%cvalue_i(1,1,1))
+                  allocate (boundary(i)%cvalue_r(1,2,1))
                   allocate (boundary(i)%cvalue_c(1,1,1))
                   ! Un=0
                   boundary(i)%ctype(1,1)=1
@@ -111,6 +113,8 @@ subroutine assign_default_conditions_bem_boundaries_mechanics_harmonic
                 case (fbem_potential)
                   ! Allocate structure members
                   allocate (boundary(i)%ctype(1,2))
+                  allocate (boundary(i)%cvalue_i(1,1,2))
+                  allocate (boundary(i)%cvalue_r(1,2,2))
                   allocate (boundary(i)%cvalue_c(1,1,2))
                   ! Face + : Un=0
                   boundary(i)%ctype(1,1)=1

@@ -91,17 +91,21 @@ if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'SEARCHING s
                     call fbem_search_keyword(input_fileunit,keyword,':',found)
                     ! Switch depending on the type of boundary condition
                     select case (boundary(i)%ctype(1,1))
-                      ! 0: p=P
-                      ! 1: Un=W
+                      ! 0: p = P
+                      ! 1: Un = U
                       case (0,1)
                         read(input_fileunit,*) boundary(i)%ctype(1,1), boundary(i)%cvalue_c(1,1,1)
                       ! 2: Un+i/(rho*c*omega)p=0
                       case (2)
                         read(input_fileunit,*) boundary(i)%ctype(1,1)
-                        boundary(i)%cvalue_c(1,1,1)=0.
-                      ! 3: Un+(i/(rho*c*omega)-1/(2*R*rho*omega^2))p=0
+                        boundary(i)%cvalue_c(1,1,1)=(1.d0,0.d0)
+                      ! 3: Un = -i/(rho*c*omega)*beta*p (constant beta)
                       case (3)
                         read(input_fileunit,*) boundary(i)%ctype(1,1), boundary(i)%cvalue_c(1,1,1)
+                      ! 4: Un = -i/(rho*c*omega)*beta*p (Delany & Bazley model)
+                      !    Three values: type (0: normal, 1: alpha statistical), sigma (specific flow-resistance per unit thickness), t (layer thickness)
+                      case (4)
+                        read(input_fileunit,*) boundary(i)%ctype(1,1), boundary(i)%cvalue_i(1,1,1), boundary(i)%cvalue_r(1,1,1), boundary(i)%cvalue_r(1,2,1)
                       case default
                         call fbem_error_message(error_unit,0,'boundary',boundary(i)%id,'invalid type of boundary condition')
                     end select
@@ -316,41 +320,57 @@ if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'SEARCHING s
                   ! --------------
 
                   case (fbem_potential)
+                    !
                     ! Face +
+                    !
                     read(input_fileunit,*) boundary(i)%ctype(1,1)
                     call fbem_search_section(input_fileunit,section_name,found)
                     call fbem_search_keyword(input_fileunit,keyword,':',found)
                     ! Switch depending on the type of boundary condition
                     select case (boundary(i)%ctype(1,1))
                       ! 0: p^+=P^+
-                      ! 1: Un^+=W^+
-                      ! 20: Un^+ - Un^- = K
-                      ! 21: p^+ - p^- = K
-                      case (0,1,20,21)
+                      ! 1: Un^+=U^+
+                      case (0,1)
                         read(input_fileunit,*) boundary(i)%ctype(1,1), boundary(i)%cvalue_c(1,1,1)
+                      ! 2: Un^+ +i/(rho*c*omega)p^+=0
+                      case (2)
+                        read(input_fileunit,*) boundary(i)%ctype(1,1)
+                        boundary(i)%cvalue_c(1,1,1)=(1.d0,0.d0)
+                      ! 3: Un^+ = -i/(rho*c*omega)*beta*p^+ (constant beta)
+                      case (3)
+                        read(input_fileunit,*) boundary(i)%ctype(1,1), boundary(i)%cvalue_c(1,1,1)
+                      ! 4: Un^+ = -i/(rho*c*omega)*beta*p^+ (Delany & Bazley model)
+                      !    Three values: type (0: normal, 1: alpha statistical), sigma (specific flow-resistance per unit thickness), t (layer thickness)
+                      case (4)
+                        read(input_fileunit,*) boundary(i)%ctype(1,1), boundary(i)%cvalue_i(1,1,1), boundary(i)%cvalue_r(1,1,1), boundary(i)%cvalue_r(1,2,1)
                       case default
                         call fbem_error_message(error_unit,0,'boundary',boundary(i)%id,'invalid type of boundary condition')
                     end select
+                    !
                     ! Face -
+                    !
                     read(input_fileunit,*) boundary(i)%ctype(1,2)
                     backspace(input_fileunit)
                     ! Switch depending on the type of boundary condition
                     select case (boundary(i)%ctype(1,2))
                       ! 0: p^-=P^-
-                      ! 1: Un^-=W^-
-                      ! 20: Un^+ - Un^- = K
-                      ! 21: p^+ - p^- = K
-                      case (0,1,20,21)
+                      ! 1: Un^-=U^-
+                      case (0,1)
                         read(input_fileunit,*) boundary(i)%ctype(1,2), boundary(i)%cvalue_c(1,1,2)
+                      ! 2: Un^- + i/(rho*c*omega)p^-=0
+                      case (2)
+                        read(input_fileunit,*) boundary(i)%ctype(1,2)
+                        boundary(i)%cvalue_c(1,1,2)=(1.d0,0.d0)
+                      ! 3: Un^- = -i/(rho*c*omega)*beta*p^- (constant beta)
+                      case (3)
+                        read(input_fileunit,*) boundary(i)%ctype(1,2), boundary(i)%cvalue_c(1,1,2)
+                      ! 4: Un^- = -i/(rho*c*omega)*beta*p^- (Delany & Bazley model)
+                      !    Three values: type (0: normal, 1: alpha statistical), sigma (specific flow-resistance per unit thickness), t (layer thickness)
+                      case (4)
+                        read(input_fileunit,*) boundary(i)%ctype(1,2), boundary(i)%cvalue_i(1,1,2), boundary(i)%cvalue_r(1,1,2), boundary(i)%cvalue_r(1,2,2)
                       case default
                         call fbem_error_message(error_unit,0,'boundary',boundary(i)%id,'invalid type of boundary condition')
                     end select
-                    if ((boundary(i)%ctype(1,1).eq.20).and.(boundary(i)%ctype(1,2).eq.20)) then
-                      call fbem_error_message(error_unit,0,'boundary',boundary(i)%id,'incompatible combination of boundary conditions')
-                    end if
-                    if ((boundary(i)%ctype(1,1).eq.21).and.(boundary(i)%ctype(1,2).eq.21)) then
-                      call fbem_error_message(error_unit,0,'boundary',boundary(i)%id,'incompatible combination of boundary conditions')
-                    end if
 
                   ! ------------------
                   ! VISCOELASTIC SOLID

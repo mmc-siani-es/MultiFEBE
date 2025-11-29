@@ -137,8 +137,9 @@ subroutine build_auxiliary_variables_mechanics_harmonic
                             case (1)
                               node(sn)%col(1,1)=col
                             ! 2: p unknown, Un=i/(rho*c*omega)p
-                            ! 3: p unknown, Un-(i/(rho*c*omega)-1/(2*R*rho*omega^2))p=0
-                            case (2,3)
+                            ! 3: p unknown, Un = -i/(rho*c*omega)*beta*p (constant beta)
+                            ! 4: p unknown, Un = -i/(rho*c*omega)*beta*p (Delany & Bazley model)
+                            case (2,3,4)
                               node(sn)%col(1,1)=col
                           end select
                           ! Increment counter
@@ -355,6 +356,11 @@ subroutine build_auxiliary_variables_mechanics_harmonic
                             ! Un known, p unknown
                             case (1)
                               node(sn)%col(1,1)=col
+                            ! 2: p unknown, Un=i/(rho*c*omega)p
+                            ! 3: p unknown, Un = -i/(rho*c*omega)*beta*p (constant beta)
+                            ! 4: p unknown, Un = -i/(rho*c*omega)*beta*p (Delany & Bazley model)
+                            case (2,3,4)
+                              node(sn)%col(1,1)=col
                           end select
                           ! Increment counter
                           col=col+1
@@ -366,6 +372,11 @@ subroutine build_auxiliary_variables_mechanics_harmonic
                               node(sn)%col(2,2)=col
                             ! Un known, p unknown
                             case (1)
+                              node(sn)%col(1,2)=col
+                            ! 2: p unknown, Un=i/(rho*c*omega)p
+                            ! 3: p unknown, Un = -i/(rho*c*omega)*beta*p (constant beta)
+                            ! 4: p unknown, Un = -i/(rho*c*omega)*beta*p (Delany & Bazley model)
+                            case (2,3,4)
                               node(sn)%col(1,2)=col
                           end select
                           ! Increment counter

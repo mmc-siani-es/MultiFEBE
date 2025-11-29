@@ -24,11 +24,12 @@
 !!
 !! @version 2.0
 !!
-!! <b> Subroutine that reads the frequencies from a file. </b>
+!! <b> Subroutine that reads the frequencies from a file and build
+!!     the vector of frequencies. </b>
 !!
 !!>
 !! 'Hz' or 'rad/s'
-!! 'list' or 'lin' or 'log10'
+!! 'list', 'lin', 'log10', 'sound_octave', 'sound_1/3-octave'
 !! n_frequencies
 !! frequency(1) (minimum frequency for mode 'lin' and 'log10')
 !! ... (if mode is 'list')
@@ -39,6 +40,7 @@ subroutine read_frequencies(fileunit)
   ! fbem module
   use fbem_numerical
   use fbem_string_handling
+  use fbem_acoustics
 
   ! Problem variables module
   use problem_variables
@@ -47,17 +49,19 @@ subroutine read_frequencies(fileunit)
   ! I/O
   integer                                 :: fileunit
   ! Local
+  character(len=fbem_stdcharlen)          :: section_name      ! Name of the section
   character(len=fbem_file_record_length)  :: line
-  integer                                 :: i
+  integer                                 :: i, nf
   integer                                 :: specification_mode
-  real(kind=real64)                       :: delta
+  real(kind=real64)                       :: delta, minf, maxf
   logical                                 :: found
 
-  if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'SEARCHING section [frequencies]')
-  call fbem_search_section(fileunit,'frequencies',found)
+  section_name='frequencies'
+  if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'SEARCHING section ['//trim(section_name)//']')
+  call fbem_search_section(fileunit,section_name,found)
   if (found) then
 
-    if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'START reading section [frequencies]')
+    if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'START reading section ['//trim(section_name)//']')
 
     ! Read units
     read(fileunit,'(a)') line
@@ -73,12 +77,14 @@ subroutine read_frequencies(fileunit)
     read(fileunit,'(a)') line
     call fbem_trim2b(line)
     specification_mode=0
-    if (trim(line).eq.'list' ) specification_mode=1
-    if (trim(line).eq.'lin'  ) specification_mode=2
-    if (trim(line).eq.'log10') specification_mode=3
-    if (trim(line).eq.'log'  ) specification_mode=3
+    if (trim(line).eq.'list'            ) specification_mode=1
+    if (trim(line).eq.'lin'             ) specification_mode=2
+    if (trim(line).eq.'log10'           ) specification_mode=3
+    if (trim(line).eq.'log'             ) specification_mode=3
+    if (trim(line).eq.'sound_octave'    ) specification_mode=4
+    if (trim(line).eq.'sound_1/3-octave') specification_mode=5
     if (specification_mode.eq.0) then
-      call fbem_error_message(error_unit,0,'specification_mode',0,'the frequency specification mode is "list", "lin" or "log"')
+      call fbem_error_message(error_unit,0,'specification_mode',0,'the frequency specification mode is not valid')
     end if
 
     ! Switch between the frequency specification modes
@@ -139,20 +145,141 @@ subroutine read_frequencies(fileunit)
         do i=2,n_frequencies-1
           frequency(i)=10.0d0**(dlog10(frequency(1))+delta*dble(i-1))
         end do
+      !
+      ! sound_octave
+      !
+      case (4)
+        ! Read the number of frequencies
+        read(fileunit,*) n_frequencies
+        ! Read minimum and maximum frequencies
+        read(fileunit,*) minf
+        read(fileunit,*) maxf
+        ! If n_frequencies == 0 (all octave frequencies between minf and maxf are analyzed)
+        if (n_frequencies.eq.0) then
+          n_frequencies = 0
+          do i=1,size(fbem_octave_f)
+            if ((fbem_octave_f(i).ge.minf).and.(fbem_octave_f(i).le.maxf)) then
+              n_frequencies = n_frequencies + 1
+            end if
+          end do
+          allocate(frequency(n_frequencies))
+          n_frequencies = 0
+          do i=1,size(fbem_octave_f)
+            if ((fbem_octave_f(i).ge.minf).and.(fbem_octave_f(i).le.maxf)) then
+              n_frequencies = n_frequencies + 1
+              frequency(n_frequencies) = fbem_octave_f(i)
+            end if
+          end do
+        ! If n_frequencies > 0 (up to n_frequencies between minf and maxf are analyzed starting from minf)
+        elseif (n_frequencies.gt.0) then
+          nf = 0
+          do i=1,size(fbem_octave_f)
+            if ((fbem_octave_f(i).ge.minf).and.(fbem_octave_f(i).le.maxf)) then
+              nf = nf + 1
+            end if
+          end do
+          n_frequencies = min(n_frequencies,nf)
+          allocate(frequency(n_frequencies))
+          n_frequencies = 0
+          do i=1,size(fbem_octave_f)
+            if ((fbem_octave_f(i).ge.minf).and.(fbem_octave_f(i).le.maxf)) then
+              n_frequencies = n_frequencies + 1
+              frequency(n_frequencies) = fbem_octave_f(i)
+            end if
+          end do
+        ! If n_frequencies > 0 (up to n_frequencies between minf and maxf are analyzed starting from maxf)
+        elseif (n_frequencies.lt.0) then
+          nf = 0
+          do i=size(fbem_octave_f),1
+            if ((fbem_octave_f(i).ge.minf).and.(fbem_octave_f(i).le.maxf)) then
+              nf = nf + 1
+            end if
+          end do
+          n_frequencies = min(n_frequencies,nf)
+          allocate(frequency(n_frequencies))
+          n_frequencies = 0
+          do i=size(fbem_octave_f),1
+            if ((fbem_octave_f(i).ge.minf).and.(fbem_octave_f(i).le.maxf)) then
+              n_frequencies = n_frequencies + 1
+              frequency(n_frequencies) = fbem_octave_f(i)
+            end if
+          end do
+
+        end if
+      !
+      ! sound_1/3-octave
+      !
+      case (5)
+        ! Read the number of frequencies
+        read(fileunit,*) n_frequencies
+        ! Read minimum and maximum frequencies
+        read(fileunit,*) minf
+        read(fileunit,*) maxf
+        ! If n_frequencies == 0 (all octave frequencies between minf and maxf are analyzed)
+        if (n_frequencies.eq.0) then
+          n_frequencies = 0
+          do i=1,size(fbem_onethird_octave_f)
+            if ((fbem_onethird_octave_f(i).ge.minf).and.(fbem_onethird_octave_f(i).le.maxf)) then
+              n_frequencies = n_frequencies + 1
+            end if
+          end do
+          allocate(frequency(n_frequencies))
+          n_frequencies = 0
+          do i=1,size(fbem_onethird_octave_f)
+            if ((fbem_onethird_octave_f(i).ge.minf).and.(fbem_onethird_octave_f(i).le.maxf)) then
+              n_frequencies = n_frequencies + 1
+              frequency(n_frequencies) = fbem_onethird_octave_f(i)
+            end if
+          end do
+        ! If n_frequencies > 0 (up to n_frequencies between minf and maxf are analyzed starting from minf)
+        elseif (n_frequencies.gt.0) then
+          nf = 0
+          do i=1,size(fbem_onethird_octave_f)
+            if ((fbem_onethird_octave_f(i).ge.minf).and.(fbem_onethird_octave_f(i).le.maxf)) then
+              nf = nf + 1
+            end if
+          end do
+          n_frequencies = min(n_frequencies,nf)
+          allocate(frequency(n_frequencies))
+          n_frequencies = 0
+          do i=1,size(fbem_onethird_octave_f)
+            if ((fbem_onethird_octave_f(i).ge.minf).and.(fbem_onethird_octave_f(i).le.maxf)) then
+              n_frequencies = n_frequencies + 1
+              frequency(n_frequencies) = fbem_onethird_octave_f(i)
+            end if
+          end do
+        ! If n_frequencies > 0 (up to n_frequencies between minf and maxf are analyzed starting from maxf)
+        elseif (n_frequencies.lt.0) then
+          nf = 0
+          do i=size(fbem_onethird_octave_f),1
+            if ((fbem_onethird_octave_f(i).ge.minf).and.(fbem_onethird_octave_f(i).le.maxf)) then
+              nf = nf + 1
+            end if
+          end do
+          n_frequencies = min(n_frequencies,nf)
+          allocate(frequency(n_frequencies))
+          n_frequencies = 0
+          do i=size(fbem_onethird_octave_f),1
+            if ((fbem_onethird_octave_f(i).ge.minf).and.(fbem_onethird_octave_f(i).le.maxf)) then
+              n_frequencies = n_frequencies + 1
+              frequency(n_frequencies) = fbem_onethird_octave_f(i)
+            end if
+          end do
+        end if
     end select
 
-    ! If input units are Hz, then the vector of frequencies must be converted to rad/s.
+    ! If input/output units are Hz, then the vector of frequencies must be converted to rad/s.
     if (frequency_units.eq.'f') then
       do i=1,n_frequencies
         frequency(i)=c_2pi*frequency(i)
       end do
     end if
 
-    if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'END reading section [frequencies]')
+    if (verbose_level.ge.2) call fbem_timestamp_w_message(output_unit,2,'END reading section ['//trim(section_name)//']')
 
   else
 
-    call fbem_error_message(error_unit,0,'[frequencies]',0,'this section is required')
+    call fbem_error_message(error_unit,0,trim(section_name),0,'this section is required')
 
   end if
 

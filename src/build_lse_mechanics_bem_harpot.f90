@@ -685,7 +685,6 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
   complex(kind=real64)   :: p_inc(se_int_n_nodes), Un_inc(se_int_n_nodes)
   ! Kernels for SBIE integration
   complex(kind=real64)   :: h (se_int_n_nodes), g (se_int_n_nodes)
-  complex(kind=real64)   :: ht(se_int_n_nodes), gt(se_int_n_nodes)
   complex(kind=real64)   :: hp(se_int_n_nodes), gp(se_int_n_nodes)
   complex(kind=real64)   :: hm(se_int_n_nodes), gm(se_int_n_nodes)
   ! Kernels for HBIE integration
@@ -1185,7 +1184,7 @@ subroutine build_lse_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nod
   complex(kind=real64)   :: c
   complex(kind=real64)   :: k
   ! Integrals for SBIE and HBIE integration
-  complex(kind=real64), allocatable :: g(:), gt(:), gp(:), l(:)
+  complex(kind=real64), allocatable :: g(:), gp(:), l(:), lp(:)
   ! Multiplier for Dual Burton & Miller formulation
   real(kind=real64)      :: alpha
   ! Symmetry plane configuration for the current element
@@ -1232,9 +1231,9 @@ subroutine build_lse_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nod
   se_int_data%bball_centre=element(se_int)%bball_centre
   se_int_data%bball_radius=element(se_int)%bball_radius
   allocate (g (se_int_data%n_snodes))
-  allocate (gt(se_int_data%n_snodes))
   allocate (gp(se_int_data%n_snodes))
   allocate (l (se_int_data%n_snodes))
+  allocate (lp(se_int_data%n_snodes))
 
   ! ACTIVE SYMMETRY PLANES FOR THE CURRENT ELEMENT
   call build_symplane_bodyload_elements(se_int,se_n_symplanes,se_n_symelements,se_symplane_m,se_symplane_s,se_symplane_t,se_symplane_r)
@@ -1297,6 +1296,29 @@ subroutine build_lse_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nod
                 call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,g)
                 call fbem_bem_harpot3d_hbie_bl_auto(se_int_data,x_i,n_i,p3d,qsi_parameters,qsi_ns_max,l)
             end select
+            ! Additional kernels for half-space fundamental solution
+            if (region(kr)%space.eq.fbem_half_space) then
+              x_i(abs(region(kr)%halfspace_n))=2.d0*region(kr)%halfspace_x-x_i(abs(region(kr)%halfspace_n))
+              n_i(abs(region(kr)%halfspace_n))=-n_i(abs(region(kr)%halfspace_n))
+              select case (problem%n)
+                case (2)
+                  call fbem_bem_harpot2d_sbie_bl_auto(se_int_data,x_i,p2d,qsi_parameters,qsi_ns_max,gp)
+                  call fbem_bem_harpot2d_hbie_bl_auto(se_int_data,x_i,n_i,p2d,qsi_parameters,qsi_ns_max,lp)
+                case (3)
+                  call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,gp)
+                  call fbem_bem_harpot3d_hbie_bl_auto(se_int_data,x_i,n_i,p3d,qsi_parameters,qsi_ns_max,lp)
+              end select
+              select case (region(kr)%halfspace_bc)
+                ! p=0
+                case (0)
+                  g=g-gp
+                  l=l-lp
+                ! Un=0
+                case (1)
+                  g=g+gp
+                  l=l+lp
+              end select
+            end if
             ! MODIFY INFLUENCE MATRICES ACCORDING TO SYMMETRY CONFIGURATION
             g(:)=symconf_s*g(:)
             l(:)=symconf_s*l(:)
@@ -1324,6 +1346,24 @@ subroutine build_lse_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nod
                 case (3)
                   call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,g)
               end select
+              ! Additional kernels for half-space fundamental solution
+              if (region(kr)%space.eq.fbem_half_space) then
+                x_i(abs(region(kr)%halfspace_n))=2.d0*region(kr)%halfspace_x-x_i(abs(region(kr)%halfspace_n))
+                select case (problem%n)
+                  case (2)
+                    call fbem_bem_harpot2d_sbie_bl_auto(se_int_data,x_i,p2d,qsi_parameters,qsi_ns_max,gp)
+                  case (3)
+                    call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,gp)
+                end select
+                select case (region(kr)%halfspace_bc)
+                  ! p=0
+                  case (0)
+                    g=g-gp
+                  ! Un=0
+                  case (1)
+                    g=g+gp
+                end select
+              end if
               ! MODIFY INFLUENCE MATRICES ACCORDING TO SYMMETRY CONFIGURATION
               g(:)=symconf_s*g(:)
             end if
@@ -1343,6 +1383,24 @@ subroutine build_lse_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nod
                 case (3)
                   call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,g)
               end select
+              ! Additional kernels for half-space fundamental solution
+              if (region(kr)%space.eq.fbem_half_space) then
+                x_i(abs(region(kr)%halfspace_n))=2.d0*region(kr)%halfspace_x-x_i(abs(region(kr)%halfspace_n))
+                select case (problem%n)
+                  case (2)
+                    call fbem_bem_harpot2d_sbie_bl_auto(se_int_data,x_i,p2d,qsi_parameters,qsi_ns_max,gp)
+                  case (3)
+                    call fbem_bem_harpot3d_sbie_bl_auto(se_int_data,x_i,p3d,qsi_parameters,qsi_ns_max,gp)
+                end select
+                select case (region(kr)%halfspace_bc)
+                  ! p=0
+                  case (0)
+                    g=g-gp
+                  ! Un=0
+                  case (1)
+                    g=g+gp
+                end select
+              end if
               ! MODIFY INFLUENCE MATRICES ACCORDING TO SYMMETRY CONFIGURATION
               g(:)=symconf_s*g(:)
             end if
@@ -1364,6 +1422,25 @@ subroutine build_lse_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nod
                 case (3)
                   call fbem_bem_harpot3d_hbie_bl_auto(se_int_data,x_i,n_i,p3d,qsi_parameters,qsi_ns_max,l)
               end select
+              ! Additional kernels for half-space fundamental solution
+              if (region(kr)%space.eq.fbem_half_space) then
+                x_i(abs(region(kr)%halfspace_n))=2.d0*region(kr)%halfspace_x-x_i(abs(region(kr)%halfspace_n))
+                n_i(abs(region(kr)%halfspace_n))=-n_i(abs(region(kr)%halfspace_n))
+                select case (problem%n)
+                  case (2)
+                    call fbem_bem_harpot2d_hbie_bl_auto(se_int_data,x_i,n_i,p2d,qsi_parameters,qsi_ns_max,lp)
+                  case (3)
+                    call fbem_bem_harpot3d_hbie_bl_auto(se_int_data,x_i,n_i,p3d,qsi_parameters,qsi_ns_max,lp)
+                end select
+                select case (region(kr)%halfspace_bc)
+                  ! p=0
+                  case (0)
+                    l=l-lp
+                  ! Un=0
+                  case (1)
+                    l=l+lp
+                end select
+              end if
               ! MODIFY INFLUENCE MATRICES ACCORDING TO SYMMETRY CONFIGURATION
               l(:)=symconf_s*l(:)
               ! HBIE
@@ -1395,7 +1472,7 @@ subroutine build_lse_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nod
                     call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,1,g)
                   case (fbem_boundary_class_cracklike)
                     call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,1,g)
-                    call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,2,l)
+                    call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,2,l/d1J)
                 end select
               case (fbem_boundary_coupling_be_fe)
                 select case (boundary(sb_col)%class)
@@ -1403,7 +1480,7 @@ subroutine build_lse_mechanics_bem_harpot_bl(omega,kr,sb_int,se_int,se_int_n_nod
                     call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,1,g)
                   case (fbem_boundary_class_cracklike)
                     call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,1,g)
-                    call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,2,l)
+                    call assemble_bem_bl_harpot_equation(sb_int,se_int,se_int_data%n_snodes,sn_col,2,l/d1J)
                 end select
               case (fbem_boundary_coupling_be_be,fbem_boundary_coupling_be_fe_be)
                 if (sb_col_reversion) then
