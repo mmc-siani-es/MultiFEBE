@@ -528,6 +528,7 @@ subroutine build_data_at_geometrical_nodes
             !
             case (1,2)
 
+              element(ke)%ep=0
               select case (problem%n)
                 case (2)
                   element(ke)%ep(:,1)= element(ke)%t1_gn(:,1)
