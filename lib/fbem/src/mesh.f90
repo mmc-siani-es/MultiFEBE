@@ -941,10 +941,6 @@ contains
     end do
   end subroutine build_part_nodes_connectivity
 
-
-
-
-
   !! Read node values from file
   subroutine read_node_values_from_file(mesh,filename)
     implicit none

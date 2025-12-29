@@ -60,13 +60,6 @@ module fbem_numerical
   public :: fbem_solve_lse_c
   public :: dsyevj3
 
-  ! ================================================================================================================================
-  !type fbem_table
-  !  integer                        :: nc, nr
-  !  real(kind=real64), allocatable :: cell(:,:)
-  !end type fbem_table
-  ! ================================================================================================================================
-
   ! Numerical constants
   real(kind=real64),    parameter, public :: c_e       =2.71828182845904523536028747135d0 !! <tt>e</tt> number
   real(kind=real64),    parameter, public :: c_log2e   =1.44269504088896340735992468100d0 !! <tt>log2(e)</tt>

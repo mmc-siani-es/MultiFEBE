@@ -79,14 +79,14 @@ module fbem_gmsh
   character(len=fbem_fmtstr) :: fmt_real='e16.8e2'
 
   ! MSH 2.2 FILE FORMAT: https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format-version-2-_0028Legacy_0029
-  ! MSH 4.1 FILE FORMAT: https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format
+  ! TODO: MSH 4.1 FILE FORMAT: https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format
 
   type fbem_gmsh_mesh
-    ! $MeshFormat (valid 2.1 & 4.1)
-    character(len=3)                :: version  ! Only 2.2 or 4.1
+    ! $MeshFormat (valid 2.2)
+    character(len=3)                :: version  ! Only 2.2
     integer                         :: filetype ! Only ASCII (filetype=0) is valid.
     integer                         :: datasize ! Only 8 is valid
-    ! $PhysicalNames (valid 2.1 & 4.1)
+    ! $PhysicalNames (valid 2.2)
     integer                         :: n_physicalnames
     integer, allocatable            :: physicalname_dim(:)
     integer, allocatable            :: physicalname_eid(:)
