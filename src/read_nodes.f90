@@ -108,7 +108,7 @@ subroutine read_nodes(fileunit,mode)
     ! ==============================
 
     ! Allocate and initialize
-    if (n_nodes.gt.1) then
+    if (n_nodes.gt.0) then
       allocate (node(n_nodes))
       do i=1,n_nodes
         allocate(node(i)%x(problem%n),node(i)%x_fn(problem%n),node(i)%n_fn(problem%n),node(i)%t1_fn(problem%n))
@@ -142,7 +142,7 @@ subroutine read_nodes(fileunit,mode)
         node(i)%export=.true.
       end do
     else
-      call fbem_error_message(error_unit,0,section_name,0,'the number of nodes must be >1')
+      call fbem_error_message(error_unit,0,section_name,0,'the number of nodes must be >0')
     end if
 
     ! Read the number of nodes in the file
