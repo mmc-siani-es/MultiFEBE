@@ -258,10 +258,20 @@ subroutine read_export(input_fileunit)
     ! Read if found
     if (found) then
       read(input_fileunit,*) nso_nodes
-      if (nso_nodes.le.0) then
+      ! Export results of all nodes.
+      if (nso_nodes.lt.0) then
+        do i=1,n_nodes
+          node(i)%export=.true.
+        end do
         if (verbose_level.ge.3) then
           write(output_unit,'(3x,a)') 'Results will be printed for all nodes if export_nso is True'
         end if
+      ! Do not export nodal results.
+      else if (nso_nodes.eq.0) then
+        do i=1,n_nodes
+          node(i)%export=.false.
+        end do
+      ! Export results of nodes given in a list.
       else if (nso_nodes.gt.0) then
         ! Allocate
         allocate(nso_nodes_export(nso_nodes))
@@ -282,7 +292,7 @@ subroutine read_export(input_fileunit)
         do i=1,n_nodes
           node(i)%export=.false.
         end do
-          node(nso_nodes_export)%export=.true.
+        node(nso_nodes_export)%export=.true.
         ! Write
         if (verbose_level.ge.3) then
           write(fmtstr,*) '(2x,a,i2,',nso_nodes,'i3)'
