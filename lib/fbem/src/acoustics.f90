@@ -185,8 +185,6 @@ contains
     k = 2.d0*c_pi*f/c
     k_layer = k*(10.3d0*fs**(-0.59d0)+c_im*(1.d0+10.8d0*fs**(-0.7d0)))
     beta = 1.d0/(1.d0+9.08d0*fs**(-0.75d0)-c_im*11.9d0*fs**(-0.73d0))
-    z = k_layer*t
-    !fbem_delanybazley1970_thin_beta_n = beta*(cdexp(z)+cdexp(-z))/(cdexp(z)-cdexp(-z))
     fbem_delanybazley1970_thin_beta_n = beta*tanh(k_layer*t)
   end function fbem_delanybazley1970_thin_beta_n
 
