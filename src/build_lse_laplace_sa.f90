@@ -120,7 +120,9 @@ subroutine build_lse_laplace_sa
   if (verbose_level.ge.1)  write(output_unit,'(a)') 'Building the b vector for sensitivity analysis ...'
 
   ! Initialize bsa vector
-  bsa_r=0.d0
+  if (n_dof.gt.0) then
+    bsa_r=0
+  end if
 
   ! Allocate auxiliary variables
   allocate (node_freeterm_added(n_nodes))

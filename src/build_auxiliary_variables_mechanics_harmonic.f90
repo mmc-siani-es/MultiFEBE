@@ -3620,17 +3620,20 @@ subroutine build_auxiliary_variables_mechanics_harmonic
     call fbem_error_message(error_unit,0,'fatal',0,'the mapping of the linear system of equations is wrong')
   end if
 
+  !
   ! Number of degrees of freedom
+  !
   n_dof=row-1
-  if (n_dof.eq.0) stop 'n_dof=0'
+  !if (n_dof.eq.0) stop 'n_dof=0'
   ! Print
   if (verbose_level.ge.1) then
     write(fmtstr,*) '(1x,a,i',fbem_nchar_int(n_dof),')'
     call fbem_trimall(fmtstr)
     write(output_unit,fmtstr) 'Number of degrees of freedom: ', n_dof
   end if
-
-  ! Allocate and initialized variables for system of equations manipulations
+  !
+  ! Check if the available memory is enough
+  !
   if (max_memory.ne.0) then
     memory=n_dof
     if (problem%sensitivity) then
@@ -3641,15 +3644,20 @@ subroutine build_auxiliary_variables_mechanics_harmonic
     if (lse_condition.or.lse_refine) memory=2*memory
     if (memory.gt.max_memory) call fbem_error_message(error_unit,0,'memory',0,'required memory > memory limit')
   end if
-  allocate (A_c(n_dof,n_dof),b_c(n_dof,1),fact_ipiv(n_dof),scal_r(n_dof),scal_c(n_dof))
-  if (lse_condition.or.lse_refine) then
-    allocate (Ao_c(n_dof,n_dof))
-    Aodim=n_dof
-  else
-    allocate (Ao_c(1,1))
-    Aodim=1
+  !
+  ! Allocate and initialized variables for system of equations manipulations
+  !
+  if (n_dof.gt.0) then
+    allocate (A_c(n_dof,n_dof),b_c(n_dof,1),fact_ipiv(n_dof),scal_r(n_dof),scal_c(n_dof))
+    if (lse_condition.or.lse_refine) then
+      allocate (Ao_c(n_dof,n_dof))
+      Aodim=n_dof
+    else
+      allocate (Ao_c(1,1))
+      Aodim=1
+    end if
+    if (problem%sensitivity) allocate (bsa_c(n_dof,problem%n_designvariables))
   end if
-  if (problem%sensitivity) allocate (bsa_c(n_dof,problem%n_designvariables))
 
   ! =============================================================== !
   ! ALLOCATE INCIDENT FIELDS ON ELEMENTS, NODES AND INTERNAL POINTS !

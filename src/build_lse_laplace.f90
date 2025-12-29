@@ -100,8 +100,10 @@ subroutine build_lse_laplace
   if (verbose_level.ge.1)  write(output_unit,'(a)') 'Building the LSE ...'
 
   ! Initialize A matrix and b vector.
-  A_r=0.d0
-  b_r=0.d0
+  if (n_dof.gt.0) then
+    A_r=0
+    b_r=0
+  end if
 
   ! ===========================
   ! BUILD BEM AND FEM EQUATIONS

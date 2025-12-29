@@ -1306,17 +1306,20 @@ subroutine build_auxiliary_variables_mechanics_static
     call fbem_error_message(error_unit,0,'fatal',0,'the mapping of the linear system of equations is wrong')
   end if
 
+  !
   ! Number of degrees of freedom
+  !
   n_dof=row-1
-  if (n_dof.eq.0) stop 'n_dof=0'
+  !if (n_dof.eq.0) stop 'n_dof=0'
   ! Print
   if (verbose_level.ge.1) then
     write(fmtstr,*) '(1x,a,i',fbem_nchar_int(n_dof),')'
     call fbem_trimall(fmtstr)
     write(output_unit,fmtstr) 'Number of degrees of freedom: ', n_dof
   end if
-
+  !
   ! Allocate and initialize variables for system of equations manipulations
+  !
   if (max_memory.ne.0) then
     memory=n_dof
     if (problem%sensitivity) then
@@ -1327,15 +1330,20 @@ subroutine build_auxiliary_variables_mechanics_static
     if (lse_condition.or.lse_refine) memory=2*memory
     if (memory.gt.max_memory) call fbem_error_message(error_unit,0,'memory',0,'required memory > memory limit')
   end if
-  allocate (A_r(n_dof,n_dof),b_r(n_dof,1),fact_ipiv(n_dof),scal_r(n_dof),scal_c(n_dof))
-  if (lse_condition.or.lse_refine) then
-    allocate (Ao_r(n_dof,n_dof))
-    Aodim=n_dof
-  else
-    allocate (Ao_r(1,1))
-    Aodim=1
+  !
+  ! Allocate and initialized variables for system of equations manipulations
+  !
+  if (n_dof.gt.0) then
+    allocate (A_r(n_dof,n_dof),b_r(n_dof,1),fact_ipiv(n_dof),scal_r(n_dof),scal_c(n_dof))
+    if (lse_condition.or.lse_refine) then
+      allocate (Ao_r(n_dof,n_dof))
+      Aodim=n_dof
+    else
+      allocate (Ao_r(1,1))
+      Aodim=1
+    end if
+    if (problem%sensitivity) allocate (bsa_r(n_dof,problem%n_designvariables))
   end if
-  if (problem%sensitivity) allocate (bsa_r(n_dof,problem%n_designvariables))
 
   ! Allocate data for internal points
   do k=1,n_internalpoints
