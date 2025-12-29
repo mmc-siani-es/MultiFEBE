@@ -60,8 +60,10 @@ program multifebe
       call export_solution_laplace
       if (problem%sensitivity) then
         call build_lse_laplace_sa
-        call solve_lse_r(n_dof,A_r,fact_ipiv,Aodim,Ao_r,scal_equed,scal_r,scal_c,problem%n_designvariables,bsa_r,&
-                        .false.,lse_scaling,lse_condition,lse_refine)
+        if (n_dof.gt.0) then
+          call solve_lse_r(n_dof,A_r,fact_ipiv,Aodim,Ao_r,scal_equed,scal_r,scal_c,problem%n_designvariables,bsa_r,&
+                          .false.,lse_scaling,lse_condition,lse_refine)
+        end if
         call assign_solution_laplace_sa
         call calculate_internal_points_laplace_sa
         call export_solution_laplace_sa
@@ -83,16 +85,20 @@ program multifebe
 
           call build_auxiliary_variables_mechanics_static
           call build_lse_mechanics_static
-          call solve_lse_r(n_dof,A_r,fact_ipiv,Aodim,Ao_r,scal_equed,scal_r,scal_c,1,b_r,&
-                           .true.,lse_scaling,lse_condition,lse_refine)
+          if (n_dof.gt.0) then
+            call solve_lse_r(n_dof,A_r,fact_ipiv,Aodim,Ao_r,scal_equed,scal_r,scal_c,1,b_r,&
+                            .true.,lse_scaling,lse_condition,lse_refine)
+          end if
           call assign_solution_mechanics_static
           call calculate_stresses_mechanics_static
           call calculate_internal_points_mechanics_static
           call export_solution_mechanics_static
           if (problem%sensitivity) then
             call build_lse_mechanics_static_sa
-            call solve_lse_r(n_dof,A_r,fact_ipiv,Aodim,Ao_r,scal_equed,scal_r,scal_c,problem%n_designvariables,bsa_r,&
-                             .false.,lse_scaling,lse_condition,lse_refine)
+            if (n_dof.gt.0) then
+              call solve_lse_r(n_dof,A_r,fact_ipiv,Aodim,Ao_r,scal_equed,scal_r,scal_c,problem%n_designvariables,bsa_r,&
+                              .false.,lse_scaling,lse_condition,lse_refine)
+            end if
             call assign_solution_mechanics_static_sa
             call export_solution_mechanics_static_sa
           end if
@@ -108,8 +114,10 @@ program multifebe
             call print_frequency(output_unit,1,kf)
             call calculate_incident_mechanics_harmonic(kf)
             call build_lse_mechanics_harmonic(kf)
-            call solve_lse_c(n_dof,A_c,fact_ipiv,Aodim,Ao_c,scal_equed,scal_r,scal_c,1,b_c,&
-                             .true.,lse_scaling,lse_condition,lse_refine)
+            if (n_dof.gt.0) then
+              call solve_lse_c(n_dof,A_c,fact_ipiv,Aodim,Ao_c,scal_equed,scal_r,scal_c,1,b_c,&
+                              .true.,lse_scaling,lse_condition,lse_refine)
+            end if
             call assign_solution_mechanics_harmonic(kf)
             call calculate_stresses_mechanics_harmonic(kf)
             call calculate_internal_points_mechanics_harmonic(kf)
