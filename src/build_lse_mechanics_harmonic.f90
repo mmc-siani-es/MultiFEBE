@@ -71,8 +71,10 @@ subroutine build_lse_mechanics_harmonic(kf)
   if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'START building the linear system of equations')
 
   ! Initialization
-  A_c=0.
-  b_c=0.
+  if (n_dof.gt.0) then
+    A_c=0
+    b_c=0
+  end if
   omega=frequency(kf)
 
   ! ==========================================================================================

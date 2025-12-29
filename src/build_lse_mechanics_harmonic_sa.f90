@@ -86,7 +86,9 @@ subroutine build_lse_mechanics_harmonic_sa(kf)
   if (verbose_level.ge.1)  write(output_unit,'(a)') 'Building the b vector for sensitivity analysis ...'
 
   ! Initialize bsa vector
-  bsa_c=(0.0d0,0.0d0)
+  if (n_dof.gt.0) then
+    bsa_c=0
+  end if
 
   ! Frequency
   omega=frequency(kf)

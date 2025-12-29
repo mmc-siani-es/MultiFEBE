@@ -49,8 +49,10 @@ subroutine build_lse_mechanics_static
   if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'START building the linear system of equations')
 
   ! Initialization
-  A_r=0.d0
-  b_r=0.d0
+  if (n_dof.gt.0) then
+    A_r=0
+    b_r=0
+  end if
 
   ! ==========================================================================================
   ! BUILD AND ASSEMBLE BEM INFLUENCE MATRICES AND FEM STIFFNESS MATRICES AND DISTRIBUTED LOADS
