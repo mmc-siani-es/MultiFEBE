@@ -585,8 +585,8 @@ subroutine build_lse_mechanics_bem_harpot(kf,kr)
                 case (fbem_boundary_class_cracklike)
                   gp=gp*d1J
                   gm=gm*d1J
-                  lp=lp*d1J
-                  lm=lm*d1J
+                  mp=mp/d1J
+                  mm=mm/d1J
                   call assemble_bem_harpot_equation(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,sn_col,1,hp,gp,hm,gm,p_inc,Un_inc)
                   call assemble_bem_harpot_equation(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,sn_col,2,mp,lp,mm,lm,p_inc,Un_inc)
               end select
@@ -1075,8 +1075,8 @@ subroutine build_lse_mechanics_bem_harpot_element(omega,kr,sb_int,sb_int_reversi
                   case (fbem_boundary_class_cracklike)
                     gp=gp*d1J
                     gm=gm*d1J
-                    lp=lp*d1J
-                    lm=lm*d1J
+                    mp=mp/d1J
+                    mm=mm/d1J
                     call assemble_bem_harpot_equation(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,sn_col,1,hp,gp,hm,gm,p_inc,Un_inc)
                     call assemble_bem_harpot_equation(omega,kr,sb_int,sb_int_reversion,se_int,se_int_n_nodes,sn_col,2,mp,lp,mm,lm,p_inc,Un_inc)
                 end select
