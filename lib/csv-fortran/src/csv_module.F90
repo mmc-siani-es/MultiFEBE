@@ -440,29 +440,62 @@
             write(int_val,fmt=ifmt,iostat=istat) val
             write(me%iunit,fmt='(A)',advance='NO',iostat=istat) trim(adjustl(int_val))
         type is (real(sp))
-            if (present(real_fmt)) then
-                rfmt = trim(adjustl(real_fmt))
+!            if (present(real_fmt)) then
+!                rfmt = trim(adjustl(real_fmt))
+!            else
+!                rfmt = default_sp_fmt
+!            end if
+!            write(real_val,fmt=rfmt,iostat=istat) val
+!            write(me%iunit,fmt='(A)',advance='NO',iostat=istat) trim(adjustl(real_val))
+            if (val == real(int(val, kind=ip), sp)) then
+                write(me%iunit,fmt='(I0)',advance='NO',iostat=istat) int(val, kind=ip)
             else
-                rfmt = default_sp_fmt
+                if (present(real_fmt)) then
+                    rfmt = real_fmt
+                else
+                    rfmt = default_sp_fmt
+                end if
+                write(real_val, fmt=rfmt, iostat=istat) val
+                write(me%iunit, fmt='(A)', advance='NO', iostat=istat) trim(adjustl(real_val))
             end if
-            write(real_val,fmt=rfmt,iostat=istat) val
-            write(me%iunit,fmt='(A)',advance='NO',iostat=istat) trim(adjustl(real_val))
         type is (real(wp))
-            if (present(real_fmt)) then
-                rfmt = trim(adjustl(real_fmt))
+!            if (present(real_fmt)) then
+!                rfmt = trim(adjustl(real_fmt))
+!            else
+!                rfmt = default_wp_fmt
+!            end if
+!            write(real_val,fmt=rfmt,iostat=istat) val
+!            write(me%iunit,fmt='(A)',advance='NO',iostat=istat) trim(adjustl(real_val))
+            if (val == real(int(val, kind=ip), wp)) then
+                write(me%iunit,fmt='(I0)',advance='NO',iostat=istat) int(val, kind=ip)
             else
-                rfmt = default_wp_fmt
+                if (present(real_fmt)) then
+                    rfmt = real_fmt
+                else
+                    rfmt = default_wp_fmt
+                end if
+                write(real_val, fmt=rfmt, iostat=istat) val
+                write(me%iunit, fmt='(A)', advance='NO', iostat=istat) trim(adjustl(real_val))
             end if
-            write(real_val,fmt=rfmt,iostat=istat) val
-            write(me%iunit,fmt='(A)',advance='NO',iostat=istat) trim(adjustl(real_val))
         type is (real(qp))
-            if (present(real_fmt)) then
-                rfmt = trim(adjustl(real_fmt))
+!            if (present(real_fmt)) then
+!                rfmt = trim(adjustl(real_fmt))
+!            else
+!                rfmt = default_qp_fmt
+!            end if
+!            write(real_val,fmt=rfmt,iostat=istat) val
+!            write(me%iunit,fmt='(A)',advance='NO',iostat=istat) trim(adjustl(real_val))
+            if (val == real(int(val, kind=ip), qp)) then
+                write(me%iunit,fmt='(I0)',advance='NO',iostat=istat) int(val, kind=ip)
             else
-                rfmt = default_qp_fmt
+                if (present(real_fmt)) then
+                    rfmt = real_fmt
+                else
+                    rfmt = default_qp_fmt
+                end if
+                write(real_val, fmt=rfmt, iostat=istat) val
+                write(me%iunit, fmt='(A)', advance='NO', iostat=istat) trim(adjustl(real_val))
             end if
-            write(real_val,fmt=rfmt,iostat=istat) val
-            write(me%iunit,fmt='(A)',advance='NO',iostat=istat) trim(adjustl(real_val))
         type is (logical)
             if (val) then
                 write(me%iunit,fmt='(A)',advance='NO',iostat=istat) me%logical_true_string
@@ -535,19 +568,23 @@
 
     integer :: i !! counter
 
-    do i=1,size(val)
-
-#if ( defined __GFORTRAN__ ) && ( __GNUC__ <= 10 )
-        ! This is a stupid workaround for gfortran bugs (tested with 7.2.0)
+    do i=1,size(val,1)
         select type (val)
-        type is (character(len=*))
-            call me%add(val(i),int_fmt,real_fmt,trim_str)
-        class default
-            call me%add(val(i),int_fmt,real_fmt,trim_str)
+            type is (integer(ip))
+                call me%add_cell(val(i),int_fmt,real_fmt,trim_str)
+            type is (real(sp))
+                call me%add_cell(val(i),int_fmt,real_fmt,trim_str)
+            type is (real(wp))
+                call me%add_cell(val(i),int_fmt,real_fmt,trim_str)
+            type is (real(qp))
+                call me%add_cell(val(i),int_fmt,real_fmt,trim_str)
+            type is (character(len=*))
+                call me%add_cell(val(i),int_fmt,real_fmt,trim_str)
+            type is (logical)
+                call me%add_cell(val(i),int_fmt,real_fmt,trim_str)
+            class default
+                call me%add_cell(val(i),int_fmt,real_fmt,trim_str)
         end select
-#else
-        call me%add(val(i),int_fmt,real_fmt,trim_str)
-#endif
 
     end do
 
@@ -572,11 +609,18 @@
                                                      !! this format string.
     logical,intent(in),optional :: trim_str !! if `val` is a string, then trim it.
 
-    integer :: i !! counter
+    integer :: i, j !! counter
 
-    ! add each row:
+!    ! add each row:
+!    do i=1,size(val,1)
+!        call me%add(val(i,:),int_fmt,real_fmt,trim_str)
+!        call me%next_row()
+!    end do
+
     do i=1,size(val,1)
-        call me%add(val(i,:),int_fmt,real_fmt,trim_str)
+        do j=1,size(val,2)
+            call me%add_cell(val(i,j), int_fmt, real_fmt, trim_str)
+        end do
         call me%next_row()
     end do
 

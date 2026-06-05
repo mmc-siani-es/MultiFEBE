@@ -528,9 +528,11 @@ subroutine build_data_at_geometrical_nodes
             !
             case (1,2)
 
-              element(ke)%ep=0
+              ! Introduced in commit 8ec13541, but I do not know why. I put it in the 2D case, although it seems unnecesary.
+              !element(ke)%ep=0
               select case (problem%n)
                 case (2)
+                  element(ke)%ep=0
                   element(ke)%ep(:,1)= element(ke)%t1_gn(:,1)
                   element(ke)%ep(1,2)=-element(ke)%ep(2,1)
                   element(ke)%ep(2,2)= element(ke)%ep(1,1)

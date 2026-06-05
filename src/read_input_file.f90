@@ -117,6 +117,7 @@ subroutine read_input_file
       call read_nodes(input_fileunit,1)
     case (1,2)
       call fbem_open_file_to_read(mesh_filename,'This is the mesh file.',aux_fileunit)
+      ! falta chequear si la malla gmsh es de la version correcta
       call read_parts(aux_fileunit,mesh_file_mode)
       call read_elements(aux_fileunit,mesh_file_mode)
       call read_nodes(aux_fileunit,mesh_file_mode)

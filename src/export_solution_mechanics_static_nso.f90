@@ -39,7 +39,7 @@ subroutine export_solution_mechanics_static_nso(output_fileunit)
 
   ! I/O variables
   integer                                 :: output_fileunit
- ! Local variables
+  ! Local variables
   integer                                 :: k
   integer                                 :: kr, kb, ke, kn, kip, sip, kc
   integer                                 :: sb, se, sn, ks, ss, sp
@@ -86,7 +86,6 @@ subroutine export_solution_mechanics_static_nso(output_fileunit)
   ! Elastic:
   !   - uk: displacement (k component)
   !   - tk: traction (k component)
-  !   -
   !
   !
   ! 2D PROBLEM

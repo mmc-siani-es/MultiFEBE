@@ -1,5 +1,5 @@
 ! ---------------------------------------------------------------------
-! Copyright (C) 2014-2023 Universidad de Las Palmas de Gran Canaria:
+! Copyright (C) 2014-2025 Universidad de Las Palmas de Gran Canaria:
 !                         Jacob D.R. Bordon
 !                         Guillermo M. Alamo
 !                         Juan J. Aznarez
@@ -29,10 +29,11 @@ subroutine export_region_wsp_harela(kf,kr,c1,c2)
   use fbem_string_handling
   use fbem_numerical
 
-  use csv_module
-
   ! Module of problem variables
   use problem_variables
+
+  ! other modules
+  use csv_module
 
   ! No implicit variables
   implicit none
@@ -48,23 +49,26 @@ subroutine export_region_wsp_harela(kf,kr,c1,c2)
   type(csv_file)                          :: file_csv
   logical                                 :: status_ok, do_append
   character(len=3)                        :: complex_str1, complex_str2
-  character(len=5)                        :: freq_str
+  character(len=64)                       :: header(6)
 
   ! Frequency
   omega=frequency(kf)
 
   call file_csv%initialize
-  write(tmp_filename,*) trim(output_filename),'.wsp.','region.',region(kr)%id,'.csv'
+  write(tmp_filename,*) trim(output_filename),'.region_',region(kr)%id,'.wsp.csv'
   call fbem_trimall(tmp_filename)
   do_append=.true.
   if (kf.eq.1) do_append=.false.
   call file_csv%open(trim(tmp_filename),n_cols=6,status_ok=status_ok,append=do_append)
   if (status_ok) then
+    ! HEADER
     if (kf.eq.1) then
+      header=''
+      header(1) = 'Freq. step'
       if (frequency_units.eq.'f') then
-        freq_str='Hz'
+        header(2)='f [Hz]'
       else
-        freq_str='rad/s'
+        header(2)='omega [rad/s]'
       end if
       if (complex_notation.eq.2) then
         complex_str1='Re'
@@ -73,11 +77,14 @@ subroutine export_region_wsp_harela(kf,kr,c1,c2)
         complex_str1='Abs'
         complex_str2='Arg'
       end if
-      call file_csv%add(['Frequency index','Frequency value ['//trim(freq_str)//']',&
-                         trim(complex_str1)//'(c1)',trim(complex_str2)//'(c1)',&
-                         trim(complex_str1)//'(c2)',trim(complex_str2)//'(c2)'],trim_str=.true.)
+      header(3) = trim(complex_str1)//'(cp)'
+      header(4) = trim(complex_str2)//'(cp)'
+      header(5) = trim(complex_str1)//'(cs)'
+      header(6) = trim(complex_str2)//'(cs)'
+      call file_csv%add(header,trim_str=.true.)
       call file_csv%next_row()
     end if
+    ! ROWS
     call file_csv%add(kf)
     if (frequency_units.eq.'f') then
       call file_csv%add(omega*c_1_2pi)
@@ -85,15 +92,15 @@ subroutine export_region_wsp_harela(kf,kr,c1,c2)
       call file_csv%add(omega)
     end if
     if (complex_notation.eq.2) then
-      call file_csv%add(dreal(c1),real_fmt='('//fmt_real//')')
-      call file_csv%add(dimag(c1),real_fmt='('//fmt_real//')')
-      call file_csv%add(dreal(c2),real_fmt='('//fmt_real//')')
-      call file_csv%add(dimag(c2),real_fmt='('//fmt_real//')')
+      call file_csv%add(dreal(c1))
+      call file_csv%add(dimag(c1))
+      call file_csv%add(dreal(c2))
+      call file_csv%add(dimag(c2))
     else
-      call file_csv%add(      abs(c1),real_fmt='('//fmt_real//')')
-      call file_csv%add(fbem_zarg(c1),real_fmt='('//fmt_real//')')
-      call file_csv%add(      abs(c2),real_fmt='('//fmt_real//')')
-      call file_csv%add(fbem_zarg(c2),real_fmt='('//fmt_real//')')
+      call file_csv%add(      abs(c1))
+      call file_csv%add(fbem_zarg(c1))
+      call file_csv%add(      abs(c2))
+      call file_csv%add(fbem_zarg(c2))
     end if
     call file_csv%next_row()
   else

@@ -19,7 +19,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ! ---------------------------------------------------------------------
 
-subroutine export_region_wsp_harpot(kf,kr,c)
+subroutine export_region_wsp_harpor(kf,kr,c1,c2,c3)
 
   ! Fortran 2003 intrinsic module
   use iso_fortran_env
@@ -41,14 +41,16 @@ subroutine export_region_wsp_harpot(kf,kr,c)
   ! I/O variables
   integer                           :: kf
   integer                           :: kr
-  complex(kind=real64)              :: c
+  complex(kind=real64)              :: c1
+  complex(kind=real64)              :: c2
+  complex(kind=real64)              :: c3
   ! Local
   real(kind=real64)                       :: omega
   character(len=fbem_filename_max_length) :: tmp_filename
   type(csv_file)                          :: file_csv
   logical                                 :: status_ok, do_append
   character(len=3)                        :: complex_str1, complex_str2
-  character(len=64)                       :: header(4)
+  character(len=64)                       :: header(8)
 
   ! Frequency
   omega=frequency(kf)
@@ -58,7 +60,7 @@ subroutine export_region_wsp_harpot(kf,kr,c)
   call fbem_trimall(tmp_filename)
   do_append=.true.
   if (kf.eq.1) do_append=.false.
-  call file_csv%open(trim(tmp_filename),n_cols=4,status_ok=status_ok,append=do_append)
+  call file_csv%open(trim(tmp_filename),n_cols=8,status_ok=status_ok,append=do_append)
   if (status_ok) then
     ! HEADER
     if (kf.eq.1) then
@@ -76,11 +78,16 @@ subroutine export_region_wsp_harpot(kf,kr,c)
         complex_str1='Abs'
         complex_str2='Arg'
       end if
-      header(3) = trim(complex_str1)//'(c)'
-      header(4) = trim(complex_str2)//'(c)'
+      header(3) = trim(complex_str1)//'(cp1)'
+      header(4) = trim(complex_str2)//'(cp1)'
+      header(5) = trim(complex_str1)//'(cp2)'
+      header(6) = trim(complex_str2)//'(cp2)'
+      header(7) = trim(complex_str1)//'(cs)'
+      header(8) = trim(complex_str2)//'(cs)'
       call file_csv%add(header,trim_str=.true.)
       call file_csv%next_row()
     end if
+    ! ROWS
     call file_csv%add(kf)
     if (frequency_units.eq.'f') then
       call file_csv%add(omega*c_1_2pi)
@@ -88,11 +95,19 @@ subroutine export_region_wsp_harpot(kf,kr,c)
       call file_csv%add(omega)
     end if
     if (complex_notation.eq.2) then
-      call file_csv%add(dreal(c))
-      call file_csv%add(dimag(c))
+      call file_csv%add(dreal(c1))
+      call file_csv%add(dimag(c1))
+      call file_csv%add(dreal(c2))
+      call file_csv%add(dimag(c2))
+      call file_csv%add(dreal(c3))
+      call file_csv%add(dimag(c3))
     else
-      call file_csv%add(      abs(c))
-      call file_csv%add(fbem_zarg(c))
+      call file_csv%add(      abs(c1))
+      call file_csv%add(fbem_zarg(c1))
+      call file_csv%add(      abs(c2))
+      call file_csv%add(fbem_zarg(c2))
+      call file_csv%add(      abs(c3))
+      call file_csv%add(fbem_zarg(c3))
     end if
     call file_csv%next_row()
   else
@@ -101,4 +116,4 @@ subroutine export_region_wsp_harpot(kf,kr,c)
   call file_csv%close(status_ok)
   if (.not.status_ok) call fbem_error_message(error_unit,0,trim(tmp_filename),0,'error when closing the file.')
 
-end subroutine export_region_wsp_harpot
+end subroutine export_region_wsp_harpor

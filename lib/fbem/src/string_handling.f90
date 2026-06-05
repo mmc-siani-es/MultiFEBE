@@ -64,6 +64,8 @@ module fbem_string_handling
   public :: fbem_get_dirname
   public :: fbem_file_exists
   public :: fbem_open_file_to_read
+  public :: fbem_open_file_to_write
+  public :: fbem_open_file_to_append
   public :: fbem_close_file
 
   ! Parameters
@@ -860,6 +862,34 @@ contains
     if (iostat_var.ne.0) call fbem_error_message(error_unit,0,trim(filename),iostat_var,trim(iomsg_var))
     if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'File "'//trim(filename)//'" correctly OPENED')
   end subroutine fbem_open_file_to_read
+
+  subroutine fbem_open_file_to_write(filename,annotation,fileunit)
+    implicit none
+    character(len=*), intent(in)          :: filename
+    character(len=*), intent(in)          :: annotation
+    integer, intent(out)                  :: fileunit
+    integer                               :: iostat_var
+    character(len=fbem_string_max_length) :: iomsg_var
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'OPENING file "'//trim(filename)//'". '//trim(annotation))
+    fileunit = fbem_get_valid_unit()
+    open(unit=fileunit,file=trim(adjustl(filename)),action='write',recl=fbem_file_record_length,iostat=iostat_var,iomsg=iomsg_var)
+    if (iostat_var.ne.0) call fbem_error_message(error_unit,0,trim(filename),iostat_var,trim(iomsg_var))
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'File "'//trim(filename)//'" correctly OPENED')
+  end subroutine fbem_open_file_to_write
+
+  subroutine fbem_open_file_to_append(filename,annotation,fileunit)
+    implicit none
+    character(len=*), intent(in)          :: filename
+    character(len=*), intent(in)          :: annotation
+    integer, intent(out)                  :: fileunit
+    integer                               :: iostat_var
+    character(len=fbem_string_max_length) :: iomsg_var
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'OPENING file "'//trim(filename)//'". '//trim(annotation))
+    fileunit = fbem_get_valid_unit()
+    open(unit=fileunit,file=trim(adjustl(filename)),action='append',recl=fbem_file_record_length,iostat=iostat_var,iomsg=iomsg_var)
+    if (iostat_var.ne.0) call fbem_error_message(error_unit,0,trim(filename),iostat_var,trim(iomsg_var))
+    if (verbose_level.ge.1) call fbem_timestamp_w_message(output_unit,2,'File "'//trim(filename)//'" correctly OPENED')
+  end subroutine fbem_open_file_to_append
 
   subroutine fbem_close_file(filename,fileunit)
     implicit none
