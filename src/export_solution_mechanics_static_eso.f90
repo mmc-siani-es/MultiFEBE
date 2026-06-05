@@ -113,6 +113,7 @@ subroutine export_solution_mechanics_static_eso(output_fileunit)
           node_used=.false.
           do ke=1,part(boundary(sb)%part)%n_elements
             se=part(boundary(sb)%part)%element(ke)
+            if (.not.element(se)%export) cycle
             !
             ! Boundary coupling
             !
@@ -198,6 +199,7 @@ subroutine export_solution_mechanics_static_eso(output_fileunit)
           ss=region(kr)%fe_subregion(ks)
           do ke=1,part(fe_subregion(ss)%part)%n_elements
             se=part(fe_subregion(ss)%part)%element(ke)
+            if (.not.element(se)%export) cycle
             select case (element(se)%n_dimension)
 
               ! ==================================================================================================================

@@ -73,6 +73,11 @@ subroutine export_solution_mechanics_static
     end if
   end if
 
+  !
+  ! Export nodal solutions in csv format (*.nso.csv)
+  !
+  if (export_nso) call export_solution_mechanics_static_nso_csv
+
   ! ==========================================================================================================================
   ! EXPORT ELEMENT NODE SOLUTIONS
   ! ==========================================================================================================================

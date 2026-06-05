@@ -147,6 +147,7 @@ subroutine export_solution_mechanics_harmonic_eso(kf,output_fileunit)
           sb=region(kr)%boundary(kb)
           do ke=1,part(boundary(sb)%part)%n_elements
             se=part(boundary(sb)%part)%element(ke)
+            if (.not.element(se)%export) cycle
             !
             ! Boundary coupling
             !
@@ -247,6 +248,7 @@ subroutine export_solution_mechanics_harmonic_eso(kf,output_fileunit)
           ss=region(kr)%fe_subregion(ks)
           do ke=1,part(fe_subregion(ss)%part)%n_elements
             se=part(fe_subregion(ss)%part)%element(ke)
+            if (.not.element(se)%export) cycle
             select case (element(se)%n_dimension)
 
               ! ==================================================================================================================
@@ -496,7 +498,6 @@ subroutine export_solution_mechanics_harmonic_eso(kf,output_fileunit)
                 ! SOLID / CONTINUUM ELEMENTS
                 !
                 call fbem_error_message(error_unit,0,'element',element(se)%id,'3D elements not available yet')
-                !
                 !-----------------------------------------------------------------------------------------------------------------
 
             end select
