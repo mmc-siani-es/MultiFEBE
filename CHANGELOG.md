@@ -6,6 +6,8 @@ project adheres to [Semantic Versioning](https://semver.org).
 
 ## [2.0.3] - In progress
 ### Added
+- 2026-06-05 The implementation of exporting selected nodes and elements has been changed.
+- 2026-06-05 Now it is possible to export the 3D volumetric mesh of shells. This is interesting to visualize the 3d nature of shells.
 - 2026-06-05 Add simple subroutines to fbem module "string_handling" for writing new files and append content to files. Changes to many source files due to this. Including the csv module.
 - 2026-01-05 Includes .csv output files (.wsp and static results (export_solution_mechanics_static_nso_csv)).
 - 2025-11-26 Absorbent boundary (acoustics) with constant beta and Delany-Bazley beta implemented for BE boundaries (ord. and crack-like). VALIDATION example still MISSING.
