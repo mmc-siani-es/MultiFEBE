@@ -48,6 +48,8 @@ subroutine read_export(input_fileunit)
   integer                                 :: output_fileunit
   character(len=fbem_filename_max_length) :: tmp_filename
   character(len=fbem_fmtstr)              :: fmtstr   ! String used for write format string
+  integer                                 :: n_objects
+  integer, allocatable                    :: object(:)
 
 
   ! Default settings
@@ -257,9 +259,9 @@ subroutine read_export(input_fileunit)
     call fbem_search_keyword(input_fileunit,'nso_nodes','=',found)
     ! Read if found
     if (found) then
-      read(input_fileunit,*) nso_nodes
+      read(input_fileunit,*) n_objects
       ! Export results of all nodes.
-      if (nso_nodes.lt.0) then
+      if (n_objects.lt.0) then
         do i=1,n_nodes
           node(i)%export=.true.
         end do
@@ -267,37 +269,88 @@ subroutine read_export(input_fileunit)
           write(output_unit,'(3x,a)') 'Results will be printed for all nodes if export_nso is True'
         end if
       ! Do not export nodal results.
-      else if (nso_nodes.eq.0) then
+      else if (n_objects.eq.0) then
         do i=1,n_nodes
           node(i)%export=.false.
         end do
       ! Export results of nodes given in a list.
-      else if (nso_nodes.gt.0) then
+      else if (n_objects.gt.0) then
         ! Allocate
-        allocate(nso_nodes_export(nso_nodes))
+        allocate(object(n_objects))
         ! Set the cursor again at the correct position
         call fbem_search_section(input_fileunit,'export',found)
         call fbem_search_keyword(input_fileunit,'nso_nodes','=',found)
-        read(input_fileunit,*) nso_nodes, (nso_nodes_export(i),i=1,nso_nodes)
+        read(input_fileunit,*) n_objects, (object(i),i=1,n_objects)
         ! Sort the array in ascend order
-        call fbem_quicksort(1,nso_nodes,nso_nodes,nso_nodes_export)
+        call fbem_quicksort(1,n_objects,n_objects,object)
         ! Check if any value is repeated
-        do i=2,nso_nodes
-          if (nso_nodes_export(i).eq.nso_nodes_export(i-1)) then
+        do i=2,n_objects
+          if (object(i).eq.object(i-1)) then
             call fbem_error_message(error_unit,0,__FILE__,__LINE__,&
-                                'there are repeated nodes for export')
+                                'there are repeated nodes in the export list')
           end if
         end do
         ! Set for export only nodes in the list
         do i=1,n_nodes
           node(i)%export=.false.
         end do
-        node(nso_nodes_export)%export=.true.
+        node(object)%export=.true.
         ! Write
         if (verbose_level.ge.3) then
-          write(fmtstr,*) '(2x,a,i2,',nso_nodes,'i3)'
+          write(fmtstr,*) '(2x,a,i2,',n_objects,'i3)'
           call fbem_trim2b(fmtstr)
-          write(output_unit,fmtstr) 'nso_nodes = ', nso_nodes, (nso_nodes_export(i),i=1,nso_nodes)
+          write(output_unit,fmtstr) 'nso_nodes = ', n_objects, (object(i),i=1,n_objects)
+        end if
+      end if
+    end if
+    !
+    ! Find "eso_elements"
+    !
+    call fbem_search_section(input_fileunit,'export',found)
+    call fbem_search_keyword(input_fileunit,'eso_elements','=',found)
+    ! Read if found
+    if (found) then
+      read(input_fileunit,*) n_objects
+      ! Export results of all elements.
+      if (n_objects.lt.0) then
+        do i=1,n_elements
+          element(i)%export=.true.
+        end do
+        if (verbose_level.ge.3) then
+          write(output_unit,'(3x,a)') 'Results will be printed for all elements if export_eso is True'
+        end if
+      ! Do not export element results.
+      else if (n_objects.eq.0) then
+        do i=1,n_elements
+          element(i)%export=.false.
+        end do
+      ! Export results of elements given in a list.
+      else if (n_objects.gt.0) then
+        ! Allocate
+        allocate(object(n_objects))
+        ! Set the cursor again at the correct position
+        call fbem_search_section(input_fileunit,'export',found)
+        call fbem_search_keyword(input_fileunit,'eso_elements','=',found)
+        read(input_fileunit,*) n_objects, (object(i),i=1,n_objects)
+        ! Sort the array in ascend order
+        call fbem_quicksort(1,n_objects,n_objects,object)
+        ! Check if any value is repeated
+        do i=2,n_objects
+          if (object(i).eq.object(i-1)) then
+            call fbem_error_message(error_unit,0,__FILE__,__LINE__,&
+                                'there are repeated elements in the export list')
+          end if
+        end do
+        ! Set for export only nodes in the list
+        do i=1,n_elements
+          element(i)%export=.false.
+        end do
+        element(object)%export=.true.
+        ! Write
+        if (verbose_level.ge.3) then
+          write(fmtstr,*) '(2x,a,i2,',n_objects,'i3)'
+          call fbem_trim2b(fmtstr)
+          write(output_unit,fmtstr) 'eso_elements = ', n_objects, (object(i),i=1,n_objects)
         end if
       end if
     end if

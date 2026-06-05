@@ -267,8 +267,6 @@ module problem_variables
   logical                                 :: export_tot            !! ¿Export .tot file?
   integer                                 :: tot_xm                !! Resultant moment in .tot file: 1 (origin), 2 (centroid of the boundary)
   logical                                 :: tot_apply_symmetry    !! Resultants (tot y ier) applying symmetry
-  integer                                 :: nso_nodes             !! Number of nodes for export
-  integer, allocatable                    :: nso_nodes_export(:)   !! List of nodes for export
   ! --------------------------------------------------------------------------------------------------------------------------------
   ! Memory settings
   ! ---------------
