@@ -122,6 +122,13 @@ module fbem_fem_shells
   public :: fbem_fem_dkt_K_static
   ! ================================================================================================================================
 
+  public :: fbem_fem_degshell_XDOF_to_6DOF
+
+  interface fbem_fem_degshell_XDOF_to_6DOF
+     module procedure fbem_fem_degshell_XDOF_to_6DOF_r64
+     module procedure fbem_fem_degshell_XDOF_to_6DOF_C64
+  end interface fbem_fem_degshell_XDOF_to_6DOF
+
 contains
 
   ! ================================================================================================================================
@@ -943,6 +950,60 @@ contains
     end do
     fbem_fem_degshell_x=x
   end function fbem_fem_degshell_x
+
+  function fbem_fem_degshell_XDOF_to_6DOF_r64(a,v1,v2,ndof) result (a_out)
+    implicit none
+    ! I/O
+    real(kind=real64)             :: a_out(6) !! a = (u1, u2, u3, r1, r2, r3)
+    real(kind=real64), intent(in) :: a(:)     !! a = (u1, u2, u3, alpha, beta) or a = (u1, u2, u3, r1, r2, r3)
+    real(kind=real64), intent(in) :: v1(3)    !! v1 director vector
+    real(kind=real64), intent(in) :: v2(3)    !! v2 director vector
+    integer, intent(in), optional :: ndof     !! Indicate if "a" has 5 DOF (local rotations, default) or 6 DOF (global rotations)
+    ! Local
+    integer           :: local_ndof
+    if (present(ndof)) then
+      local_ndof=ndof
+    else
+      local_ndof=5
+    end if
+    if ((local_ndof == 5) .and. (size(a) >= 5)) then
+      a_out(1:3) = a(1:3)
+      a_out(  4) = v2(1)*a(4)+v1(1)*a(5)
+      a_out(  5) = v2(2)*a(4)+v1(2)*a(5)
+      a_out(  6) = v2(3)*a(4)+v1(3)*a(5)
+    else if ((local_ndof == 6) .and. (size(a) == 6)) then
+      a_out = a
+    else
+      stop 'Error: invalid value of size(a) or ndof'
+    end if
+  end function fbem_fem_degshell_XDOF_to_6DOF_r64
+
+  function fbem_fem_degshell_XDOF_to_6DOF_c64(a,v1,v2,ndof) result (a_out)
+    implicit none
+    ! I/O
+    complex(kind=real64)             :: a_out(6) !! a = (u1, u2, u3, r1, r2, r3)
+    complex(kind=real64), intent(in) :: a(:)     !! a = (u1, u2, u3, alpha, beta) or a = (u1, u2, u3, r1, r2, r3)
+    real(kind=real64), intent(in)    :: v1(3)    !! v1 director vector
+    real(kind=real64), intent(in)    :: v2(3)    !! v2 director vector
+    integer, intent(in), optional    :: ndof     !! Indicate if "a" has 5 DOF (local rotations, default) or 6 DOF (global rotations)
+    ! Local
+    integer           :: local_ndof
+    if (present(ndof)) then
+      local_ndof=ndof
+    else
+      local_ndof=5
+    end if
+    if ((local_ndof == 5) .and. (size(a) >= 5)) then
+      a_out(1:3) = a(1:3)
+      a_out(  4) = v2(1)*a(4)+v1(1)*a(5)
+      a_out(  5) = v2(2)*a(4)+v1(2)*a(5)
+      a_out(  6) = v2(3)*a(4)+v1(3)*a(5)
+    else if ((local_ndof == 6) .and. (size(a) == 6)) then
+      a_out = a
+    else
+      stop 'Error: invalid value of size(a) or ndof'
+    end if
+  end function fbem_fem_degshell_XDOF_to_6DOF_c64
 
   !! Calculate the coordinate transformation matrix Lc^(i) for each node (local to global rotations, displacements are global).
   subroutine fbem_fem_degshell_Lci(etype,n_dof_node,v_md,Lci)

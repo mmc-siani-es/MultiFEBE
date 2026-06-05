@@ -156,7 +156,7 @@ module fbem_fem_beams
   public :: fbem_fem_strbeam_DBl
   public :: fbem_fem_strbeam_DB
   !
-  public :: fbem_fem_strbeam_N
+  public :: fbem_fem_strbeam_N, fbem_fem_strbeam_N_w_rotations
   public :: fbem_fem_strbeam_K_static
   public :: fbem_fem_strbeam_K_harmonic
   public :: fbem_fem_strbeam_Q_midline
@@ -1202,36 +1202,57 @@ contains
   function fbem_fem_strbeam_Nl(etype,esubtype,L,phi,xi) result (N)
     implicit none
     ! I/O
-    integer           :: etype                     !! Type of element (displacements interpolation)
-    integer           :: esubtype                  !! Subtype (for line3)
-    real(kind=real64) :: L                         !! Length
-    real(kind=real64) :: phi                       !! Ratio of the beam bending stiffness to the shear stiffness
-    real(kind=real64) :: xi                        !! Local coordinate (between -1 and 1)
-    real(kind=real64) :: N(2*fbem_n_nodes(etype))  !! Shape functions matrix (DOF in local coordinates)
+    integer           :: etype                      !! Type of element
+    integer           :: esubtype                   !! Subtype (for line3)
+    real(kind=real64) :: L                          !! Length
+    real(kind=real64) :: phi                        !! Ratio of the beam bending stiffness to the shear stiffness
+    real(kind=real64) :: xi                         !! Local coordinate (between -1 and 1)
+    real(kind=real64) :: N(2,2*fbem_n_nodes(etype)) !! Shape functions matrix for deflection and rotation (DOF in local coordinates)
     ! Local
-    real(kind=real64) :: xip                       !! Local coordinate (between 0 and 1)
+    real(kind=real64) :: xip                        !! Local coordinate (between 0 and 1)
     N=0
     xip=0.5d0*(xi+1.d0)
     select case (etype)
       case (fbem_line2)
-        N(1)=-((-1.d0+xip)*(1.d0+xip-2.d0*xip**2+phi))/(1.d0+phi)
-        N(2)=-(L*(-1.d0+xip)*xip*(2.d0-2.d0*xip+phi))/(2.d0*(1.d0+phi))
-        N(3)=(xip*((3.d0-2.d0*xip)*xip+phi))/(1.d0+phi)
-        N(4)=(L*(-1.d0+xip)*xip*(2.d0*xip+phi))/(2.d0*(1.d0+phi))
+        ! Deflection
+        N(1,1)=-((-1.d0+xip)*(1.d0+xip-2.d0*xip**2+phi))/(1.d0+phi)
+        N(1,2)=-(L*(-1.d0+xip)*xip*(2.d0-2.d0*xip+phi))/(2.d0*(1.d0+phi))
+        N(1,3)=(xip*((3.d0-2.d0*xip)*xip+phi))/(1.d0+phi)
+        N(1,4)=(L*(-1.d0+xip)*xip*(2.d0*xip+phi))/(2.d0*(1.d0+phi))
+        ! Rotation
+        N(2,1)=-(-6*(-1+xip)*xip)/(L*(1+phi))
+        N(2,2)=-(((-1+xip)*(1-3*xip+phi))/(1+phi))
+        N(2,3)=-(6*(-1+xip)*xip)/(L*(1+phi))
+        N(2,4)=(xip*(-2+3*xip+phi))/(1+phi)
       case (fbem_line3)
         if (esubtype.eq.0) then
-          N(1)=-(((-1.d0+xip)*(-1.d0+2.d0*xip)*(4.d0*xip**2*(1.d0+phi)-3.d0*xip*(1.d0+2.d0*phi)-(1.d0+phi)*(1.d0+4.d0*phi)))/((1.d0+phi)*(1.d0+4.d0*phi)))
-          N(2)=-(L*xip*(1.d0-3.d0*xip+2.d0*xip**2)*(-2.d0-5.d0*phi+2.d0*xip*(1.d0+phi)))/(2.d0+10.d0*phi+8.d0*phi**2)
-          N(3)=-((xip*(-1.d0+2.d0*xip)*(4.d0*xip**2*(1.d0+phi)-xip*(5.d0+2.d0*phi)-phi*(7.d0+4.d0*phi)))/(1.d0+5.d0*phi+4.d0*phi**2))
-          N(4)=((L*xip*(1.d0-3.d0*xip+2.d0*xip**2)*(3.d0*phi+2.d0*xip*(1.d0+phi)))/(2.d0+10.d0*phi+8.d0*phi**2))
-          N(5)=(16.d0*(-1.d0+xip)*xip*((-1.d0+xip)*xip-phi))/(1.d0+4.d0*phi)
+          ! Deflection
+          N(1,1)=-(((-1.d0+xip)*(-1.d0+2.d0*xip)*(4.d0*xip**2*(1.d0+phi)-3.d0*xip*(1.d0+2.d0*phi)-(1.d0+phi)*(1.d0+4.d0*phi)))/((1.d0+phi)*(1.d0+4.d0*phi)))
+          N(1,2)=-(L*xip*(1.d0-3.d0*xip+2.d0*xip**2)*(-2.d0-5.d0*phi+2.d0*xip*(1.d0+phi)))/(2.d0+10.d0*phi+8.d0*phi**2)
+          N(1,3)=-((xip*(-1.d0+2.d0*xip)*(4.d0*xip**2*(1.d0+phi)-xip*(5.d0+2.d0*phi)-phi*(7.d0+4.d0*phi)))/(1.d0+5.d0*phi+4.d0*phi**2))
+          N(1,4)=((L*xip*(1.d0-3.d0*xip+2.d0*xip**2)*(3.d0*phi+2.d0*xip*(1.d0+phi)))/(2.d0+10.d0*phi+8.d0*phi**2))
+          N(1,5)=(16.d0*(-1.d0+xip)*xip*((-1.d0+xip)*xip-phi))/(1.d0+4.d0*phi)
+          ! Rotation
+          N(2,1)=-(2*(-1+xip)*xip*(-11-20*phi+16*xip*(1+phi)))/(L*(1+5*phi+4*phi**2))
+          N(2,2)=1-xip+(3*(-1+xip)*xip)/(1+phi)-(4*(-1+xip)*xip*(-1+2*xip))/(1+4*phi)
+          N(2,3)=-(2*(-1+xip)*xip*(-5+4*phi+16*xip*(1+phi)))/(L*(1+5*phi+4*phi**2))
+          N(2,4)=(xip*(2-9*xip+8*xip**2*(1+phi)+phi*(-3+4*phi)))/((1+phi)*(1+4*phi))
+          N(2,5)=(-32*(-1+xip)*xip*(-1+2*xip))/(L+4*L*phi)
         else
-          N(1)=((-1.d0+xip)*(-1.d0+2.d0*xip)*(1.d0+xip*(3.d0+4.d0*xip*(-4.d0+3.d0*xip))+9.d0*phi+2.d0*xip*(-3.d0+2.d0*xip)*(1.d0+12.d0*xip)*phi+20.d0*(1.d0-4.d0*xip)*phi**2))/((1.d0+4.d0*phi)*(1.d0+5.d0*phi))
-          N(2)=-(L*(-1.d0+xip)*xip*(-1.d0+2.d0*xip)*(-6.d0+12.d0*xip**2*(-1.d0+2.d0*phi)*(1.d0+4.d0*phi)+phi*(-15.d0+8.d0*(1.d0-20.d0*phi)*phi)+6.d0*xip*(3.d0+(9.d0-16.d0*phi)*phi)))/(6.d0*(1.d0+4.d0*phi)*(1.d0+5.d0*phi))
-          N(3)=-((xip*(-1.d0+2.d0*xip)*(12.d0*xip**3*(1.d0+4.d0*phi)-4.d0*xip**2*(5.d0+19.d0*phi)+phi*(17.d0+60.d0*phi)+xip*(7.d0+2.d0*phi-80.d0*phi**2)))/(1.d0+9.d0*phi+20.d0*phi**2))
-          N(4)=-(L*(-1.d0+xip)*xip*(-1.d0+2.d0*xip)*(12.d0*xip**2*(-1.d0+2.d0*phi)*(1.d0+4.d0*phi)+phi*(15.d0+8.d0*(1.d0-20.d0*phi)*phi)-6.d0*xip*(-1.d0+phi+16.d0*phi**2)))/(6.d0*(1.d0+4.d0*phi)*(1.d0+5.d0*phi))
-          N(5)=(16.d0*(-1.d0+xip)*xip*((-1.d0+xip)*xip-phi))/(1.d0+4.d0*phi)
-          N(6)=-(-8.d0*L*(-1.d0+xip)*xip*(-1.d0+2.d0*xip)*(3.d0*(-1.d0+xip)*xip+3.d0*(-2.d0+xip)*(1.d0+xip)*phi-5.d0*phi**2))/(3.d0+15.d0*phi)
+          ! Deflection
+          N(1,1)=((-1.d0+xip)*(-1.d0+2.d0*xip)*(1.d0+xip*(3.d0+4.d0*xip*(-4.d0+3.d0*xip))+9.d0*phi+2.d0*xip*(-3.d0+2.d0*xip)*(1.d0+12.d0*xip)*phi+20.d0*(1.d0-4.d0*xip)*phi**2))/((1.d0+4.d0*phi)*(1.d0+5.d0*phi))
+          N(1,2)=-(L*(-1.d0+xip)*xip*(-1.d0+2.d0*xip)*(-6.d0+12.d0*xip**2*(-1.d0+2.d0*phi)*(1.d0+4.d0*phi)+phi*(-15.d0+8.d0*(1.d0-20.d0*phi)*phi)+6.d0*xip*(3.d0+(9.d0-16.d0*phi)*phi)))/(6.d0*(1.d0+4.d0*phi)*(1.d0+5.d0*phi))
+          N(1,3)=-((xip*(-1.d0+2.d0*xip)*(12.d0*xip**3*(1.d0+4.d0*phi)-4.d0*xip**2*(5.d0+19.d0*phi)+phi*(17.d0+60.d0*phi)+xip*(7.d0+2.d0*phi-80.d0*phi**2)))/(1.d0+9.d0*phi+20.d0*phi**2))
+          N(1,4)=-(L*(-1.d0+xip)*xip*(-1.d0+2.d0*xip)*(12.d0*xip**2*(-1.d0+2.d0*phi)*(1.d0+4.d0*phi)+phi*(15.d0+8.d0*(1.d0-20.d0*phi)*phi)-6.d0*xip*(-1.d0+phi+16.d0*phi**2)))/(6.d0*(1.d0+4.d0*phi)*(1.d0+5.d0*phi))
+          N(1,5)=(16.d0*(-1.d0+xip)*xip*((-1.d0+xip)*xip-phi))/(1.d0+4.d0*phi)
+          N(1,6)=-(-8.d0*L*(-1.d0+xip)*xip*(-1.d0+2.d0*xip)*(3.d0*(-1.d0+xip)*xip+3.d0*(-2.d0+xip)*(1.d0+xip)*phi-5.d0*phi**2))/(3.d0+15.d0*phi)
+          ! Rotation
+          N(2,1)=-(-2*(-1+xip)*xip*(-1+2*xip)*(-23+30*xip+20*(-5+6*xip)*phi))/(L*(1+4*phi)*(1+5*phi))
+          N(2,2)=-(((-1+xip)*(-1+2*xip)*(10*xip**2*(-1+2*phi)*(1+4*phi)-(1+4*phi)*(1+5*phi)+xip*(9+10*(3-4*phi)*phi)))/((1+4*phi)*(1+5*phi)))
+          N(2,3)=-(2*xip*(1-3*xip+2*xip**2)*(-7-20*phi+30*xip*(1+4*phi)))/(L*(1+9*phi+20*phi**2))
+          N(2,4)=-((xip*(-1+2*xip)*(-2+(11-10*xip)*xip+phi+10*(1-2*xip)*xip*phi+20*(1-6*xip+4*xip**2)*phi**2))/((1+4*phi)*(1+5*phi)))
+          N(2,5)=-(-32*(-1+xip)*xip*(-1+2*xip))/(L+4*L*phi)
+          N(2,6)=(16*(-1+xip)*xip*(1+5*(-1+xip)*xip*(1+phi)))/(1+5*phi)
         end if
       case default
         call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid type of strbeam')
@@ -1899,32 +1920,32 @@ contains
     end select
   end function fbem_fem_strbeam_Q
 
-  !! Shape function matrix (return displacements in global coordinates)
-  function fbem_fem_strbeam_N(rn,etype,esubtype,theory,x,local_axis,A,I,k,E,nu,nodal_axes,xi) result (N)
+  !! Complete shape function matrix N, where the input is a vector a^{e} of element nodes displacements and rotations and
+  !! output is a vector a(xi) with displacements and rotations at xi.
+  function fbem_fem_strbeam_N_w_rotations(rn,etype,esubtype,theory,x,local_axis,A,I,k,E,nu,nodal_axes,xi) result (N)
     implicit none
     ! I/O
-    integer           :: rn                                    !! Ambient space
-    integer           :: etype                                 !! Type of element
-    integer           :: esubtype                              !! Subtype (for line3)
-    integer           :: theory                                !! 1: Euler-Bernoulli, 2: Timoshenko
-    real(kind=real64) :: x(rn,fbem_n_nodes(etype))             !! Coordinates of the nodes
-    real(kind=real64) :: local_axis(rn,rn)                     !! Beam local axis (assumed correct, no checkings performed): axis 1' (axial) local_axis(:,1), axis 2' (lateral) local_axis(:,2), axis 3' (lateral) local_axis(:,3)
-    real(kind=real64) :: A                                     !! Length
-    real(kind=real64) :: I(3)                                  !! Moments of inertia:       I(1)=I11, I(2)=I22, I(3)=I33 (2D analysis).
-    real(kind=real64) :: k(3)                                  !! Shear correction factors: k(1)=kt , k(2)=k2 (2D analysis), k(3)=k3 .
-    real(kind=real64) :: E                                     !! Young' modulus
-    real(kind=real64) :: nu                                    !! Poisson's ratio
-    real(kind=real64) :: nodal_axes(rn,rn,fbem_n_nodes(etype)) !! Axes for each node DOFs nodal_axes(component,axis,node)
-    real(kind=real64) :: xi                                    !! Local coordinate
-    real(kind=real64) :: N(rn,3*(rn-1)*fbem_n_nodes(etype))
+    integer           :: rn                                       !! Ambient space
+    integer           :: etype                                    !! Type of element
+    integer           :: esubtype                                 !! Subtype (for line3)
+    integer           :: theory                                   !! 1: Euler-Bernoulli, 2: Timoshenko
+    real(kind=real64) :: x(rn,fbem_n_nodes(etype))                !! Coordinates of the nodes
+    real(kind=real64) :: local_axis(rn,rn)                        !! Beam local axis (assumed correct, no checkings performed): axis 1' (axial) local_axis(:,1), axis 2' (lateral) local_axis(:,2), axis 3' (lateral) local_axis(:,3)
+    real(kind=real64) :: A                                        !! Length
+    real(kind=real64) :: I(3)                                     !! Moments of inertia:       I(1)=I11, I(2)=I22, I(3)=I33 (2D analysis).
+    real(kind=real64) :: k(3)                                     !! Shear correction factors: k(1)=kt , k(2)=k2 (2D analysis), k(3)=k3 .
+    real(kind=real64) :: E                                        !! Young' modulus
+    real(kind=real64) :: nu                                       !! Poisson's ratio
+    real(kind=real64) :: nodal_axes(rn,rn,fbem_n_nodes(etype))    !! Axes for each node DOFs nodal_axes(component,axis,node)
+    real(kind=real64) :: xi                                       !! Local coordinate
+    real(kind=real64) :: N(3*(rn-1),3*(rn-1)*fbem_n_nodes(etype))
     ! Local
     integer           :: ki
-    real(kind=real64) :: Le                  !! Length
-    real(kind=real64) :: phi2, phi3          !! Ratio of the beam bending stiffness to the shear stiffness
-    real(kind=real64) :: G                   !! Shear modulus
+    real(kind=real64) :: Le
+    real(kind=real64) :: phi2, phi3
+    real(kind=real64) :: G
     real(kind=real64) :: Na(fbem_n_nodes(etype))
-    real(kind=real64) :: Nl(2*fbem_n_nodes(etype))
-    real(kind=real64) :: Nl2(4)
+    real(kind=real64) :: Nl(2,2*fbem_n_nodes(etype))
     real(kind=real64) :: L(3*(rn-1)*fbem_n_nodes(etype),3*(rn-1)*fbem_n_nodes(etype))
     real(kind=real64) :: ex(rn,rn), Ln(rn,rn)
     !
@@ -1941,41 +1962,187 @@ contains
       phi2=12*E*I(3)/(Le**2*k(2)*G*A)
       phi3=12*E*I(2)/(Le**2*k(3)*G*A)
     end if
-    ! Shape function matrix, all in local coordinates
+    ! Shape function matrix, all DOF in local coordinates.
     select case (etype)
       case (fbem_line2)
         select case (rn)
           case (2)
+            ! u1'
             Na=fbem_fem_strbeam_Na(etype,xi)
             N(1,[1,4])=Na
+            ! PLANE X'Y'
             Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
-            N(2,[2,3,5,6])=Nl
+            ! u2'
+            N(2,[2,3,5,6])=Nl(1,:)
+            ! r3'
+            N(3,[2,3,5,6])=Nl(2,:)
           case (3)
+            ! u1'
             Na=fbem_fem_strbeam_Na(etype,xi)
             N(1,[1,7])=Na
+            ! r1'
+            N(4,[4,10])=Na
+            ! PLANE X'Y'
             Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
-            N(2,[2,6,8,12])=Nl
+            ! u2'
+            N(2,[2,6,8,12])=Nl(1,:)
+            ! r3'
+            N(6,[2,6,8,12])=Nl(2,:)
+            ! PLANE X'Z'
             Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi3,xi)
-            Nl([2,4])=-Nl([2,4])
-            N(3,[3,5,9,11])=Nl
+            ! u3'
+            Nl(1,[2,4])=-Nl(1,[2,4])
+            N(3,[3,5,9,11])=Nl(1,:)
+            ! r2'
+            Nl(2,[1,3])=-Nl(2,[1,3])
+            N(5,[3,5,9,11])=Nl(2,:)
           case default
             call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid value of rn')
         end select
       case (fbem_line3)
         select case (rn)
           case (2)
+            ! u1'
             Na=fbem_fem_strbeam_Na(etype,xi)
             N(1,[1,4,7])=Na
+            ! PLANE X'Y'
             Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
-            N(2,[2,3,5,6,8,9])=Nl
+            ! u2'
+            N(2,[2,3,5,6,8,9])=Nl(1,:)
+            ! r3'
+            N(3,[2,3,5,6,8,9])=Nl(2,:)
           case (3)
+            ! u1'
             Na=fbem_fem_strbeam_Na(etype,xi)
             N(1,[1,7,13])=Na
+            ! r1'
+            N(4,[4,10,16])=Na
+            ! PLANE X'Y'
             Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
-            N(2,[2,6,8,12,14,18])=Nl
+            ! u2'
+            N(2,[2,6,8,12,14,18])=Nl(1,:)
+            ! r3'
+            N(6,[2,6,8,12,14,18])=Nl(2,:)
+            ! PLANE X'Z'
             Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi3,xi)
-            Nl([2,4,6])=-Nl([2,4,6])
-            N(3,[3,5,9,11,15,17])=Nl
+            ! u3'
+            Nl(1,[2,4,6])=-Nl(1,[2,4,6])
+            N(3,[3,5,9,11,15,17])=Nl(1,:)
+            ! r2'
+            Nl(2,[1,3,5])=-Nl(2,[1,3,5])
+            N(5,[3,5,9,11,15,17])=Nl(2,:)
+          case default
+            call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid value of rn')
+        end select
+      case default
+        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid type of strbeam')
+    end select
+    ! Calculation of change of coordinate matrices
+    L=fbem_fem_strbeam_L_element(rn,etype,local_axis,nodal_axes)
+    ex=0
+    do ki=1,rn
+      ex(ki,ki)=1
+    end do
+    call fbem_coordinate_transformation_L(rn,local_axis,ex,Ln)
+    ! Perform change of coordinates
+    select case (rn)
+      case (2)
+        N(1:2,:)=matmul(Ln,matmul(N(1:2,:),transpose(L)))
+      case (3)
+        N(1:3,:)=matmul(Ln,matmul(N(1:3,:),transpose(L)))
+        N(4:6,:)=matmul(Ln,matmul(N(4:6,:),transpose(L)))
+      case default
+        call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid value of rn')
+    end select
+  end function fbem_fem_strbeam_N_w_rotations
+
+  !! Complete shape function matrix N, where the input is a vector a^{e} of element nodes displacements and rotations and
+  !! output is a vector u(xi) with displacements at xi.
+  function fbem_fem_strbeam_N(rn,etype,esubtype,theory,x,local_axis,A,I,k,E,nu,nodal_axes,xi) result (N)
+    implicit none
+    ! I/O
+    integer           :: rn                                       !! Ambient space
+    integer           :: etype                                    !! Type of element
+    integer           :: esubtype                                 !! Subtype (for line3)
+    integer           :: theory                                   !! 1: Euler-Bernoulli, 2: Timoshenko
+    real(kind=real64) :: x(rn,fbem_n_nodes(etype))                !! Coordinates of the nodes
+    real(kind=real64) :: local_axis(rn,rn)                        !! Beam local axis (assumed correct, no checkings performed): axis 1' (axial) local_axis(:,1), axis 2' (lateral) local_axis(:,2), axis 3' (lateral) local_axis(:,3)
+    real(kind=real64) :: A                                        !! Length
+    real(kind=real64) :: I(3)                                     !! Moments of inertia:       I(1)=I11, I(2)=I22, I(3)=I33 (2D analysis).
+    real(kind=real64) :: k(3)                                     !! Shear correction factors: k(1)=kt , k(2)=k2 (2D analysis), k(3)=k3 .
+    real(kind=real64) :: E                                        !! Young' modulus
+    real(kind=real64) :: nu                                       !! Poisson's ratio
+    real(kind=real64) :: nodal_axes(rn,rn,fbem_n_nodes(etype))    !! Axes for each node DOFs nodal_axes(component,axis,node)
+    real(kind=real64) :: xi                                       !! Local coordinate
+    real(kind=real64) :: N(3,3*(rn-1)*fbem_n_nodes(etype))
+    ! Local
+    integer           :: ki
+    real(kind=real64) :: Le
+    real(kind=real64) :: phi2, phi3
+    real(kind=real64) :: G
+    real(kind=real64) :: Na(fbem_n_nodes(etype))
+    real(kind=real64) :: Nl(2,2*fbem_n_nodes(etype))
+    real(kind=real64) :: L(3*(rn-1)*fbem_n_nodes(etype),3*(rn-1)*fbem_n_nodes(etype))
+    real(kind=real64) :: ex(rn,rn), Ln(rn,rn)
+    !
+    ! Initialize
+    !
+    N=0
+    Le=sqrt(dot_product(x(:,2)-x(:,1),x(:,2)-x(:,1)))
+    G=E/(2*(1+nu))
+    ! Euler-Bernoulli or Timoshenko
+    if (theory.eq.1) then
+      phi2=0
+      phi3=0
+    else
+      phi2=12*E*I(3)/(Le**2*k(2)*G*A)
+      phi3=12*E*I(2)/(Le**2*k(3)*G*A)
+    end if
+    ! Shape function matrix, all DOF in local coordinates.
+    select case (etype)
+      case (fbem_line2)
+        select case (rn)
+          case (2)
+            ! u1'
+            Na=fbem_fem_strbeam_Na(etype,xi)
+            N(1,[1,4])=Na
+            ! u2'
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
+            N(2,[2,3,5,6])=Nl(1,:)
+          case (3)
+            ! u1'
+            Na=fbem_fem_strbeam_Na(etype,xi)
+            N(1,[1,7])=Na
+            ! u2'
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
+            N(2,[2,6,8,12])=Nl(1,:)
+            ! u3'
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi3,xi)
+            Nl(1,[2,4])=-Nl(1,[2,4])
+            N(3,[3,5,9,11])=Nl(1,:)
+          case default
+            call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid value of rn')
+        end select
+      case (fbem_line3)
+        select case (rn)
+          case (2)
+            ! u1'
+            Na=fbem_fem_strbeam_Na(etype,xi)
+            N(1,[1,4,7])=Na
+            ! u2'
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
+            N(2,[2,3,5,6,8,9])=Nl(1,:)
+          case (3)
+            ! u1'
+            Na=fbem_fem_strbeam_Na(etype,xi)
+            N(1,[1,7,13])=Na
+            ! u2'
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi2,xi)
+            N(2,[2,6,8,12,14,18])=Nl(1,:)
+            ! u3'
+            Nl=fbem_fem_strbeam_Nl(etype,esubtype,Le,phi3,xi)
+            Nl(1,[2,4,6])=-Nl(1,[2,4,6])
+            N(3,[3,5,9,11,15,17])=Nl(1,:)
           case default
             call fbem_error_message(error_unit,0,__FILE__,__LINE__,'invalid value of rn')
         end select
