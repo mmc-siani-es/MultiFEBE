@@ -19,7 +19,6 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ! ---------------------------------------------------------------------
 
-
 !! @author Jacob David Rodriguez Bordon (jacobdavid.rodriguezbordon@ulpgc.es)
 !!
 !! @version 2.0
@@ -35,6 +34,7 @@ subroutine export_data_at_geometrical_nodes
   use fbem_string_handling
   use fbem_data_structures
   use fbem_shape_functions
+  use fbem_fem_shells
   use fbem_gmsh
 
   ! Module of problem variables
@@ -51,6 +51,7 @@ subroutine export_data_at_geometrical_nodes
   integer                                 :: n_drawlines
   real(kind=real64)                       :: n(problem%n)
   type(fbem_gmsh_mesh)                    :: tmp_mesh
+  real(kind=real64)                       :: xi_pos(3)
 
   ! Starting message
   if (verbose_level.ge.1)  write(output_unit,'(a)') 'Exporting geometrical of data mesh ...'
@@ -234,8 +235,6 @@ subroutine export_data_at_geometrical_nodes
 
   if ((n_fe_subregions.gt.0).and.(problem%n.eq.3)) then
 
-    ! TO-DO: include all the shell elements, for now only quad9 and tri6
-
     ! Initialization
     call tmp_mesh%init
     tmp_mesh%version = '2.2'
@@ -257,20 +256,29 @@ subroutine export_data_at_geometrical_nodes
           se=part(sp)%element(ke)
           if (element(se)%n_dimension.eq.2) then
             !
-            ! Solo vamos a exportar los TRI6 y QUAD9
+            ! TRI3 => PRISM6
             !
-            !
-            ! QUAD9 => HEX27
-            !
-            if (element(se)%type.eq.fbem_quad9) then
+            if (element(se)%type.eq.fbem_tri3) then
               tmp_mesh%n_elements = tmp_mesh%n_elements + 1
-              tmp_mesh%n_nodes = tmp_mesh%n_nodes + 27
+              tmp_mesh%n_nodes = tmp_mesh%n_nodes + 6
+            !
+            ! QUAD4 => HEX8
+            !
+            else if (element(se)%type.eq.fbem_quad4) then
+              tmp_mesh%n_elements = tmp_mesh%n_elements + 1
+              tmp_mesh%n_nodes = tmp_mesh%n_nodes + 8
             !
             ! TRI6 => PRISM18
             !
             else if (element(se)%type.eq.fbem_tri6) then
               tmp_mesh%n_elements = tmp_mesh%n_elements + 1
               tmp_mesh%n_nodes = tmp_mesh%n_nodes + 18
+            !
+            ! QUAD8 OR QUAD9 => HEX27
+            !
+            else if ((element(se)%type.eq.fbem_quad8).or.(element(se)%type.eq.fbem_quad9)) then
+              tmp_mesh%n_elements = tmp_mesh%n_elements + 1
+              tmp_mesh%n_nodes = tmp_mesh%n_nodes + 27
             else
               call fbem_warning_message(error_unit,0,'element',element(se)%id,'only tri6 and quad9 shells are exported to a volumetric mesh')
             end if
@@ -292,27 +300,44 @@ subroutine export_data_at_geometrical_nodes
 
     global_sn = 1
     global_se = 1
-
     do kr=1,n_regions
       if (region(kr)%class.ne.fbem_fe) cycle
       do ks=1,region(kr)%n_fe_subregions
         ss=region(kr)%fe_subregion(ks)
         sp=fe_subregion(ss)%part
-
         tmp_mesh%physicalname_dim (sp)=element(part(sp)%element(1))%n_dimension
         tmp_mesh%physicalname_eid (sp)=part(sp)%id
         tmp_mesh%physicalname_name(sp)=trim(part(sp)%name)
-
         do ke=1,part(sp)%n_elements
           se=part(sp)%element(ke)
           if (element(se)%n_dimension.eq.2) then
             !
-            ! Solo vamos a exportar los TRI6 y QUAD9
+            ! TRI3 => PRISM6
             !
+            if (element(se)%type.eq.fbem_tri3) then
+              ! Bottom plane vertices
+              do kn=1,3
+                tmp_mesh%node_eid(global_sn+(kn-1))=global_sn+(kn-1)
+                tmp_mesh%node_x(:,global_sn+(kn-1))=element(se)%x_gn(:,kn)-0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              end do
+              ! Top plane vertices
+              do kn=1,3
+                tmp_mesh%node_eid(global_sn+3+(kn-1))=global_sn+3+(kn-1)
+                tmp_mesh%node_x(:,global_sn+3+(kn-1))=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              end do
+              ! Element construction
+              tmp_mesh%element_eid     (global_se) = global_se
+              tmp_mesh%element_type    (global_se) = 6
+              tmp_mesh%element_physical(global_se) = part(sp)%id
+              do kn=1,6
+                tmp_mesh%element_node    (kn,global_se) = global_sn+(kn-1)
+              end do
+              global_sn = global_sn + 6
+              global_se = global_se + 1
             !
-            ! QUAD9 => HEX8----------HEX27
+            ! QUAD4 => HEX8
             !
-            if (element(se)%type.eq.fbem_quad9) then
+            else if (element(se)%type.eq.fbem_quad4) then
               ! Bottom plane vertices
               do kn=1,4
                 tmp_mesh%node_eid(global_sn+(kn-1))=global_sn+(kn-1)
@@ -323,77 +348,14 @@ subroutine export_data_at_geometrical_nodes
                 tmp_mesh%node_eid(global_sn+4+(kn-1))=global_sn+4+(kn-1)
                 tmp_mesh%node_x(:,global_sn+4+(kn-1))=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
               end do
-              ! Bottom plane edge nodes
-              kn = 5
-              tmp_mesh%node_eid(global_sn+8)=global_sn+8
-              tmp_mesh%node_x(:,global_sn+8)=element(se)%x_gn(:,kn)-0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
-              kn = 6
-              tmp_mesh%node_eid(global_sn+11)=global_sn+11
-              tmp_mesh%node_x(:,global_sn+11)=element(se)%x_gn(:,kn)-0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
-              kn = 7
-              tmp_mesh%node_eid(global_sn+13)=global_sn+13
-              tmp_mesh%node_x(:,global_sn+13)=element(se)%x_gn(:,kn)-0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
-              kn = 8
-              tmp_mesh%node_eid(global_sn+9)=global_sn+9
-              tmp_mesh%node_x(:,global_sn+9)=element(se)%x_gn(:,kn)-0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
-              ! Top plane edge nodes
-              kn = 5
-              tmp_mesh%node_eid(global_sn+16)=global_sn+16
-              tmp_mesh%node_x(:,global_sn+16)=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
-              kn = 6
-              tmp_mesh%node_eid(global_sn+18)=global_sn+18
-              tmp_mesh%node_x(:,global_sn+18)=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
-              kn = 7
-              tmp_mesh%node_eid(global_sn+19)=global_sn+19
-              tmp_mesh%node_x(:,global_sn+19)=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
-              kn = 8
-              tmp_mesh%node_eid(global_sn+17)=global_sn+17
-              tmp_mesh%node_x(:,global_sn+17)=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
-              ! Mid-plane vertices
-              kn = 1
-              tmp_mesh%node_eid(global_sn+10)=global_sn+10
-              tmp_mesh%node_x(:,global_sn+10)=element(se)%x_gn(:,kn)
-              kn = 2
-              tmp_mesh%node_eid(global_sn+12)=global_sn+12
-              tmp_mesh%node_x(:,global_sn+12)=element(se)%x_gn(:,kn)
-              kn = 3
-              tmp_mesh%node_eid(global_sn+14)=global_sn+14
-              tmp_mesh%node_x(:,global_sn+14)=element(se)%x_gn(:,kn)
-              kn = 4
-              tmp_mesh%node_eid(global_sn+15)=global_sn+15
-              tmp_mesh%node_x(:,global_sn+15)=element(se)%x_gn(:,kn)
-              ! Bottom plane mid node
-              kn = 9
-              tmp_mesh%node_eid(global_sn+20)=global_sn+20
-              tmp_mesh%node_x(:,global_sn+20)=element(se)%x_gn(:,kn)-0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
-              ! Mid-plane edge nodes and interior
-              kn = 5
-              tmp_mesh%node_eid(global_sn+21)=global_sn+21
-              tmp_mesh%node_x(:,global_sn+21)=element(se)%x_gn(:,kn)
-              kn = 6
-              tmp_mesh%node_eid(global_sn+23)=global_sn+23
-              tmp_mesh%node_x(:,global_sn+23)=element(se)%x_gn(:,kn)
-              kn = 7
-              tmp_mesh%node_eid(global_sn+24)=global_sn+24
-              tmp_mesh%node_x(:,global_sn+24)=element(se)%x_gn(:,kn)
-              kn = 8
-              tmp_mesh%node_eid(global_sn+22)=global_sn+22
-              tmp_mesh%node_x(:,global_sn+22)=element(se)%x_gn(:,kn)
-              kn = 9
-              tmp_mesh%node_eid(global_sn+26)=global_sn+26
-              tmp_mesh%node_x(:,global_sn+26)=element(se)%x_gn(:,kn)
-              ! Top plane mid node
-              kn = 9
-              tmp_mesh%node_eid(global_sn+25)=global_sn+25
-              tmp_mesh%node_x(:,global_sn+25)=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
               ! Element construction
               tmp_mesh%element_eid     (global_se) = global_se
-              tmp_mesh%element_type    (global_se) = 12
+              tmp_mesh%element_type    (global_se) = 5
               tmp_mesh%element_physical(global_se) = part(sp)%id
-              do kn=1,27
+              do kn=1,8
                 tmp_mesh%element_node    (kn,global_se) = global_sn+(kn-1)
               end do
-              global_sn = global_sn + 27
+              global_sn = global_sn + 8
               global_se = global_se + 1
             !
             ! TRI6 => PRISM18
@@ -457,6 +419,98 @@ subroutine export_data_at_geometrical_nodes
               end do
               global_sn = global_sn + 18
               global_se = global_se + 1
+            !
+            ! QUAD8 OR QUAD9 => HEX27
+            !
+            else if ((element(se)%type.eq.fbem_quad8).or.(element(se)%type.eq.fbem_quad9)) then
+              ! Bottom plane vertices
+              do kn=1,4
+                tmp_mesh%node_eid(global_sn+(kn-1))=global_sn+(kn-1)
+                tmp_mesh%node_x(:,global_sn+(kn-1))=element(se)%x_gn(:,kn)-0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              end do
+              ! Top plane vertices
+              do kn=1,4
+                tmp_mesh%node_eid(global_sn+4+(kn-1))=global_sn+4+(kn-1)
+                tmp_mesh%node_x(:,global_sn+4+(kn-1))=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              end do
+              ! Bottom plane edge nodes
+              kn = 5
+              tmp_mesh%node_eid(global_sn+8)=global_sn+8
+              tmp_mesh%node_x(:,global_sn+8)=element(se)%x_gn(:,kn)-0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              kn = 6
+              tmp_mesh%node_eid(global_sn+11)=global_sn+11
+              tmp_mesh%node_x(:,global_sn+11)=element(se)%x_gn(:,kn)-0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              kn = 7
+              tmp_mesh%node_eid(global_sn+13)=global_sn+13
+              tmp_mesh%node_x(:,global_sn+13)=element(se)%x_gn(:,kn)-0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              kn = 8
+              tmp_mesh%node_eid(global_sn+9)=global_sn+9
+              tmp_mesh%node_x(:,global_sn+9)=element(se)%x_gn(:,kn)-0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              ! Top plane edge nodes
+              kn = 5
+              tmp_mesh%node_eid(global_sn+16)=global_sn+16
+              tmp_mesh%node_x(:,global_sn+16)=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              kn = 6
+              tmp_mesh%node_eid(global_sn+18)=global_sn+18
+              tmp_mesh%node_x(:,global_sn+18)=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              kn = 7
+              tmp_mesh%node_eid(global_sn+19)=global_sn+19
+              tmp_mesh%node_x(:,global_sn+19)=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              kn = 8
+              tmp_mesh%node_eid(global_sn+17)=global_sn+17
+              tmp_mesh%node_x(:,global_sn+17)=element(se)%x_gn(:,kn)+0.5d0*element(se)%tv_midnode(3,kn)*element(se)%v_midnode(:,3,kn)
+              ! Mid-plane vertices
+              kn = 1
+              tmp_mesh%node_eid(global_sn+10)=global_sn+10
+              tmp_mesh%node_x(:,global_sn+10)=element(se)%x_gn(:,kn)
+              kn = 2
+              tmp_mesh%node_eid(global_sn+12)=global_sn+12
+              tmp_mesh%node_x(:,global_sn+12)=element(se)%x_gn(:,kn)
+              kn = 3
+              tmp_mesh%node_eid(global_sn+14)=global_sn+14
+              tmp_mesh%node_x(:,global_sn+14)=element(se)%x_gn(:,kn)
+              kn = 4
+              tmp_mesh%node_eid(global_sn+15)=global_sn+15
+              tmp_mesh%node_x(:,global_sn+15)=element(se)%x_gn(:,kn)
+              ! Bottom plane mid node
+              kn = 9
+              tmp_mesh%node_eid(global_sn+20)=global_sn+20
+              xi_pos=[0.,0.,-1.]
+              tmp_mesh%node_x(:,global_sn+20)=fbem_fem_degshell_x(element(se)%type,element(se)%x_gn,&
+                                                                  element(se)%v_midnode(:,3,:),element(se)%tv_midnode(3,:),xi_pos)
+              ! Mid-plane edge nodes and interior
+              kn = 5
+              tmp_mesh%node_eid(global_sn+21)=global_sn+21
+              tmp_mesh%node_x(:,global_sn+21)=element(se)%x_gn(:,kn)
+              kn = 6
+              tmp_mesh%node_eid(global_sn+23)=global_sn+23
+              tmp_mesh%node_x(:,global_sn+23)=element(se)%x_gn(:,kn)
+              kn = 7
+              tmp_mesh%node_eid(global_sn+24)=global_sn+24
+              tmp_mesh%node_x(:,global_sn+24)=element(se)%x_gn(:,kn)
+              kn = 8
+              tmp_mesh%node_eid(global_sn+22)=global_sn+22
+              tmp_mesh%node_x(:,global_sn+22)=element(se)%x_gn(:,kn)
+              kn = 9
+              tmp_mesh%node_eid(global_sn+26)=global_sn+26
+              xi_pos=[0.,0.,0.]
+              tmp_mesh%node_x(:,global_sn+26)=fbem_fem_degshell_x(element(se)%type,element(se)%x_gn,&
+                                                                  element(se)%v_midnode(:,3,:),element(se)%tv_midnode(3,:),xi_pos)
+              ! Top plane mid node
+              kn = 9
+              tmp_mesh%node_eid(global_sn+25)=global_sn+25
+              xi_pos=[0.,0.,1.]
+              tmp_mesh%node_x(:,global_sn+25)=fbem_fem_degshell_x(element(se)%type,element(se)%x_gn,&
+                                                                  element(se)%v_midnode(:,3,:),element(se)%tv_midnode(3,:),xi_pos)
+              ! Element construction
+              tmp_mesh%element_eid     (global_se) = global_se
+              tmp_mesh%element_type    (global_se) = 12
+              tmp_mesh%element_physical(global_se) = part(sp)%id
+              do kn=1,27
+                tmp_mesh%element_node    (kn,global_se) = global_sn+(kn-1)
+              end do
+              global_sn = global_sn + 27
+              global_se = global_se + 1
             end if
           end if
         end do
@@ -468,21 +522,6 @@ subroutine export_data_at_geometrical_nodes
     call tmp_mesh%write(tmp_filename)
 
   end if
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   ! Close files
   do i=1,3
