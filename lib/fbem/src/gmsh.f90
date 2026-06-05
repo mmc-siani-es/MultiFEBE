@@ -113,9 +113,9 @@ module fbem_gmsh
     ! $Periodic (not used, not available)
   contains
     procedure, pass(mesh)           :: init
-    procedure, pass(mesh)           :: read
+    procedure, pass(mesh)           :: read => gmsh_read
     !procedure, pass(mesh)           :: check
-    !procedure, pass(mesh)           :: write
+    procedure, pass(mesh)           :: write => gmsh_write
   end type fbem_gmsh_mesh
 
 contains
@@ -211,7 +211,7 @@ contains
     end do
   end subroutine fbem_gmsh_search_section
 
-  subroutine read(mesh,filename)
+  subroutine gmsh_read(mesh,filename)
     implicit none
     ! I/O
     class(fbem_gmsh_mesh), intent(out)      :: mesh
@@ -452,7 +452,127 @@ contains
     ! CLOSE FILE
     !
     call fbem_close_file(filename,fileunit)
-  end subroutine read
+  end subroutine gmsh_read
+
+
+
+
+
+
+
+
+
+
+
+
+
+  !
+  ! Yet to be tested!
+  !
+
+  subroutine gmsh_write(mesh,filename)
+    implicit none
+    ! I/O
+    class(fbem_gmsh_mesh), intent(in)       :: mesh
+    character(len=*), intent(in)            :: filename
+    ! Local
+    integer                                 :: fileunit          ! Unit of the file to write to
+    character(len=fbem_fmtstr)              :: fmtstr
+    integer                                 :: i, j              ! Counters
+    integer                                 :: tmp_int           ! Temporary integer
+    !
+    ! TO-DO: Before writing, the mesh should be checked
+    !
+    !
+    !call mesh%check
+    !
+    ! Open file
+    !
+    call fbem_open_file_to_write(filename,'This Gmsh file is going to be created.',fileunit)
+    !
+    ! Write $MeshFormat
+    !
+    write(fileunit,'(a)') '$MeshFormat'
+    ! TO-DO: add other gmsh file versions
+    write(fileunit,'(a)' ) '2.2 0 8'
+    write(fileunit,'(a)') '$EndMeshFormat'
+    !
+    ! Write $PhysicalNames
+    !
+    write(fileunit,'(a)') '$PhysicalNames'
+    write(fmtstr,*) '(i',fbem_nchar_int(mesh%n_physicalnames),')'
+    call fbem_trimall(fmtstr)
+    write(fileunit,fmtstr) mesh%n_physicalnames
+    do i=1,mesh%n_physicalnames
+      write(fmtstr,*) '(i1,1x,i',fbem_nchar_int(mesh%physicalname_eid(i)),',1x,a,a',len_trim(mesh%physicalname_name(i)),',a)'
+      call fbem_trimall(fmtstr)
+      write(fileunit,fmtstr) mesh%physicalname_dim(i), mesh%physicalname_eid(i), '"',trim(mesh%physicalname_name(i)),'"'
+    end do
+    write(fileunit,'(a)') '$EndPhysicalNames'
+    !
+    ! Write $Nodes
+    !
+    write(fileunit,'(a)') '$Nodes'
+    write(fmtstr,*) '(i',fbem_nchar_int(mesh%n_nodes),')'
+    call fbem_trimall(fmtstr)
+    write(fileunit,fmtstr) mesh%n_nodes
+    do i=1,mesh%n_nodes
+      write(fmtstr,*) '(i',fbem_nchar_int(mesh%node_eid(i)),',3e25.16)'
+      call fbem_trimall(fmtstr)
+      write(fileunit,fmtstr) mesh%node_eid(i), mesh%node_x(:,i)
+    end do
+    write(fileunit,'(a)') '$EndNodes'
+    !
+    ! Write $Elements
+    !
+    write(fileunit,'(a)') '$Elements'
+    write(fmtstr,*) '(i',fbem_nchar_int(mesh%n_elements),')'
+    call fbem_trimall(fmtstr)
+    write(fileunit,fmtstr) mesh%n_elements
+    do i=1,mesh%n_elements
+      write(fmtstr,*) '(i',fbem_nchar_int(mesh%element_eid(i)),',1x,i',fbem_nchar_int(mesh%element_type(i)),')'
+      call fbem_trimall(fmtstr)
+      write(fileunit,fmtstr,advance='no') mesh%element_eid(i), mesh%element_type(i)
+      tmp_int=mesh%physicalname_eid(mesh%element_physical(i))
+      write(fmtstr,*) '(1x,i1,1x,i',fbem_nchar_int(tmp_int),',1x,i',fbem_nchar_int(tmp_int),')'
+      call fbem_trimall(fmtstr)
+      write(fileunit,fmtstr,advance='no') 2, tmp_int, tmp_int
+      tmp_int=0
+      do j=1,fbem_gmsh_type_n_nodes(mesh%element_type(i))
+        if (tmp_int.lt.mesh%node_eid(mesh%element_node(j,i))) then
+          tmp_int=mesh%node_eid(mesh%element_node(j,i))
+        end if
+      end do
+      write(fmtstr,*) '(',fbem_gmsh_type_n_nodes(mesh%element_type(i)),'i',fbem_nchar_int(tmp_int)+1,')'
+      call fbem_trimall(fmtstr)
+      write(fileunit,fmtstr) (mesh%node_eid(mesh%element_node(j,i)),j=1,fbem_gmsh_type_n_nodes(mesh%element_type(i)))
+    end do
+    write(fileunit,'(a)') '$EndElements'
+    !
+    ! CLOSE FILE
+    !
+    call fbem_close_file(filename,fileunit)
+  end subroutine gmsh_write
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   subroutine fbem_export_gmsh_fmt_real(fmt_real_val)
     implicit none

@@ -6,7 +6,11 @@ project adheres to [Semantic Versioning](https://semver.org).
 
 ## [2.0.3] - In progress
 ### Added
-- 2025-10-20 (By Samuel González Jiménez). Implement variable shell thicknesses. It required reading from a csv file the thickness at each shell node.
+- 2026-06-05 Add simple subroutines to fbem module "string_handling" for writing new files and append content to files. Changes to many source files due to this. Including the csv module.
+- 2026-01-05 Includes .csv output files (.wsp and static results (export_solution_mechanics_static_nso_csv)).
+- 2025-11-26 Absorbent boundary (acoustics) with constant beta and Delany-Bazley beta implemented for BE boundaries (ord. and crack-like). VALIDATION example still MISSING.
+- 2025-10-20 Add point BE body load (point source) to inviscid fluids (acoustics).
+- 2025-10-20 (By Samuel González Jiménez). Implement variable shell thicknesses. It requires reading from a csv file the thickness at each shell node.
 
 ### Changed
 - None
