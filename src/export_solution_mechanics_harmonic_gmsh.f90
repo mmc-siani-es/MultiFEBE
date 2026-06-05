@@ -2085,93 +2085,92 @@ subroutine export_solution_mechanics_harmonic_gmsh(kf,output_fileunit)
       ! Solid total stress tensor (internal elements)
       ! ==========================================================================================================================
 
-      if (problem%n.ne.3) then
-        close(unit=output_fileunit)
-        stop 'internal elements only 3D'
-      end if
-
-      exp_n_elements=0
-      exp_element_eid=0
-      exp_element_n_nodes=0
-      exp_element_node_value_c=0
-      do kp=1,internalelements_mesh%n_parts
-        kr=internalelements_mesh%part(kp)%entity
-        if (kr.eq.0) cycle
-        if (region(kr)%class.eq.fbem_be) then
-          select case (region(kr)%type)
-            case (fbem_potential)
-                k_start=0
-                k_end  =0
-            case (fbem_viscoelastic)
-                k_start=1
-                k_end  =problem%n
-            case (fbem_poroelastic)
-                k_start=1
-                k_end  =problem%n
-          end select
-          if (k_end.eq.0) cycle
-          do ke=1,internalelements_mesh%part(kp)%n_elements
-            se=internalelements_mesh%part(kp)%element(ke)
-            exp_n_elements=exp_n_elements+1
-            exp_element_eid(exp_n_elements)=internalelements_mesh%element(se)%id
-            exp_element_n_nodes(exp_n_elements)=internalelements_mesh%element(se)%n_nodes
-            do kn=1,exp_element_n_nodes(exp_n_elements)
-              exp_element_node_value_c(1:3,kn,exp_n_elements)=internalelements_mesh%element(se)%value_c(1,kn,1:problem%n)
-              exp_element_node_value_c(4:6,kn,exp_n_elements)=internalelements_mesh%element(se)%value_c(2,kn,1:problem%n)
-              exp_element_node_value_c(7:9,kn,exp_n_elements)=internalelements_mesh%element(se)%value_c(3,kn,1:problem%n)
+      if (problem%n.eq.3) then
+        exp_n_elements=0
+        exp_element_eid=0
+        exp_element_n_nodes=0
+        exp_element_node_value_c=0
+        do kp=1,internalelements_mesh%n_parts
+          kr=internalelements_mesh%part(kp)%entity
+          if (kr.eq.0) cycle
+          if (region(kr)%class.eq.fbem_be) then
+            select case (region(kr)%type)
+              case (fbem_potential)
+                  k_start=0
+                  k_end  =0
+              case (fbem_viscoelastic)
+                  k_start=1
+                  k_end  =problem%n
+              case (fbem_poroelastic)
+                  k_start=1
+                  k_end  =problem%n
+            end select
+            if (k_end.eq.0) cycle
+            do ke=1,internalelements_mesh%part(kp)%n_elements
+              se=internalelements_mesh%part(kp)%element(ke)
+              exp_n_elements=exp_n_elements+1
+              exp_element_eid(exp_n_elements)=internalelements_mesh%element(se)%id
+              exp_element_n_nodes(exp_n_elements)=internalelements_mesh%element(se)%n_nodes
+              do kn=1,exp_element_n_nodes(exp_n_elements)
+                exp_element_node_value_c(1:3,kn,exp_n_elements)=internalelements_mesh%element(se)%value_c(1,kn,1:problem%n)
+                exp_element_node_value_c(4:6,kn,exp_n_elements)=internalelements_mesh%element(se)%value_c(2,kn,1:problem%n)
+                exp_element_node_value_c(7:9,kn,exp_n_elements)=internalelements_mesh%element(se)%value_c(3,kn,1:problem%n)
+              end do
             end do
+          end if
+        end do
+        if (exp_n_elements.gt.0) then
+          !
+          ! Write to file the real part
+          !
+          write(output_fileunit,'(a16)' ) '$ElementNodeData'
+          write(output_fileunit,'(a1)' ) '1'
+          write(output_fileunit,'(a35)') '"sigma^{total} (internal elements)"'
+          write(output_fileunit,'(a1)' ) '1'
+          write(fmt1,*) '(',fmt_real,')'
+          call fbem_trim2b(fmt1)
+          write(output_fileunit,fmt1) omega
+          write(output_fileunit,'(a1)') '3'
+          write(fmt1,*) '(',fmt_integer,')'
+          call fbem_trim2b(fmt1)
+          write(output_fileunit,fmt1) 2*kf-2
+          write(output_fileunit,'(a1)') '9'
+          write(fmt1,*) '(',fmt_integer,')'
+          call fbem_trim2b(fmt1)
+          write(output_fileunit,fmt1) exp_n_elements
+          do k=1,exp_n_elements
+            write(fmt1,*) '(2',fmt_integer,',',9*exp_element_n_nodes(k),fmt_real,')'
+            call fbem_trim2b(fmt1)
+            write(output_fileunit,fmt1) exp_element_eid(k), exp_element_n_nodes(k), real(exp_element_node_value_c(:,1:exp_element_n_nodes(k),k))
           end do
+          write(output_fileunit,'(a19)') '$EndElementNodeData'
+          !
+          ! Write to file the imaginary part
+          !
+          write(output_fileunit,'(a16)' ) '$ElementNodeData'
+          write(output_fileunit,'(a1)' ) '1'
+          write(output_fileunit,'(a35)') '"sigma^{total} (internal elements)"'
+          write(output_fileunit,'(a1)' ) '1'
+          write(fmt1,*) '(',fmt_real,')'
+          call fbem_trim2b(fmt1)
+          write(output_fileunit,fmt1) omega
+          write(output_fileunit,'(a1)') '3'
+          write(fmt1,*) '(',fmt_integer,')'
+          call fbem_trim2b(fmt1)
+          write(output_fileunit,fmt1) 2*kf-1
+          write(output_fileunit,'(a1)') '9'
+          write(fmt1,*) '(',fmt_integer,')'
+          call fbem_trim2b(fmt1)
+          write(output_fileunit,fmt1) exp_n_elements
+          do k=1,exp_n_elements
+            write(fmt1,*) '(2',fmt_integer,',',9*exp_element_n_nodes(k),fmt_real,')'
+            call fbem_trim2b(fmt1)
+            write(output_fileunit,fmt1) exp_element_eid(k), exp_element_n_nodes(k), imag(exp_element_node_value_c(:,1:exp_element_n_nodes(k),k))
+          end do
+          write(output_fileunit,'(a19)') '$EndElementNodeData'
         end if
-      end do
-      if (exp_n_elements.gt.0) then
-        !
-        ! Write to file the real part
-        !
-        write(output_fileunit,'(a16)' ) '$ElementNodeData'
-        write(output_fileunit,'(a1)' ) '1'
-        write(output_fileunit,'(a35)') '"sigma^{total} (internal elements)"'
-        write(output_fileunit,'(a1)' ) '1'
-        write(fmt1,*) '(',fmt_real,')'
-        call fbem_trim2b(fmt1)
-        write(output_fileunit,fmt1) omega
-        write(output_fileunit,'(a1)') '3'
-        write(fmt1,*) '(',fmt_integer,')'
-        call fbem_trim2b(fmt1)
-        write(output_fileunit,fmt1) 2*kf-2
-        write(output_fileunit,'(a1)') '9'
-        write(fmt1,*) '(',fmt_integer,')'
-        call fbem_trim2b(fmt1)
-        write(output_fileunit,fmt1) exp_n_elements
-        do k=1,exp_n_elements
-          write(fmt1,*) '(2',fmt_integer,',',9*exp_element_n_nodes(k),fmt_real,')'
-          call fbem_trim2b(fmt1)
-          write(output_fileunit,fmt1) exp_element_eid(k), exp_element_n_nodes(k), real(exp_element_node_value_c(:,1:exp_element_n_nodes(k),k))
-        end do
-        write(output_fileunit,'(a19)') '$EndElementNodeData'
-        !
-        ! Write to file the imaginary part
-        !
-        write(output_fileunit,'(a16)' ) '$ElementNodeData'
-        write(output_fileunit,'(a1)' ) '1'
-        write(output_fileunit,'(a35)') '"sigma^{total} (internal elements)"'
-        write(output_fileunit,'(a1)' ) '1'
-        write(fmt1,*) '(',fmt_real,')'
-        call fbem_trim2b(fmt1)
-        write(output_fileunit,fmt1) omega
-        write(output_fileunit,'(a1)') '3'
-        write(fmt1,*) '(',fmt_integer,')'
-        call fbem_trim2b(fmt1)
-        write(output_fileunit,fmt1) 2*kf-1
-        write(output_fileunit,'(a1)') '9'
-        write(fmt1,*) '(',fmt_integer,')'
-        call fbem_trim2b(fmt1)
-        write(output_fileunit,fmt1) exp_n_elements
-        do k=1,exp_n_elements
-          write(fmt1,*) '(2',fmt_integer,',',9*exp_element_n_nodes(k),fmt_real,')'
-          call fbem_trim2b(fmt1)
-          write(output_fileunit,fmt1) exp_element_eid(k), exp_element_n_nodes(k), imag(exp_element_node_value_c(:,1:exp_element_n_nodes(k),k))
-        end do
-        write(output_fileunit,'(a19)') '$EndElementNodeData'
+      else
+        call fbem_warning_message(error_unit,0,'',0,'Solid total stress tensor (internal elements) only for 3D elements')
       end if
 
       deallocate (exp_node_eid)

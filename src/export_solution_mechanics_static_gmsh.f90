@@ -1245,67 +1245,71 @@ subroutine export_solution_mechanics_static_gmsh(output_fileunit)
     ! Stress tensor (internal elements)
     ! ==============================================================================================================================
 
-    if (problem%n.ne.3) stop 'internal elements only 3D'
+    if (problem%n.eq.3) then
 
-    exp_n_elements=0
-    exp_element_eid=0
-    exp_element_n_nodes=0
-    exp_element_node_value=0
-    do kp=1,internalelements_mesh%n_parts
-      kr=internalelements_mesh%part(kp)%entity
-      if (kr.eq.0) cycle
-      if (region(kr)%class.eq.fbem_be) then
-        k_start=1
-        k_end  =problem%n
-        mu=region(kr)%property_r(2)
-        lambda=region(kr)%property_r(6)
-        nu=region(kr)%property_r(3)
-        do ke=1,internalelements_mesh%part(kp)%n_elements
-          se=internalelements_mesh%part(kp)%element(ke)
-          exp_n_elements=exp_n_elements+1
-          exp_element_eid(exp_n_elements)=internalelements_mesh%element(se)%id
-          exp_element_n_nodes(exp_n_elements)=internalelements_mesh%element(se)%n_nodes
-          do kn=1,exp_element_n_nodes(exp_n_elements)
-            exp_element_node_value(1:3,kn,exp_n_elements)=internalelements_mesh%element(se)%value_r(1,kn,1:problem%n)
-            exp_element_node_value(4:6,kn,exp_n_elements)=internalelements_mesh%element(se)%value_r(2,kn,1:problem%n)
-            exp_element_node_value(7:9,kn,exp_n_elements)=internalelements_mesh%element(se)%value_r(3,kn,1:problem%n)
+      exp_n_elements=0
+      exp_element_eid=0
+      exp_element_n_nodes=0
+      exp_element_node_value=0
+      do kp=1,internalelements_mesh%n_parts
+        kr=internalelements_mesh%part(kp)%entity
+        if (kr.eq.0) cycle
+        if (region(kr)%class.eq.fbem_be) then
+          k_start=1
+          k_end  =problem%n
+          mu=region(kr)%property_r(2)
+          lambda=region(kr)%property_r(6)
+          nu=region(kr)%property_r(3)
+          do ke=1,internalelements_mesh%part(kp)%n_elements
+            se=internalelements_mesh%part(kp)%element(ke)
+            exp_n_elements=exp_n_elements+1
+            exp_element_eid(exp_n_elements)=internalelements_mesh%element(se)%id
+            exp_element_n_nodes(exp_n_elements)=internalelements_mesh%element(se)%n_nodes
+            do kn=1,exp_element_n_nodes(exp_n_elements)
+              exp_element_node_value(1:3,kn,exp_n_elements)=internalelements_mesh%element(se)%value_r(1,kn,1:problem%n)
+              exp_element_node_value(4:6,kn,exp_n_elements)=internalelements_mesh%element(se)%value_r(2,kn,1:problem%n)
+              exp_element_node_value(7:9,kn,exp_n_elements)=internalelements_mesh%element(se)%value_r(3,kn,1:problem%n)
 
-            sigma(1,1)=exp_element_node_value(1,kn,exp_n_elements)
-            sigma(1,2)=exp_element_node_value(2,kn,exp_n_elements)
-            sigma(1,3)=exp_element_node_value(3,kn,exp_n_elements)
-            sigma(2,1)=exp_element_node_value(4,kn,exp_n_elements)
-            sigma(2,2)=exp_element_node_value(5,kn,exp_n_elements)
-            sigma(2,3)=exp_element_node_value(6,kn,exp_n_elements)
-            sigma(3,1)=exp_element_node_value(7,kn,exp_n_elements)
-            sigma(3,2)=exp_element_node_value(8,kn,exp_n_elements)
-            sigma(3,3)=exp_element_node_value(9,kn,exp_n_elements)
+              sigma(1,1)=exp_element_node_value(1,kn,exp_n_elements)
+              sigma(1,2)=exp_element_node_value(2,kn,exp_n_elements)
+              sigma(1,3)=exp_element_node_value(3,kn,exp_n_elements)
+              sigma(2,1)=exp_element_node_value(4,kn,exp_n_elements)
+              sigma(2,2)=exp_element_node_value(5,kn,exp_n_elements)
+              sigma(2,3)=exp_element_node_value(6,kn,exp_n_elements)
+              sigma(3,1)=exp_element_node_value(7,kn,exp_n_elements)
+              sigma(3,2)=exp_element_node_value(8,kn,exp_n_elements)
+              sigma(3,3)=exp_element_node_value(9,kn,exp_n_elements)
 
-            eps(1,1)=(sigma(1,1)-nu*(sigma(2,2)+sigma(3,3)))/(2.d0*mu*(1.d0+nu))
-            eps(1,2)=sigma(1,2)/(2.d0*mu)
-            eps(1,3)=sigma(1,3)/(2.d0*mu)
-            eps(2,1)=sigma(2,1)/(2.d0*mu)
-            eps(2,2)=(sigma(2,2)-nu*(sigma(1,1)+sigma(3,3)))/(2.d0*mu*(1.d0+nu))
-            eps(2,3)=sigma(2,3)/(2.d0*mu)
-            eps(3,1)=sigma(3,1)/(2.d0*mu)
-            eps(3,2)=sigma(3,2)/(2.d0*mu)
-            eps(3,3)=(sigma(3,3)-nu*(sigma(1,1)+sigma(2,2)))/(2.d0*mu*(1.d0+nu))
+              eps(1,1)=(sigma(1,1)-nu*(sigma(2,2)+sigma(3,3)))/(2.d0*mu*(1.d0+nu))
+              eps(1,2)=sigma(1,2)/(2.d0*mu)
+              eps(1,3)=sigma(1,3)/(2.d0*mu)
+              eps(2,1)=sigma(2,1)/(2.d0*mu)
+              eps(2,2)=(sigma(2,2)-nu*(sigma(1,1)+sigma(3,3)))/(2.d0*mu*(1.d0+nu))
+              eps(2,3)=sigma(2,3)/(2.d0*mu)
+              eps(3,1)=sigma(3,1)/(2.d0*mu)
+              eps(3,2)=sigma(3,2)/(2.d0*mu)
+              eps(3,3)=(sigma(3,3)-nu*(sigma(1,1)+sigma(2,2)))/(2.d0*mu*(1.d0+nu))
 
-            call dsyevj3(eps,eigvec,eigval) ! substitute with lapack dsyev
+              call dsyevj3(eps,eigvec,eigval) ! substitute with lapack dsyev
 
-            exp_element_node_value_s(kn,exp_n_elements)=maxval(eigval)-minval(eigval)
+              exp_element_node_value_s(kn,exp_n_elements)=maxval(eigval)-minval(eigval)
 
+            end do
           end do
-        end do
-      end if
-    end do
-    call fbem_export_gmsh_ElementNodeData(output_fileunit,'Stress tensor SIJ (BE IE)',0.d0,0,9,&
-                                          internalelements_mesh%n_elements,maxval(fbem_n_nodes),&
-                                          exp_n_elements,exp_element_eid,exp_element_n_nodes,exp_element_node_value)
+        end if
+      end do
+      call fbem_export_gmsh_ElementNodeData(output_fileunit,'Stress tensor SIJ (BE IE)',0.d0,0,9,&
+                                            internalelements_mesh%n_elements,maxval(fbem_n_nodes),&
+                                            exp_n_elements,exp_element_eid,exp_element_n_nodes,exp_element_node_value)
 
-    exp_element_node_value(1,:,:)=exp_element_node_value_s
-    call fbem_export_gmsh_ElementNodeData(output_fileunit,'Maximum shear strain (BE IE)',0.d0,0,1,&
-                                          internalelements_mesh%n_elements,maxval(fbem_n_nodes),&
-                                          exp_n_elements,exp_element_eid,exp_element_n_nodes,exp_element_node_value)
+      exp_element_node_value(1,:,:)=exp_element_node_value_s
+      call fbem_export_gmsh_ElementNodeData(output_fileunit,'Maximum shear strain (BE IE)',0.d0,0,1,&
+                                            internalelements_mesh%n_elements,maxval(fbem_n_nodes),&
+                                            exp_n_elements,exp_element_eid,exp_element_n_nodes,exp_element_node_value)
+
+    else
+      call fbem_warning_message(error_unit,0,'',0,'Solid total stress tensor (internal elements) only for 3D elements')
+    end if
 
   end if
 
