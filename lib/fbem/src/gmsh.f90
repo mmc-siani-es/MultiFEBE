@@ -454,20 +454,8 @@ contains
     call fbem_close_file(filename,fileunit)
   end subroutine gmsh_read
 
-
-
-
-
-
-
-
-
-
-
-
-
   !
-  ! Yet to be tested!
+  ! Yet to be tested completely!
   !
 
   subroutine gmsh_write(mesh,filename)
@@ -533,19 +521,19 @@ contains
       write(fmtstr,*) '(i',fbem_nchar_int(mesh%element_eid(i)),',1x,i',fbem_nchar_int(mesh%element_type(i)),')'
       call fbem_trimall(fmtstr)
       write(fileunit,fmtstr,advance='no') mesh%element_eid(i), mesh%element_type(i)
-      tmp_int=mesh%physicalname_eid(mesh%element_physical(i))
+      tmp_int=mesh%element_physical(i)
       write(fmtstr,*) '(1x,i1,1x,i',fbem_nchar_int(tmp_int),',1x,i',fbem_nchar_int(tmp_int),')'
       call fbem_trimall(fmtstr)
       write(fileunit,fmtstr,advance='no') 2, tmp_int, tmp_int
       tmp_int=0
       do j=1,fbem_gmsh_type_n_nodes(mesh%element_type(i))
-        if (tmp_int.lt.mesh%node_eid(mesh%element_node(j,i))) then
-          tmp_int=mesh%node_eid(mesh%element_node(j,i))
+        if (tmp_int.lt.mesh%element_node(j,i)) then
+          tmp_int=mesh%element_node(j,i)
         end if
       end do
       write(fmtstr,*) '(',fbem_gmsh_type_n_nodes(mesh%element_type(i)),'i',fbem_nchar_int(tmp_int)+1,')'
       call fbem_trimall(fmtstr)
-      write(fileunit,fmtstr) (mesh%node_eid(mesh%element_node(j,i)),j=1,fbem_gmsh_type_n_nodes(mesh%element_type(i)))
+      write(fileunit,fmtstr) (mesh%element_node(j,i),j=1,fbem_gmsh_type_n_nodes(mesh%element_type(i)))
     end do
     write(fileunit,'(a)') '$EndElements'
     !
@@ -553,26 +541,6 @@ contains
     !
     call fbem_close_file(filename,fileunit)
   end subroutine gmsh_write
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   subroutine fbem_export_gmsh_fmt_real(fmt_real_val)
     implicit none
